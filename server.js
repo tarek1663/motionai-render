@@ -217,15 +217,29 @@ app.post("/render", async (req, res) => {
         inputProps,
       });
 
+      // Trouver chromium système
+      let chromiumPath = "";
+      try {
+        chromiumPath = execSync(
+          "which chromium || which chromium-browser || which google-chrome"
+        )
+          .toString()
+          .trim();
+        console.log("🌐 Chromium path:", chromiumPath);
+      } catch (e) {
+        console.log("⚠️ Chromium not found in PATH");
+      }
+
       await renderMedia({
         composition,
         serveUrl: bundleLocation,
         codec: "h264",
         outputLocation: outPath,
         inputProps,
+        browserExecutable: chromiumPath || undefined,
         chromiumOptions: {
           disableWebSecurity: true,
-          executablePath: execSync("which chromium").toString().trim(),
+          ignoreCertificateErrors: true,
         },
         crf: 18,
         width,

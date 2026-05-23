@@ -1,3 +1,8 @@
+[variables]
+LD_LIBRARY_PATH = "/nix/store/*/lib:/run/current-system/sw/lib"
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
+CHROME_PATH = "/run/current-system/sw/bin/chromium"
+
 [phases.setup]
 nixPkgs = [
   "chromium",
@@ -16,7 +21,6 @@ nixPkgs = [
   "xorg.libxcb",
   "xorg.libX11",
   "xorg.libXext",
-  "xorg.libXtst",
   "mesa",
   "pango",
   "cairo",
@@ -26,6 +30,8 @@ nixPkgs = [
   "freetype",
   "gdk-pixbuf",
   "gtk3",
+  "at-spi2-atk",
+  "at-spi2-core",
 ]
 
 [phases.build]
