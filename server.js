@@ -6,6 +6,7 @@ console.log("📁 Files:", require("fs").readdirSync(__dirname));
 
 const express = require("express");
 const cors = require("cors");
+const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
@@ -224,6 +225,7 @@ app.post("/render", async (req, res) => {
         inputProps,
         chromiumOptions: {
           disableWebSecurity: true,
+          executablePath: execSync("which chromium").toString().trim(),
         },
         crf: 18,
         width,

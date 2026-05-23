@@ -1,3 +1,33 @@
+[phases.setup]
+nixPkgs = [
+  "chromium",
+  "glib",
+  "nss",
+  "nspr",
+  "atk",
+  "cups",
+  "libdrm",
+  "dbus",
+  "libxkbcommon",
+  "xorg.libXcomposite",
+  "xorg.libXdamage",
+  "xorg.libXfixes",
+  "xorg.libXrandr",
+  "xorg.libxcb",
+  "xorg.libX11",
+  "xorg.libXext",
+  "xorg.libXtst",
+  "mesa",
+  "pango",
+  "cairo",
+  "alsa-lib",
+  "expat",
+  "fontconfig",
+  "freetype",
+  "gdk-pixbuf",
+  "gtk3",
+]
+
 [phases.build]
 cmds = ["npm install"]
 
