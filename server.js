@@ -206,7 +206,7 @@ app.post("/render", async (req, res) => {
   };
   const { width, height } = getDimensions(format || "9:16");
 
-  const rootPath = path.join(__dirname, "..", "remotion", "Root.tsx");
+  const rootPath = path.join(__dirname, "remotion", "Root.tsx");
 
   const cmd = [
     "npx remotion render",
