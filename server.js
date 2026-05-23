@@ -209,7 +209,7 @@ app.post("/render", async (req, res) => {
   const rootPath = path.join(__dirname, "remotion", "Root.tsx");
 
   const cmd = [
-    "npx --yes remotion@4.0.305 render",
+    "node /app/node_modules/remotion/bin/remotion.mjs render",
     `"${rootPath}"`,
     "MotionVideo",
     `"${outPath}"`,
