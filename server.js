@@ -6,7 +6,7 @@ console.log("📁 Files:", require("fs").readdirSync(__dirname));
 
 const express = require("express");
 const cors = require("cors");
-const { exec } = require("child_process");
+const { exec, execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
@@ -207,6 +207,23 @@ app.post("/render", async (req, res) => {
   const { width, height } = getDimensions(format || "9:16");
 
   const rootPath = path.join(__dirname, "remotion", "Root.tsx");
+
+  // Trouver le bon binaire remotion
+  let remotionBin = "";
+  try {
+    remotionBin = execSync("find /app/node_modules -name 'remotion' -type f 2>/dev/null | head -5").toString().trim();
+    console.log("🔍 Remotion files found:", remotionBin);
+  } catch (e) {
+    console.log("🔍 Find error:", e.message);
+  }
+
+  // Lister les binaires disponibles
+  try {
+    const bins = execSync("ls /app/node_modules/.bin/ 2>/dev/null | grep remotion").toString().trim();
+    console.log("🔍 Remotion bins:", bins);
+  } catch (e) {
+    console.log("🔍 No remotion bins found");
+  }
 
   const cmd = [
     "node /app/node_modules/remotion/bin/remotion.mjs render",
