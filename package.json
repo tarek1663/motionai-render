@@ -2,8 +2,7 @@
   "name": "motionai-render",
   "version": "1.0.0",
   "scripts": {
-    "start": "node server.js",
-    "build": "npm install && ls node_modules/.bin/remotion || echo 'remotion not found'"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -13,6 +12,7 @@
     "@remotion/renderer": "4.0.305",
     "@remotion/google-fonts": "4.0.305",
     "@remotion/transitions": "4.0.305",
-    "@remotion/bundler": "4.0.305"
+    "@remotion/bundler": "4.0.305",
+    "@remotion/cli": "4.0.305"
   }
 }
