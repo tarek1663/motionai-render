@@ -2,15 +2,17 @@
   "name": "motionai-render",
   "version": "1.0.0",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "postinstall": "echo 'deps installed'"
   },
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
     "uuid": "^9.0.0",
-    "@remotion/renderer": "^4.0.0",
-    "remotion": "^4.0.0",
-    "@remotion/google-fonts": "^4.0.0",
-    "@remotion/transitions": "^4.0.0"
+    "remotion": "4.0.305",
+    "@remotion/renderer": "4.0.305",
+    "@remotion/google-fonts": "4.0.305",
+    "@remotion/transitions": "4.0.305",
+    "@remotion/bundler": "4.0.305"
   }
 }
