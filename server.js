@@ -6,10 +6,11 @@ console.log("📁 Files:", require("fs").readdirSync(__dirname));
 
 const express = require("express");
 const cors = require("cors");
-const { exec, execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
+const { renderMedia, selectComposition } = require("@remotion/renderer");
+const { bundle } = require("@remotion/bundler");
 
 const app = express();
 app.use(cors());
@@ -173,7 +174,6 @@ app.post("/render", async (req, res) => {
 
   const outPath = path.join(RENDERS_DIR, `${jobId}.mp4`);
   const metaPath = path.join(RENDERS_DIR, `${jobId}.meta.json`);
-  const propsPath = path.join(RENDERS_DIR, `${jobId}.props.json`);
 
   fs.writeFileSync(
     metaPath,
@@ -186,19 +186,6 @@ app.post("/render", async (req, res) => {
     })
   );
 
-  fs.writeFileSync(
-    propsPath,
-    JSON.stringify({
-      scenes,
-      sceneDurations,
-      totalFrames,
-      format: format || "9:16",
-      audioSrc: audioUrl || null,
-      musicSrc: musicUrl || null,
-      musicVolume: musicVolume || 0.07,
-    })
-  );
-
   const getDimensions = (fmt) => {
     if (fmt === "16:9") return { width: 1920, height: 1080 };
     if (fmt === "1:1") return { width: 1080, height: 1080 };
@@ -206,54 +193,52 @@ app.post("/render", async (req, res) => {
   };
   const { width, height } = getDimensions(format || "9:16");
 
-  const rootPath = path.join(__dirname, "remotion", "Root.tsx");
+  const inputProps = {
+    scenes,
+    sceneDurations,
+    totalFrames,
+    format: format || "9:16",
+    audioSrc: audioUrl || null,
+    musicSrc: musicUrl || null,
+    musicVolume: musicVolume || 0.07,
+  };
 
-  // Trouver le bon binaire remotion
-  let remotionBin = "";
-  try {
-    remotionBin = execSync("find /app/node_modules -name 'remotion' -type f 2>/dev/null | head -5").toString().trim();
-    console.log("🔍 Remotion files found:", remotionBin);
-  } catch (e) {
-    console.log("🔍 Find error:", e.message);
-  }
+  (async () => {
+    try {
+      const bundleLocation = await bundle({
+        entryPoint: path.join(__dirname, "remotion", "Root.tsx"),
+        webpackOverride: (config) => config,
+      });
 
-  // Lister les binaires disponibles
-  try {
-    const bins = execSync("ls /app/node_modules/.bin/ 2>/dev/null | grep remotion").toString().trim();
-    console.log("🔍 Remotion bins:", bins);
-  } catch (e) {
-    console.log("🔍 No remotion bins found");
-  }
+      const composition = await selectComposition({
+        serveUrl: bundleLocation,
+        id: "MotionVideo",
+        inputProps,
+      });
 
-  const cmd = [
-    "node /app/node_modules/remotion/bin/remotion.mjs render",
-    `"${rootPath}"`,
-    "MotionVideo",
-    `"${outPath}"`,
-    `--props="${propsPath}"`,
-    `--width=${width}`,
-    `--height=${height}`,
-    "--codec=h264",
-    "--crf=18",
-  ].join(" ");
+      await renderMedia({
+        composition,
+        serveUrl: bundleLocation,
+        codec: "h264",
+        outputLocation: outPath,
+        inputProps,
+        chromiumOptions: {
+          disableWebSecurity: true,
+        },
+        crf: 18,
+        width,
+        height,
+      });
 
-  exec(
-    cmd,
-    {
-      cwd: path.join(__dirname, ".."),
-      maxBuffer: 1024 * 1024 * 500,
-      env: {
-        ...process.env,
-        NODE_ENV: "production",
-      },
-    },
-    (err) => {
-      if (err) {
-        console.error("Render error:", err.message);
-        fs.writeFileSync(path.join(RENDERS_DIR, `${jobId}.error`), err.message);
-      }
+      console.log("✅ Render done:", jobId);
+    } catch (err) {
+      console.error("❌ Render error:", err.message);
+      fs.writeFileSync(
+        path.join(RENDERS_DIR, `${jobId}.error`),
+        err.message
+      );
     }
-  );
+  })();
 
   res.json({ jobId });
 });
