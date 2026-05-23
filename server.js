@@ -6,7 +6,6 @@ console.log("📁 Files:", require("fs").readdirSync(__dirname));
 
 const express = require("express");
 const cors = require("cors");
-const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
@@ -217,26 +216,13 @@ app.post("/render", async (req, res) => {
         inputProps,
       });
 
-      // Trouver chromium système
-      let chromiumPath = "";
-      try {
-        chromiumPath = execSync(
-          "which chromium || which chromium-browser || which google-chrome"
-        )
-          .toString()
-          .trim();
-        console.log("🌐 Chromium path:", chromiumPath);
-      } catch (e) {
-        console.log("⚠️ Chromium not found in PATH");
-      }
-
       await renderMedia({
         composition,
         serveUrl: bundleLocation,
         codec: "h264",
         outputLocation: outPath,
         inputProps,
-        browserExecutable: chromiumPath || undefined,
+        browserExecutable: "/usr/bin/chromium",
         chromiumOptions: {
           disableWebSecurity: true,
           ignoreCertificateErrors: true,
