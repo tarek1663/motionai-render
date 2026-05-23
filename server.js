@@ -209,7 +209,7 @@ app.post("/render", async (req, res) => {
   const rootPath = path.join(__dirname, "remotion", "Root.tsx");
 
   const cmd = [
-    "npx remotion render",
+    "node_modules/.bin/remotion render",
     `"${rootPath}"`,
     "MotionVideo",
     `"${outPath}"`,
@@ -218,7 +218,6 @@ app.post("/render", async (req, res) => {
     `--height=${height}`,
     "--codec=h264",
     "--crf=18",
-    "--browser-executable=$(which chromium)",
   ].join(" ");
 
   exec(
