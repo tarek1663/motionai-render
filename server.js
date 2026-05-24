@@ -307,7 +307,7 @@ app.get("/meta/:jobId", (req, res) => {
 app.use("/video", express.static(RENDERS_DIR));
 app.use("/audio", express.static(AUDIO_DIR));
 app.use("/photos", express.static(PHOTOS_DIR));
-app.use("/music", express.static(path.join(__dirname, "..", "public", "music")));
+app.use("/music", express.static(path.join(__dirname, "public", "music")));
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`🎬 Render server on port ${PORT}`));
