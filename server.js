@@ -207,13 +207,16 @@ app.post("/render", async (req, res) => {
   (async () => {
     try {
       console.log("🎬 Starting render:", jobId);
-      console.log("🌐 Chrome path:", "/usr/bin/chromium");
+
+      // Forcer le chemin Chrome AVANT tout
+      process.env.PUPPETEER_EXECUTABLE_PATH = "/usr/bin/chromium";
+      process.env.REMOTION_CHROME_EXECUTABLE_PATH = "/usr/bin/chromium";
 
       try {
         const chromePath = execSync("which chromium").toString().trim();
-        console.log("✅ Chromium found:", chromePath);
+        console.log("✅ Chromium found at:", chromePath);
       } catch (e) {
-        console.log("❌ Chromium not found");
+        console.log("❌ Chromium not found, using bundled");
       }
 
       const bundleLocation = await bundle({
@@ -237,10 +240,14 @@ app.post("/render", async (req, res) => {
         chromiumOptions: {
           disableWebSecurity: true,
           ignoreCertificateErrors: true,
+          args: ["--no-sandbox", "--disable-setuid-sandbox"],
         },
         crf: 18,
         width,
         height,
+        onProgress: ({ progress }) => {
+          console.log(`📊 Render progress: ${Math.round(progress * 100)}%`);
+        },
       });
 
       console.log("✅ Render done:", jobId);
