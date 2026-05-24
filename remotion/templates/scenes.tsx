@@ -18,6 +18,22 @@ const E_OUT  = Easing.bezier(0.16, 1, 0.3, 1);
 const E_IN   = Easing.bezier(0.7, 0, 0.84, 0);
 const E_IO   = Easing.bezier(0.76, 0, 0.24, 1);
 
+const CLAMP_BOTH = { extrapolateLeft: "clamp" as const, extrapolateRight: "clamp" as const };
+
+/** Input range strictement croissante pour interpolate() */
+const monoRange = (...values: number[]): number[] => {
+  const out: number[] = [];
+  for (const v of values) {
+    const n = Number.isFinite(v) ? v : 0;
+    if (out.length === 0) {
+      out.push(n);
+    } else if (n > out[out.length - 1]) {
+      out.push(n);
+    }
+  }
+  return out.length >= 2 ? out : [0, 1];
+};
+
 // ---------------------------------------------------------
 // TYPES
 // ---------------------------------------------------------
@@ -2471,15 +2487,18 @@ export const CountdownScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
   const light = isLight(bg);
 
   const startNum = parseInt(scene.text || "5");
-  const framesPerNum = Math.floor(durationInFrames / (startNum + 1));
+  const framesPerNum = Math.max(4, Math.floor(durationInFrames / (startNum + 1)));
   const currentNum = Math.max(0, startNum - Math.floor(frame / framesPerNum));
   const localFrame = frame % framesPerNum;
 
   // Animation pour chaque chiffre
   const scaleIn = spring({ frame: localFrame, fps, config: { damping: 8, stiffness: 400, mass: 0.8 }, from: 3, to: 1 });
-  const numOp   = interpolate(localFrame, [0, 8, framesPerNum - 12, framesPerNum], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp",
-  });
+  const tFadeIn = Math.min(8, Math.max(1, Math.floor(framesPerNum * 0.15)));
+  const tFadeOut = Math.max(tFadeIn + 1, framesPerNum - 12);
+  const tEnd = Math.max(tFadeOut + 1, framesPerNum);
+  const numOp = tFadeOut >= tEnd - 1
+    ? interpolate(localFrame, [0, tEnd], [0, 1], CLAMP_BOTH)
+    : interpolate(localFrame, monoRange(0, tFadeIn, tFadeOut, tEnd), [0, 1, 1, 0], CLAMP_BOTH);
   const blurNum = interpolate(localFrame, [0, 12], [20, 0], { extrapolateRight: "clamp" });
 
   // Cercle de progression
@@ -4361,7 +4380,8 @@ export const OdometerScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
   const fade = useFade();
   const bg = scene.bg || "#0a0a0a";
   const to = scene.counterTo || 1000000;
-  const progress = interpolate(frame, [0, durationInFrames * 0.8], [0, 1], { extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
+  const odometerEnd = Math.max(2, Math.round(durationInFrames * 0.8));
+  const progress = interpolate(frame, [0, odometerEnd], [0, 1], { ...CLAMP_BOTH, easing: Easing.out(Easing.cubic) });
   const value = Math.round(to * progress);
   const digits = value.toLocaleString("fr-FR").split("");
 
@@ -4400,7 +4420,8 @@ export const ProgressRingScene: React.FC<{ scene: SceneData; sceneIndex?: number
   const fade = useFade();
   const bg = scene.bg || "#0a0a0a";
   const targetPct = scene.counterTo || 78;
-  const progress = interpolate(frame, [10, durationInFrames * 0.8], [0, targetPct], { extrapolateRight: "clamp", easing: E_OUT });
+  const ringEnd = Math.max(12, Math.round(durationInFrames * 0.8));
+  const progress = interpolate(frame, monoRange(10, ringEnd), [0, targetPct], { ...CLAMP_BOTH, easing: E_OUT });
   const r = 160;
   const circumference = 2 * Math.PI * r;
   const dashOffset = circumference - (progress / 100) * circumference;
@@ -4459,7 +4480,8 @@ export const GaugeScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
   const fade = useFade();
   const bg = scene.bg || "#0a0a0a";
   const targetPct = scene.counterTo || 85;
-  const progress = interpolate(frame, [10, durationInFrames * 0.8], [0, targetPct / 100], { extrapolateRight: "clamp", easing: E_OUT });
+  const gaugeEnd = Math.max(12, Math.round(durationInFrames * 0.8));
+  const progress = interpolate(frame, monoRange(10, gaugeEnd), [0, targetPct / 100], { ...CLAMP_BOTH, easing: E_OUT });
   const angle = -135 + progress * 270;
 
   return (
@@ -4708,7 +4730,8 @@ export const FeatureHighlightScene: React.FC<{ scene: SceneData; sceneIndex?: nu
           )}
           {/* Highlights animés */}
           {highlights.map((h, i) => {
-            const op = interpolate(Math.max(0, frame - h.delay), [0, 16, 40, 56], [0, 0.8, 0.8, 0], { extrapolateRight: "clamp" });
+            const highlightT = Math.max(0, frame - h.delay);
+            const op = interpolate(highlightT, [0, 16, 40, 56], [0, 0.8, 0.8, 0], CLAMP_BOTH);
             return (
               <div key={i} style={{
                 position: "absolute",
@@ -4796,9 +4819,12 @@ export const FollowerCounterScene: React.FC<{ scene: SceneData; sceneIndex?: num
   const fade = useFade();
   const bg = scene.bg || "#0a0a0a";
   const target = scene.counterTo || 100000;
-  const progress = interpolate(frame, [0, durationInFrames * 0.8], [0, 1], { extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
+  const followerEnd = Math.max(2, Math.round(durationInFrames * 0.8));
+  const progress = interpolate(frame, [0, followerEnd], [0, 1], { ...CLAMP_BOTH, easing: Easing.out(Easing.cubic) });
   const current = Math.round(target * progress);
-  const milestoneOp = interpolate(frame, [durationInFrames * 0.75, durationInFrames * 0.85], [0, 1], { extrapolateRight: "clamp" });
+  const milestoneStart = Math.round(durationInFrames * 0.75);
+  const milestoneEnd = Math.max(milestoneStart + 1, Math.round(durationInFrames * 0.85));
+  const milestoneOp = interpolate(frame, [milestoneStart, milestoneEnd], [0, 1], CLAMP_BOTH);
 
   return (
     <AbsoluteFill style={{ background: bg }}>
@@ -5043,7 +5069,8 @@ export const XPBarScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
   const bg = scene.bg || "#0a0a0a";
   const targetXP = scene.counterTo || 8500;
   const maxXP = 10000;
-  const progress = interpolate(frame, [10, durationInFrames * 0.8], [0, targetXP / maxXP], { extrapolateRight: "clamp", easing: E_OUT });
+  const xpEnd = Math.max(12, Math.round(durationInFrames * 0.8));
+  const progress = interpolate(frame, monoRange(10, xpEnd), [0, targetXP / maxXP], { ...CLAMP_BOTH, easing: E_OUT });
   const barWidth = 800;
 
   return (
@@ -5454,7 +5481,7 @@ export const GradientSlideScene: React.FC<{ scene: SceneData; sceneIndex?: numbe
   const { durationInFrames } = useVideoConfig();
   const fade = useFade();
   const bg = scene.bg || "#0a0a0a";
-  const slideX = interpolate(frame, [0, durationInFrames], [-100, 200], { extrapolateRight: "clamp" });
+  const slideX = interpolate(frame, [0, Math.max(1, durationInFrames)], [-100, 200], CLAMP_BOTH);
   const fontSize = autoFontSize(scene.text || "", 140, 60);
 
   return (
@@ -5554,7 +5581,7 @@ export const BlurFocusScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
             fontSize: 36, fontWeight: 200,
             color: isLight(bg) ? "#888" : "#555", fontFamily,
             filter: `blur(${blur * 0.5}px)`,
-            opacity: interpolate(frame, [20, 50], [0, 1], { extrapolateRight: "clamp" }),
+            opacity: interpolate(frame, [20, 50], [0, 1], CLAMP_BOTH),
           }}>
             {scene.text2}
           </div>
@@ -5830,7 +5857,8 @@ export const ROIScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ 
   const fade = useFade();
   const bg = scene.bg || "#0a0a0a";
   const targetROI = scene.counterTo || 347;
-  const progress = interpolate(frame, [10, durationInFrames * 0.75], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
+  const roiEnd = Math.max(11, Math.round(durationInFrames * 0.75));
+  const progress = interpolate(frame, monoRange(10, roiEnd), [0, 1], { ...CLAMP_BOTH, easing: E_OUT });
   const currentROI = Math.round(targetROI * progress);
 
   return (
@@ -6145,7 +6173,7 @@ export const EndCreditsScene: React.FC<{ scene: SceneData; sceneIndex?: number }
   const { durationInFrames } = useVideoConfig();
   const fade = useFade();
   const bg = scene.bg || "#0a0a0a";
-  const scrollY = interpolate(frame, [0, durationInFrames], [600, -800], { extrapolateRight: "clamp" });
+  const scrollY = interpolate(frame, [0, Math.max(1, durationInFrames)], [600, -800], CLAMP_BOTH);
 
   const credits = [
     { role: "Créé avec", name: "MotionAI" },
@@ -6197,7 +6225,8 @@ export const WipeTransitionScene: React.FC<{ scene: SceneData; sceneIndex?: numb
   const { durationInFrames } = useVideoConfig();
   const fade = useFade();
   const bg = scene.bg || "#0a0a0a";
-  const wipeX = interpolate(frame, [0, durationInFrames * 0.6], [-1080, 0], { extrapolateRight: "clamp", easing: E_OUT });
+  const wipeEnd = Math.max(1, Math.round(durationInFrames * 0.6));
+  const wipeX = interpolate(frame, [0, wipeEnd], [-1080, 0], { ...CLAMP_BOTH, easing: E_OUT });
   const fontSize = autoFontSize(scene.text || "", 130, 60);
 
   return (
@@ -6230,8 +6259,9 @@ export const DollyZoomScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
   const { durationInFrames } = useVideoConfig();
   const fade = useFade();
   const bg = scene.bg || "#0a0a0a";
-  const scale = interpolate(frame, [0, durationInFrames], [1, 2.5], { extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
-  const bgScale = interpolate(frame, [0, durationInFrames], [2.5, 1], { extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
+  const dollyEnd = Math.max(1, durationInFrames);
+  const scale = interpolate(frame, [0, dollyEnd], [1, 2.5], { ...CLAMP_BOTH, easing: Easing.out(Easing.cubic) });
+  const bgScale = interpolate(frame, [0, dollyEnd], [2.5, 1], { ...CLAMP_BOTH, easing: Easing.out(Easing.cubic) });
   const fontSize = autoFontSize(scene.text || "", 130, 60);
 
   return (
@@ -6605,8 +6635,8 @@ export const PriceRevealScene: React.FC<{ scene: SceneData; sceneIndex?: number 
   const fade = useFade();
   const bg = scene.bg || "#0a0a0a";
   const s = spring({ frame, fps, config: { damping: 18, stiffness: 200 }, from: 0.5, to: 1 });
-  const oldPriceOp = interpolate(frame, [0, 20, 40], [1, 1, 0], { extrapolateRight: "clamp" });
-  const newPriceOp = interpolate(Math.max(0, frame - 30), [0, 20], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
+  const oldPriceOp = interpolate(frame, [0, 20, 40], [1, 1, 0], CLAMP_BOTH);
+  const newPriceOp = interpolate(Math.max(0, frame - 30), [0, 20], [0, 1], { ...CLAMP_BOTH, easing: E_OUT });
 
   return (
     <AbsoluteFill style={{ background: bg }}>
