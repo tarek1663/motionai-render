@@ -3146,7 +3146,7 @@ export const PhotoScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
             position: "relative",
           }}>
             <img
-              src={staticFile(scene.photoUrl.replace(/^\//, ""))}
+              src={scenePhotoSrc(scene.photoUrl)}
               style={{
                 width: "100%", height: "100%",
                 objectFit: "cover",
@@ -3228,7 +3228,7 @@ export const MockupScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
 
   const ScreenContent = () => imageUrl ? (
     <img
-      src={staticFile(imageUrl.replace(/^\//, ""))}
+      src={scenePhotoSrc(imageUrl)}
       alt=""
       style={{
         width: "100%", height: "100%",
@@ -3924,7 +3924,7 @@ export const GeneratedUIScene: React.FC<{ scene: SceneData; sceneIndex?: number 
         }}>
           {photoUrl ? (
             <img
-              src={staticFile(photoUrl.replace(/^\//, ""))}
+              src={scenePhotoSrc(photoUrl)}
               alt=""
               style={{ width: "100%", display: "block" }}
             />
@@ -4737,7 +4737,7 @@ export const FeatureHighlightScene: React.FC<{ scene: SceneData; sceneIndex?: nu
           position: "relative",
         }}>
           {photoUrl ? (
-            <img src={photoUrl?.startsWith("http") ? photoUrl : (photoUrl ? staticFile(photoUrl.replace(/^\//, "")) : "")}
+            <img src={scenePhotoSrc(photoUrl)}
               style={{ width: "100%", display: "block", transform: `scale(${kb})`, transformOrigin: "top center" }} />
           ) : (
             <div style={{ height: 480, background: "linear-gradient(135deg, #1a1a2e, #16213e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48 }}>🖥️</div>
