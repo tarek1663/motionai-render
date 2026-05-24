@@ -8,6 +8,7 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
+const { execSync } = require("child_process");
 const { v4: uuidv4 } = require("uuid");
 const { renderMedia, selectComposition } = require("@remotion/renderer");
 const { bundle } = require("@remotion/bundler");
@@ -205,6 +206,16 @@ app.post("/render", async (req, res) => {
 
   (async () => {
     try {
+      console.log("🎬 Starting render:", jobId);
+      console.log("🌐 Chrome path:", "/usr/bin/chromium");
+
+      try {
+        const chromePath = execSync("which chromium").toString().trim();
+        console.log("✅ Chromium found:", chromePath);
+      } catch (e) {
+        console.log("❌ Chromium not found");
+      }
+
       const bundleLocation = await bundle({
         entryPoint: path.join(__dirname, "remotion", "Root.tsx"),
         webpackOverride: (config) => config,
