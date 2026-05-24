@@ -251,12 +251,18 @@ app.post("/render", async (req, res) => {
 
   (async () => {
     try {
+      console.log("📐 Props totalFrames:", inputProps.totalFrames);
+      console.log("📐 Expected duration:", inputProps.totalFrames / 60, "seconds");
+
       const { renderMedia, selectComposition } = require("@remotion/renderer");
 
       const bundleLocation = await getBundleLocation();
 
+      const totalFrames = inputProps.totalFrames || 1800;
+
       const renderInputProps = {
         ...inputProps,
+        totalFrames,
         audioSrc: inputProps.audioSrc?.startsWith("http")
           ? inputProps.audioSrc
           : inputProps.audioSrc
@@ -275,8 +281,9 @@ app.post("/render", async (req, res) => {
         inputProps: renderInputProps,
       });
 
+      composition.durationInFrames = totalFrames;
       console.log(
-        "📐 Composition duration:",
+        "📐 Final duration:",
         composition.durationInFrames,
         "frames =",
         composition.durationInFrames / 60,
