@@ -236,7 +236,19 @@ app.post("/render", async (req, res) => {
         serveUrl: bundleLocation,
         codec: "h264",
         outputLocation: outPath,
-        inputProps,
+        inputProps: {
+          ...inputProps,
+          audioSrc: inputProps.audioSrc?.startsWith("http")
+            ? inputProps.audioSrc
+            : inputProps.audioSrc
+              ? `${process.env.RENDER_SERVER_URL}${inputProps.audioSrc}`
+              : null,
+          musicSrc: inputProps.musicSrc?.startsWith("http")
+            ? inputProps.musicSrc
+            : inputProps.musicSrc
+              ? `${process.env.RENDER_SERVER_URL}${inputProps.musicSrc}`
+              : null,
+        },
         browserExecutable: "/usr/bin/chromium",
         chromiumOptions: {
           disableWebSecurity: true,
