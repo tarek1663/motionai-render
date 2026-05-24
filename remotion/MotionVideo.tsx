@@ -1,6 +1,6 @@
 import {
   AbsoluteFill,
-  Audio, staticFile, interpolate, Easing, useVideoConfig, useCurrentFrame,
+  Audio, interpolate, Easing, useVideoConfig, useCurrentFrame,
 } from "remotion";
 import {
   linearTiming,
@@ -321,14 +321,14 @@ export const MotionVideo: React.FC<MotionVideoProps> = ({
     <AbsoluteFill>
       {audioSrc && (
         <Audio
-          src={staticFile(audioSrc.replace("/audio/", "audio/"))}
+          src={audioSrc}
           volume={1}
         />
       )}
 
       {musicSrc && (
         <MusicAudio
-          src={staticFile(musicSrc.replace("/music/", "music/"))}
+          src={musicSrc}
           targetVolume={musicVolume}
           totalFrames={durationInFrames}
           fadeFrames={FADE_MUSIC}
