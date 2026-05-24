@@ -26,6 +26,13 @@ import {
   CountdownScene, MirrorScene, DataScrollScene, BurstScene,
   MorphShapesScene, Text3DScene, SplitScreenScene, PhotoScene, MockupScene,
   ReconstructedUIScene, GeneratedUIScene,
+  TypewriterScene, ScrambleTextScene, NeonGlowScene, StampScene,
+  WaveTextScene, OutlineFillScene, OdometerScene, ProgressRingScene,
+  GaugeScene, BubbleChartScene, NotificationScene, SuccessCheckScene,
+  FeatureHighlightScene, LikeExplosionScene, FollowerCounterScene,
+  StarfieldScene, AuroraScene, MatrixRainScene, CountdownRingScene,
+  XPBarScene, FlightBoardScene, StockChartScene, HologramScene,
+  MoneyRainScene, TitleCardScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -287,6 +294,31 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({ scene, i
     case "mockup":           return <MockupScene           scene={s} sceneIndex={index} />;
     case "reconstructed": return <ReconstructedUIScene scene={s} sceneIndex={index} />;
     case "generatedui":   return <GeneratedUIScene       scene={s} sceneIndex={index} />;
+    case "typewriter":      return <TypewriterScene scene={s} sceneIndex={index} />;
+    case "scramble":        return <ScrambleTextScene scene={s} sceneIndex={index} />;
+    case "neonglow":        return <NeonGlowScene scene={s} sceneIndex={index} />;
+    case "stamp":           return <StampScene scene={s} sceneIndex={index} />;
+    case "wavetext":        return <WaveTextScene scene={s} sceneIndex={index} />;
+    case "outlinefill":     return <OutlineFillScene scene={s} sceneIndex={index} />;
+    case "odometer":        return <OdometerScene scene={s} sceneIndex={index} />;
+    case "progressring":    return <ProgressRingScene scene={s} sceneIndex={index} />;
+    case "gauge":           return <GaugeScene scene={s} sceneIndex={index} />;
+    case "bubblechart":     return <BubbleChartScene scene={s} sceneIndex={index} />;
+    case "notification":    return <NotificationScene scene={s} sceneIndex={index} />;
+    case "successcheck":    return <SuccessCheckScene scene={s} sceneIndex={index} />;
+    case "featurehighlight":return <FeatureHighlightScene scene={s} sceneIndex={index} />;
+    case "likeexplosion":   return <LikeExplosionScene scene={s} sceneIndex={index} />;
+    case "followercounter": return <FollowerCounterScene scene={s} sceneIndex={index} />;
+    case "starfield":       return <StarfieldScene scene={s} sceneIndex={index} />;
+    case "aurora":          return <AuroraScene scene={s} sceneIndex={index} />;
+    case "matrix":          return <MatrixRainScene scene={s} sceneIndex={index} />;
+    case "countdownring":   return <CountdownRingScene scene={s} sceneIndex={index} />;
+    case "xpbar":           return <XPBarScene scene={s} sceneIndex={index} />;
+    case "flightboard":     return <FlightBoardScene scene={s} sceneIndex={index} />;
+    case "stockchart":      return <StockChartScene scene={s} sceneIndex={index} />;
+    case "hologram":        return <HologramScene scene={s} sceneIndex={index} />;
+    case "moneyrain":       return <MoneyRainScene scene={s} sceneIndex={index} />;
+    case "titlecard":       return <TitleCardScene scene={s} sceneIndex={index} />;
     default:              return <WordScene                scene={s} sceneIndex={index} />;
   }
 };

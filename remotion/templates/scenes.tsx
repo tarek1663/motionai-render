@@ -28,7 +28,12 @@ export type SceneData = {
     | "particles" | "timeline" | "highlight" | "numbers" | "icon"
     | "worldmap" | "waveform" | "progressbars" | "quote" | "countdown"
     | "mirror" | "datascroll" | "burst" | "morphshapes" | "text3d" | "splitscreen"
-    | "photo" | "mockup" | "reconstructed" | "generatedui";
+    | "photo" | "mockup" | "reconstructed" | "generatedui"
+    | "typewriter" | "scramble" | "neonglow" | "stamp" | "wavetext"
+    | "outlinefill" | "odometer" | "progressring" | "gauge" | "bubblechart"
+    | "notification" | "successcheck" | "featurehighlight" | "likeexplosion"
+    | "followercounter" | "starfield" | "aurora" | "matrix" | "countdownring"
+    | "xpbar" | "flightboard" | "stockchart" | "hologram" | "moneyrain" | "titlecard";
   text?: string;
   text2?: string;
   bg?: string;
@@ -4107,6 +4112,1289 @@ export const GeneratedUIScene: React.FC<{ scene: SceneData; sceneIndex?: number 
         )}
       </AbsoluteFill>
       <Vignette strength={0.55} />
+    </AbsoluteFill>
+  );
+};
+
+
+// ═══════════════════════════════════════════════════════
+// BATCH 1 — TEXTE & TYPOGRAPHIE
+// ═══════════════════════════════════════════════════════
+
+export const TypewriterScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+  const text = scene.text || "";
+  const charsPerFrame = 0.4;
+  const visibleChars = Math.floor(frame * charsPerFrame);
+  const displayed = text.slice(0, visibleChars);
+  const showCursor = frame % 30 < 20;
+  const fontSize = autoFontSize(text, 100, 48);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, padding: "0 80px" }}>
+        <div style={{
+          fontSize, fontWeight: 700, color: textColor(bg),
+          fontFamily, letterSpacing: "-0.03em", lineHeight: 1.2,
+        }}>
+          {displayed}
+          {showCursor && <span style={{ color: scene.accentColor, opacity: 0.9 }}>|</span>}
+        </div>
+      </AbsoluteFill>
+      <Vignette />
+    </AbsoluteFill>
+  );
+};
+
+export const ScrambleTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+  const text = scene.text || "";
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%";
+  const revealProgress = Math.min(1, frame / 60);
+  const revealedChars = Math.floor(revealProgress * text.length);
+  const fontSize = autoFontSize(text, 140, 60);
+
+  const scrambled = text.split("").map((char, i) => {
+    if (char === " ") return " ";
+    if (i < revealedChars) return char;
+    return chars[Math.floor((frame * (i + 1) * 7) % chars.length)];
+  }).join("");
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, padding: "0 80px", textAlign: "center" }}>
+        <div style={{
+          fontSize, fontWeight: 900, fontFamily,
+          letterSpacing: autoTracking(fontSize),
+          color: textColor(bg),
+        }}>
+          {scrambled.split("").map((char, i) => (
+            <span key={i} style={{
+              color: i < revealedChars ? textColor(bg) : safeAccent(scene.accentColor, bg),
+              opacity: i < revealedChars ? 1 : 0.5 + Math.sin(frame * 0.3 + i) * 0.3,
+            }}>{char}</span>
+          ))}
+        </div>
+      </AbsoluteFill>
+      <Vignette />
+    </AbsoluteFill>
+  );
+};
+
+export const NeonGlowScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const fade = useFade();
+  const bg = "#050510";
+  const pulse = 0.7 + Math.sin(frame * 0.08) * 0.3;
+  const flicker = frame % 20 < 2 ? 0.3 : 1;
+  const fontSize = autoFontSize(scene.text || "", 140, 60);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade * flicker, padding: "0 80px", textAlign: "center", flexDirection: "column", gap: 16 }}>
+        <div style={{
+          fontSize, fontWeight: 900, fontFamily,
+          letterSpacing: autoTracking(fontSize),
+          color: scene.accentColor,
+          textShadow: `
+            0 0 10px ${scene.accentColor},
+            0 0 20px ${scene.accentColor},
+            0 0 40px ${scene.accentColor}${Math.round(pulse * 200).toString(16).padStart(2, "0")},
+            0 0 80px ${scene.accentColor}${Math.round(pulse * 100).toString(16).padStart(2, "0")}
+          `,
+        }}>
+          {scene.text}
+        </div>
+        {scene.text2 && (
+          <div style={{
+            fontSize: Math.round(fontSize * 0.35), fontWeight: 300,
+            color: "rgba(255,255,255,0.5)", fontFamily,
+            textShadow: `0 0 20px ${scene.accentColor}44`,
+          }}>
+            {scene.text2}
+          </div>
+        )}
+      </AbsoluteFill>
+      <Vignette strength={0.7} />
+    </AbsoluteFill>
+  );
+};
+
+export const StampScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const fade = useFade();
+  const bg = scene.bg || "#ffffff";
+  const s = spring({ frame, fps, config: { damping: 8, stiffness: 400, mass: 0.8 }, from: 2, to: 1 });
+  const op = interpolate(frame, [0, 8], [0, 1], { extrapolateRight: "clamp" });
+  const rotation = interpolate(frame, [0, 1], [-3, 0], { extrapolateRight: "clamp" });
+  const fontSize = autoFontSize(scene.text || "", 120, 60);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade }}>
+        <div style={{
+          transform: `scale(${s}) rotate(${rotation}deg)`,
+          opacity: op,
+          padding: "24px 48px",
+          border: `8px solid ${scene.accentColor}`,
+          borderRadius: 8,
+          textAlign: "center",
+        }}>
+          <div style={{
+            fontSize, fontWeight: 900, fontFamily,
+            letterSpacing: "0.1em", textTransform: "uppercase",
+            color: scene.accentColor,
+          }}>
+            {scene.text}
+          </div>
+          {scene.text2 && (
+            <div style={{ fontSize: 28, fontWeight: 400, color: scene.accentColor, opacity: 0.7, marginTop: 8 }}>
+              {scene.text2}
+            </div>
+          )}
+        </div>
+      </AbsoluteFill>
+      <Vignette strength={isLight(bg) ? 0.1 : 0.5} />
+    </AbsoluteFill>
+  );
+};
+
+export const WaveTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+  const words = (scene.text || "").split(" ");
+  const fontSize = autoFontSize(scene.text || "", 100, 48);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, padding: "0 80px", flexWrap: "wrap", gap: 16 }}>
+        {words.map((word, i) => {
+          const waveY = Math.sin(frame * 0.08 + i * 0.8) * 20;
+          const op = interpolate(Math.max(0, frame - i * 4), [0, 16], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
+          return (
+            <div key={i} style={{
+              fontSize, fontWeight: 800, fontFamily,
+              letterSpacing: autoTracking(fontSize),
+              color: i % 2 === 0 ? textColor(bg) : safeAccent(scene.accentColor, bg),
+              transform: `translateY(${waveY}px)`,
+              opacity: op,
+              display: "inline-block",
+            }}>
+              {word}
+            </div>
+          );
+        })}
+      </AbsoluteFill>
+      <Vignette />
+    </AbsoluteFill>
+  );
+};
+
+export const OutlineFillScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+  const fillProgress = interpolate(frame, [10, 70], [0, 100], { extrapolateRight: "clamp", easing: E_OUT });
+  const fontSize = autoFontSize(scene.text || "", 140, 60);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, padding: "0 80px", textAlign: "center", position: "relative" }}>
+        {/* Outline */}
+        <div style={{
+          fontSize, fontWeight: 900, fontFamily,
+          letterSpacing: autoTracking(fontSize),
+          WebkitTextStroke: `2px ${safeAccent(scene.accentColor, bg)}`,
+          color: "transparent",
+          position: "absolute",
+        }}>
+          {scene.text}
+        </div>
+        {/* Fill avec clip */}
+        <div style={{
+          fontSize, fontWeight: 900, fontFamily,
+          letterSpacing: autoTracking(fontSize),
+          color: safeAccent(scene.accentColor, bg),
+          clipPath: `inset(0 ${100 - fillProgress}% 0 0)`,
+        }}>
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+      <Vignette />
+    </AbsoluteFill>
+  );
+};
+
+// ═══════════════════════════════════════════════════════
+// BATCH 2 — DATA & STATS
+// ═══════════════════════════════════════════════════════
+
+export const OdometerScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+  const to = scene.counterTo || 1000000;
+  const progress = interpolate(frame, [0, durationInFrames * 0.8], [0, 1], { extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
+  const value = Math.round(to * progress);
+  const digits = value.toLocaleString("fr-FR").split("");
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          {digits.map((digit, i) => (
+            <div key={i} style={{
+              fontSize: 120, fontWeight: 900, fontFamily,
+              color: digit === "," || digit === " " ? safeAccent(scene.accentColor, bg) : textColor(bg),
+              letterSpacing: "-0.05em",
+              transform: digit !== "," && digit !== " " ? `translateY(${Math.sin(frame * 0.1 + i) * 2}px)` : "none",
+            }}>
+              {digit}
+            </div>
+          ))}
+        </div>
+        {scene.text && (
+          <div style={{ fontSize: 36, fontWeight: 300, color: isLight(bg) ? "#666" : "#555", fontFamily }}>
+            {scene.text}
+          </div>
+        )}
+        <AccentLine accent={safeAccent(scene.accentColor, bg)} delay={10} width={80} />
+      </AbsoluteFill>
+      <Vignette />
+    </AbsoluteFill>
+  );
+};
+
+export const ProgressRingScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+  const targetPct = scene.counterTo || 78;
+  const progress = interpolate(frame, [10, durationInFrames * 0.8], [0, targetPct], { extrapolateRight: "clamp", easing: E_OUT });
+  const r = 160;
+  const circumference = 2 * Math.PI * r;
+  const dashOffset = circumference - (progress / 100) * circumference;
+  const numOp = interpolate(frame, [10, 30], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 24 }}>
+        <div style={{ position: "relative", width: 380, height: 380 }}>
+          <svg width="380" height="380" viewBox="0 0 380 380" style={{ transform: "rotate(-90deg)" }}>
+            {/* Track */}
+            <circle cx="190" cy="190" r={r} fill="none"
+              stroke={isLight(bg) ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"}
+              strokeWidth="16" />
+            {/* Progress */}
+            <circle cx="190" cy="190" r={r} fill="none"
+              stroke={safeAccent(scene.accentColor, bg)}
+              strokeWidth="16" strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={dashOffset}
+              style={{ filter: `drop-shadow(0 0 12px ${scene.accentColor})` }}
+            />
+          </svg>
+          {/* Center text */}
+          <div style={{
+            position: "absolute", inset: 0,
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            opacity: numOp,
+          }}>
+            <div style={{
+              fontSize: 72, fontWeight: 900, fontFamily,
+              color: safeAccent(scene.accentColor, bg),
+              letterSpacing: "-0.04em",
+            }}>
+              {Math.round(progress)}%
+            </div>
+          </div>
+        </div>
+        {scene.text && (
+          <div style={{ fontSize: 32, fontWeight: 300, color: isLight(bg) ? "#666" : "#555", fontFamily }}>
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+      <Vignette />
+    </AbsoluteFill>
+  );
+};
+
+export const GaugeScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+  const targetPct = scene.counterTo || 85;
+  const progress = interpolate(frame, [10, durationInFrames * 0.8], [0, targetPct / 100], { extrapolateRight: "clamp", easing: E_OUT });
+  const angle = -135 + progress * 270;
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 24 }}>
+        <div style={{ position: "relative", width: 400, height: 260 }}>
+          <svg width="400" height="260" viewBox="0 0 400 260">
+            <defs>
+              <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#30d158" />
+                <stop offset="50%" stopColor={scene.accentColor} />
+                <stop offset="100%" stopColor="#ff3b30" />
+              </linearGradient>
+            </defs>
+            {/* Track arc */}
+            <path d="M 40 220 A 160 160 0 0 1 360 220" fill="none"
+              stroke={isLight(bg) ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"}
+              strokeWidth="20" strokeLinecap="round" />
+            {/* Colored arc */}
+            <path d="M 40 220 A 160 160 0 0 1 360 220" fill="none"
+              stroke="url(#gaugeGrad)" strokeWidth="20" strokeLinecap="round"
+              strokeDasharray="503" strokeDashoffset={503 - 503 * progress} />
+            {/* Needle */}
+            <g transform={`translate(200, 220) rotate(${angle})`}>
+              <line x1="0" y1="0" x2="0" y2="-130" stroke={textColor(bg)} strokeWidth="3" strokeLinecap="round" />
+              <circle cx="0" cy="0" r="10" fill={safeAccent(scene.accentColor, bg)} />
+            </g>
+          </svg>
+          {/* Value */}
+          <div style={{
+            position: "absolute", bottom: 0, left: "50%",
+            transform: "translateX(-50%)",
+            fontSize: 64, fontWeight: 900, fontFamily,
+            color: safeAccent(scene.accentColor, bg),
+            letterSpacing: "-0.04em",
+          }}>
+            {Math.round(progress * 100)}%
+          </div>
+        </div>
+        {scene.text && (
+          <div style={{ fontSize: 32, fontWeight: 300, color: isLight(bg) ? "#666" : "#555", fontFamily }}>
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+      <Vignette />
+    </AbsoluteFill>
+  );
+};
+
+export const BubbleChartScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+  const bubbles = [
+    { x: 200, y: 300, r: 120, label: "80%", color: scene.accentColor },
+    { x: 500, y: 250, r: 90, label: "60%", color: safeAccent(scene.accentColor, bg) },
+    { x: 800, y: 350, r: 70, label: "45%", color: scene.accentColor + "88" },
+    { x: 350, y: 500, r: 60, label: "30%", color: safeAccent(scene.accentColor, bg) + "88" },
+    { x: 650, y: 480, r: 50, label: "20%", color: scene.accentColor + "66" },
+  ];
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ opacity: fade }}>
+        <svg width="1080" height="1920" viewBox="0 0 1080 1920">
+          {bubbles.map((b, i) => {
+            const scale = interpolate(Math.max(0, frame - i * 8), [0, 24], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
+            const idleY = Math.sin(frame * 0.04 + i) * 8;
+            return (
+              <g key={i} transform={`translate(${b.x}, ${b.y + idleY}) scale(${scale})`}>
+                <circle r={b.r} fill={b.color} opacity={0.85} />
+                <circle r={b.r} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={2} />
+                <text textAnchor="middle" dy="0.35em"
+                  fontSize={b.r * 0.4} fontWeight="900" fontFamily={fontFamily}
+                  fill={isLight(b.color) ? "#0a0a0a" : "#ffffff"}>
+                  {b.label}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+        {scene.text && (
+          <div style={{
+            position: "absolute", bottom: 200, left: 0, right: 0,
+            textAlign: "center", fontSize: 48, fontWeight: 300,
+            color: isLight(bg) ? "#666" : "#555", fontFamily,
+          }}>
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+      <Vignette />
+    </AbsoluteFill>
+  );
+};
+
+// ═══════════════════════════════════════════════════════
+// BATCH 3 — UI & PRODUIT
+// ═══════════════════════════════════════════════════════
+
+export const NotificationScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+
+  const notifications = [
+    { icon: "💳", title: "Payment received", sub: "$2,400 from Sarah", time: "now", delay: 0 },
+    { icon: "📦", title: "Order shipped", sub: "Package on the way", time: "2m ago", delay: 20 },
+    { icon: "🎉", title: "New milestone!", sub: "1,000 followers", time: "5m ago", delay: 40 },
+  ];
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 16, padding: "0 80px" }}>
+        {notifications.map((notif, i) => {
+          const s = spring({ frame: Math.max(0, frame - notif.delay), fps, config: { damping: 20, stiffness: 200 }, from: 0, to: 1 });
+          const x = interpolate(Math.max(0, frame - notif.delay), [0, 24], [200, 0], { extrapolateRight: "clamp", easing: E_OUT });
+          const op = interpolate(Math.max(0, frame - notif.delay), [0, 16], [0, 1], { extrapolateRight: "clamp" });
+          return (
+            <div key={i} style={{
+              width: "100%", padding: "16px 20px",
+              background: isLight(bg) ? "rgba(255,255,255,0.9)" : "rgba(30,30,30,0.9)",
+              backdropFilter: "blur(20px)",
+              borderRadius: 16,
+              border: `1px solid ${isLight(bg) ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"}`,
+              display: "flex", alignItems: "center", gap: 14,
+              opacity: op,
+              transform: `translateX(${x}px) scale(${s})`,
+              boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+            }}>
+              <div style={{ fontSize: 32, flexShrink: 0 }}>{notif.icon}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: isLight(bg) ? "#0a0a0a" : "#ffffff", fontFamily }}>
+                  {notif.title}
+                </div>
+                <div style={{ fontSize: 14, color: isLight(bg) ? "#888" : "#555", fontFamily }}>
+                  {notif.sub}
+                </div>
+              </div>
+              <div style={{ fontSize: 12, color: isLight(bg) ? "#aaa" : "#444", fontFamily }}>
+                {notif.time}
+              </div>
+            </div>
+          );
+        })}
+        {scene.text && (
+          <div style={{ fontSize: 36, fontWeight: 700, color: textColor(bg), fontFamily, marginTop: 16 }}>
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+      <Vignette />
+    </AbsoluteFill>
+  );
+};
+
+export const SuccessCheckScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+  const s = spring({ frame, fps, config: { damping: 12, stiffness: 300 }, from: 0, to: 1 });
+  const checkProgress = interpolate(frame, [10, 40], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
+  const r = 120;
+  const checkLength = 300;
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 32 }}>
+        <div style={{ transform: `scale(${s})` }}>
+          <svg width={r * 2 + 40} height={r * 2 + 40} viewBox={`0 0 ${r * 2 + 40} ${r * 2 + 40}`}>
+            {/* Circle */}
+            <circle cx={r + 20} cy={r + 20} r={r} fill="none"
+              stroke={safeAccent(scene.accentColor, bg)} strokeWidth="6"
+              strokeDasharray={2 * Math.PI * r}
+              strokeDashoffset={(1 - checkProgress) * 2 * Math.PI * r}
+              strokeLinecap="round"
+              style={{ filter: `drop-shadow(0 0 12px ${scene.accentColor})` }}
+            />
+            {/* Checkmark */}
+            <polyline points={`${r - 40},${r + 20} ${r + 5},${r + 65} ${r + 60},${r - 30}`}
+              fill="none" stroke={safeAccent(scene.accentColor, bg)} strokeWidth="8"
+              strokeLinecap="round" strokeLinejoin="round"
+              strokeDasharray={checkLength}
+              strokeDashoffset={(1 - checkProgress) * checkLength}
+            />
+          </svg>
+        </div>
+        {scene.text && (
+          <div style={{ fontSize: 56, fontWeight: 800, color: textColor(bg), fontFamily, letterSpacing: "-0.03em", textAlign: "center" }}>
+            {scene.text}
+          </div>
+        )}
+        {scene.text2 && (
+          <div style={{ fontSize: 28, fontWeight: 300, color: isLight(bg) ? "#888" : "#555", fontFamily }}>
+            {scene.text2}
+          </div>
+        )}
+      </AbsoluteFill>
+      <Vignette />
+    </AbsoluteFill>
+  );
+};
+
+export const FeatureHighlightScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+  const photoUrl = (scene as any).photoUrl || "";
+  const kb = interpolate(frame, [0, 120], [1, 1.06], { extrapolateRight: "clamp", easing: E_OUT });
+
+  // Highlight qui se déplace
+  const highlights = [
+    { x: 30, y: 25, w: 40, h: 15, delay: 20 },
+    { x: 15, y: 55, w: 60, h: 20, delay: 50 },
+    { x: 40, y: 75, w: 35, h: 12, delay: 80 },
+  ];
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ opacity: fade, justifyContent: "center", alignItems: "center" }}>
+        {/* Mockup avec highlights */}
+        <div style={{
+          width: 780, borderRadius: 20, overflow: "hidden",
+          border: "1px solid rgba(255,255,255,0.1)",
+          boxShadow: "0 40px 100px rgba(0,0,0,0.6)",
+          position: "relative",
+        }}>
+          {photoUrl ? (
+            <img src={photoUrl?.startsWith("http") ? photoUrl : (photoUrl ? staticFile(photoUrl.replace(/^\//, "")) : "")}
+              style={{ width: "100%", display: "block", transform: `scale(${kb})`, transformOrigin: "top center" }} />
+          ) : (
+            <div style={{ height: 480, background: "linear-gradient(135deg, #1a1a2e, #16213e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48 }}>🖥️</div>
+          )}
+          {/* Highlights animés */}
+          {highlights.map((h, i) => {
+            const op = interpolate(Math.max(0, frame - h.delay), [0, 16, 40, 56], [0, 0.8, 0.8, 0], { extrapolateRight: "clamp" });
+            return (
+              <div key={i} style={{
+                position: "absolute",
+                left: `${h.x}%`, top: `${h.y}%`,
+                width: `${h.w}%`, height: `${h.h}%`,
+                background: `${scene.accentColor}33`,
+                border: `2px solid ${scene.accentColor}`,
+                borderRadius: 4,
+                opacity: op,
+                boxShadow: `0 0 20px ${scene.accentColor}66`,
+              }} />
+            );
+          })}
+        </div>
+        {scene.text && (
+          <div style={{
+            position: "absolute", bottom: 100, left: 0, right: 0,
+            textAlign: "center", fontSize: 48, fontWeight: 800,
+            color: textColor(bg), fontFamily, letterSpacing: "-0.03em",
+          }}>
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+      <Vignette />
+    </AbsoluteFill>
+  );
+};
+
+// ═══════════════════════════════════════════════════════
+// BATCH 4 — SOCIAL MEDIA
+// ═══════════════════════════════════════════════════════
+
+export const LikeExplosionScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+  const count = scene.counterTo || 10247;
+  const progress = interpolate(frame, [0, 80], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
+  const currentCount = Math.round(count * progress);
+
+  const hearts = Array.from({ length: 20 }, (_, i) => ({
+    x: 400 + Math.cos(i * 0.5) * (60 + i * 15),
+    y: 900 - (frame * (1.5 + i * 0.1) + i * 20),
+    scale: 0.5 + Math.sin(i * 1.3) * 0.5,
+    opacity: Math.max(0, 1 - (frame * 0.015 + i * 0.05)),
+    delay: i * 3,
+  }));
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ opacity: fade, justifyContent: "center", alignItems: "center", flexDirection: "column", gap: 24 }}>
+        {/* Coeurs flottants */}
+        <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+          {hearts.map((h, i) => (
+            <div key={i} style={{
+              position: "absolute",
+              left: h.x, top: h.y,
+              fontSize: 32 * h.scale,
+              opacity: Math.max(0, h.opacity),
+              transform: `rotate(${Math.sin(i) * 20}deg)`,
+            }}>❤️</div>
+          ))}
+        </div>
+        {/* Compteur */}
+        <div style={{ fontSize: 140, fontWeight: 900, fontFamily, color: "#ff375f", letterSpacing: "-0.05em",
+          textShadow: "0 0 40px rgba(255,55,95,0.5)", position: "relative" }}>
+          {currentCount.toLocaleString("fr-FR")}
+        </div>
+        <div style={{ fontSize: 36, fontWeight: 300, color: isLight(bg) ? "#888" : "#555", fontFamily }}>
+          {scene.text || "J'aime"}
+        </div>
+        <AccentLine accent="#ff375f" delay={10} width={80} />
+      </AbsoluteFill>
+      <Vignette />
+    </AbsoluteFill>
+  );
+};
+
+export const FollowerCounterScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+  const target = scene.counterTo || 100000;
+  const progress = interpolate(frame, [0, durationInFrames * 0.8], [0, 1], { extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
+  const current = Math.round(target * progress);
+  const milestoneOp = interpolate(frame, [durationInFrames * 0.75, durationInFrames * 0.85], [0, 1], { extrapolateRight: "clamp" });
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 20 }}>
+        <div style={{ fontSize: 28, fontWeight: 300, color: isLight(bg) ? "#888" : "#555", fontFamily, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+          Abonnés
+        </div>
+        <div style={{ fontSize: 140, fontWeight: 900, fontFamily, letterSpacing: "-0.05em",
+          background: `linear-gradient(135deg, ${safeAccent(scene.accentColor, bg)}, #ffffff)`,
+          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+        }}>
+          {current >= 1000 ? `${(current / 1000).toFixed(1)}K` : current.toLocaleString()}
+        </div>
+        <AccentLine accent={safeAccent(scene.accentColor, bg)} delay={10} width={80} />
+        <div style={{ opacity: milestoneOp, fontSize: 32, fontWeight: 700, color: safeAccent(scene.accentColor, bg), fontFamily }}>
+          🎉 {target >= 1000 ? `${target / 1000}K` : target} atteints !
+        </div>
+      </AbsoluteFill>
+      <Vignette />
+    </AbsoluteFill>
+  );
+};
+
+// ═══════════════════════════════════════════════════════
+// BATCH 5 — CINÉMATIQUE & AMBIANCE
+// ═══════════════════════════════════════════════════════
+
+export const StarfieldScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const fade = useFade();
+  const bg = "#00000f";
+
+  const stars = Array.from({ length: 80 }, (_, i) => ({
+    x: (((i * 137.508 + frame * (0.1 + i * 0.002)) % 1080)),
+    y: (((i * 97.3 + frame * (0.05 + i * 0.001)) % 1920)),
+    r: 0.5 + (i % 4) * 0.5,
+    pulse: 0.5 + Math.sin(frame * 0.05 + i) * 0.4,
+  }));
+
+  const textOp = interpolate(frame, [20, 40], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
+  const textY  = interpolate(frame, [20, 40], [30, 0], { extrapolateRight: "clamp", easing: E_OUT });
+  const fontSize = autoFontSize(scene.text || "", 120, 60);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <svg width="1080" height="1920" style={{ position: "absolute", inset: 0 }}>
+        {stars.map((star, i) => (
+          <circle key={i} cx={star.x} cy={star.y} r={star.r}
+            fill="white" opacity={star.pulse} />
+        ))}
+      </svg>
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 16 }}>
+        {scene.text && (
+          <div style={{
+            fontSize, fontWeight: 900, fontFamily,
+            letterSpacing: autoTracking(fontSize),
+            color: "#ffffff",
+            opacity: textOp,
+            transform: `translateY(${textY}px)`,
+            textAlign: "center", padding: "0 80px",
+            textShadow: `0 0 40px ${scene.accentColor}88`,
+          }}>
+            {scene.text}
+          </div>
+        )}
+        <AccentLine accent={scene.accentColor} delay={30} width={80} />
+        {scene.text2 && (
+          <div style={{
+            fontSize: 32, fontWeight: 200, color: "rgba(255,255,255,0.5)",
+            fontFamily, opacity: textOp,
+          }}>
+            {scene.text2}
+          </div>
+        )}
+      </AbsoluteFill>
+      <Vignette strength={0.7} />
+    </AbsoluteFill>
+  );
+};
+
+export const AuroraScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const fade = useFade();
+  const bg = "#000510";
+  const fontSize = autoFontSize(scene.text || "", 120, 60);
+
+  const waves = [
+    { color: "#00ff88", opacity: 0.15, speed: 0.02, offset: 0 },
+    { color: scene.accentColor, opacity: 0.12, speed: 0.015, offset: 200 },
+    { color: "#0088ff", opacity: 0.1, speed: 0.025, offset: 400 },
+  ];
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <svg width="1080" height="1920" style={{ position: "absolute", inset: 0 }}>
+        {waves.map((wave, i) => {
+          const points = Array.from({ length: 20 }, (_, j) => {
+            const x = j * 60;
+            const y = 600 + wave.offset + Math.sin(j * 0.5 + frame * wave.speed) * 200 + Math.cos(j * 0.3 + frame * wave.speed * 0.7) * 100;
+            return `${x},${y}`;
+          }).join(" ");
+          return (
+            <g key={i}>
+              <polyline points={points} fill="none" stroke={wave.color} strokeWidth="120" opacity={wave.opacity} strokeLinecap="round" />
+            </g>
+          );
+        })}
+      </svg>
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 16 }}>
+        {scene.text && (
+          <div style={{
+            fontSize, fontWeight: 900, fontFamily,
+            letterSpacing: autoTracking(fontSize),
+            color: "#ffffff", textAlign: "center", padding: "0 80px",
+            textShadow: "0 0 60px rgba(0,255,136,0.3)",
+          }}>
+            {scene.text}
+          </div>
+        )}
+        <AccentLine accent="#00ff88" delay={20} width={80} />
+      </AbsoluteFill>
+      <Vignette strength={0.6} />
+    </AbsoluteFill>
+  );
+};
+
+export const MatrixRainScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const fade = useFade();
+  const bg = "#000800";
+  const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEF";
+  const columns = 20;
+  const fontSize = autoFontSize(scene.text || "", 100, 60);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      {/* Matrix rain */}
+      <svg width="1080" height="1920" style={{ position: "absolute", inset: 0, opacity: 0.4 }}>
+        {Array.from({ length: columns }, (_, col) => {
+          const x = (col / columns) * 1080 + 27;
+          const speed = 8 + (col % 5) * 3;
+          return Array.from({ length: 12 }, (_, row) => {
+            const y = ((frame * speed + col * 150 + row * 160) % 2200) - 200;
+            const charIdx = Math.floor((frame * 0.3 + col * 7 + row * 13) % chars.length);
+            const opacity = 1 - row * 0.08;
+            return (
+              <text key={`${col}-${row}`} x={x} y={y}
+                fill="#00ff41" opacity={Math.max(0, opacity)}
+                fontSize="28" fontFamily="monospace" textAnchor="middle">
+                {chars[charIdx]}
+              </text>
+            );
+          });
+        })}
+      </svg>
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 16 }}>
+        {scene.text && (
+          <div style={{
+            fontSize, fontWeight: 900, fontFamily,
+            letterSpacing: autoTracking(fontSize),
+            color: "#00ff41",
+            textShadow: "0 0 20px #00ff41, 0 0 40px #00ff4188",
+            textAlign: "center", padding: "0 80px",
+          }}>
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+      <Vignette strength={0.6} />
+    </AbsoluteFill>
+  );
+};
+
+export const CountdownRingScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames, fps } = useVideoConfig();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+  const startCount = scene.counterTo || 5;
+  const progress = frame / durationInFrames;
+  const currentCount = Math.max(0, Math.ceil(startCount * (1 - progress)));
+  const frameInCount = frame % Math.round(durationInFrames / startCount);
+  const pulseProg = frameInCount / Math.round(durationInFrames / startCount);
+  const scale = 1 + (1 - pulseProg) * 0.3;
+  const r = 180;
+  const circumference = 2 * Math.PI * r;
+  const dashOffset = circumference * pulseProg;
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 24 }}>
+        <div style={{ position: "relative", width: 420, height: 420 }}>
+          <svg width="420" height="420" viewBox="0 0 420 420" style={{ transform: "rotate(-90deg)" }}>
+            <circle cx="210" cy="210" r={r} fill="none"
+              stroke={isLight(bg) ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"}
+              strokeWidth="12" />
+            <circle cx="210" cy="210" r={r} fill="none"
+              stroke={safeAccent(scene.accentColor, bg)}
+              strokeWidth="12" strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={dashOffset}
+              style={{ filter: `drop-shadow(0 0 16px ${scene.accentColor})` }}
+            />
+          </svg>
+          <div style={{
+            position: "absolute", inset: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <div style={{
+              fontSize: 180, fontWeight: 900, fontFamily,
+              color: safeAccent(scene.accentColor, bg),
+              letterSpacing: "-0.06em",
+              transform: `scale(${scale})`,
+              textShadow: `0 0 40px ${scene.accentColor}66`,
+            }}>
+              {currentCount}
+            </div>
+          </div>
+        </div>
+        {scene.text && (
+          <div style={{ fontSize: 40, fontWeight: 300, color: isLight(bg) ? "#888" : "#555", fontFamily }}>
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+      <Vignette />
+    </AbsoluteFill>
+  );
+};
+
+export const XPBarScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+  const targetXP = scene.counterTo || 8500;
+  const maxXP = 10000;
+  const progress = interpolate(frame, [10, durationInFrames * 0.8], [0, targetXP / maxXP], { extrapolateRight: "clamp", easing: E_OUT });
+  const barWidth = 800;
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 32, padding: "0 80px" }}>
+        {/* Level badge */}
+        <div style={{
+          width: 100, height: 100, borderRadius: "50%",
+          background: `linear-gradient(135deg, ${safeAccent(scene.accentColor, bg)}, ${safeAccent(scene.accentColor, bg)}88)`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 40, fontWeight: 900, color: isLight(scene.accentColor) ? "#0a0a0a" : "#ffffff",
+          fontFamily, boxShadow: `0 0 40px ${scene.accentColor}66`,
+        }}>
+          42
+        </div>
+        <div style={{ fontSize: 48, fontWeight: 800, color: textColor(bg), fontFamily, letterSpacing: "-0.03em" }}>
+          {scene.text || "Level Up!"}
+        </div>
+        {/* XP Bar */}
+        <div style={{ width: barWidth, position: "relative" }}>
+          <div style={{
+            display: "flex", justifyContent: "space-between",
+            fontSize: 20, color: isLight(bg) ? "#888" : "#555", fontFamily,
+            marginBottom: 10,
+          }}>
+            <span>XP</span>
+            <span>{Math.round(progress * maxXP).toLocaleString()} / {maxXP.toLocaleString()}</span>
+          </div>
+          <div style={{ height: 16, background: isLight(bg) ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", borderRadius: 8, overflow: "hidden" }}>
+            <div style={{
+              height: "100%", width: `${progress * 100}%`,
+              background: `linear-gradient(90deg, ${safeAccent(scene.accentColor, bg)}88, ${safeAccent(scene.accentColor, bg)})`,
+              borderRadius: 8,
+              boxShadow: `0 0 12px ${scene.accentColor}`,
+              transition: "width 0.1s",
+            }} />
+          </div>
+        </div>
+      </AbsoluteFill>
+      <Vignette />
+    </AbsoluteFill>
+  );
+};
+
+export const FlightBoardScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const fade = useFade();
+  const bg = "#0a0a0a";
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+  const flights = [
+    { dest: "TOKYO", flight: "JL 3", time: "15:00", gate: "A7", status: "ON TIME" },
+    { dest: "PARIS", flight: "AF 1", time: "15:30", gate: "B12", status: "BOARDING" },
+    { dest: "NEW YORK", flight: "AA 2", time: "16:00", gate: "C3", status: "DELAYED" },
+    { dest: "DUBAI", flight: "EK 5", time: "16:45", gate: "D8", status: "ON TIME" },
+  ];
+
+  const scrambleText = (text: string, progress: number, colIdx: number) => {
+    const revealed = Math.floor(progress * text.length);
+    return text.split("").map((char, i) => {
+      if (char === " ") return " ";
+      if (i < revealed) return char;
+      return chars[Math.floor((frame * (colIdx + 1) * 3 + i * 7) % chars.length)];
+    }).join("");
+  };
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, padding: "0 60px", flexDirection: "column", gap: 8 }}>
+        {/* Header */}
+        <div style={{
+          width: "100%", display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1.5fr",
+          borderBottom: "1px solid rgba(255,255,255,0.2)", paddingBottom: 12, marginBottom: 12,
+        }}>
+          {["DESTINATION", "FLIGHT", "TIME", "GATE", "STATUS"].map(h => (
+            <div key={h} style={{ fontSize: 18, fontWeight: 700, color: safeAccent(scene.accentColor, bg), fontFamily, letterSpacing: "0.08em" }}>
+              {h}
+            </div>
+          ))}
+        </div>
+        {/* Rows */}
+        {flights.map((f, i) => {
+          const rowProgress = interpolate(Math.max(0, frame - i * 12), [0, 40], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
+          return (
+            <div key={i} style={{
+              width: "100%", display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1.5fr",
+              padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.06)",
+              opacity: rowProgress,
+            }}>
+              <div style={{ fontSize: 24, fontWeight: 700, color: "#ffffff", fontFamily, letterSpacing: "0.05em" }}>
+                {scrambleText(f.dest, rowProgress, i * 5)}
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 400, color: "rgba(255,255,255,0.7)", fontFamily }}>
+                {scrambleText(f.flight, rowProgress, i * 3 + 1)}
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 400, color: "rgba(255,255,255,0.7)", fontFamily }}>
+                {f.time}
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: safeAccent(scene.accentColor, bg), fontFamily }}>
+                {f.gate}
+              </div>
+              <div style={{
+                fontSize: 18, fontWeight: 700, fontFamily,
+                color: f.status === "ON TIME" ? "#30d158" : f.status === "BOARDING" ? scene.accentColor : "#ff3b30",
+              }}>
+                {f.status}
+              </div>
+            </div>
+          );
+        })}
+        {scene.text && (
+          <div style={{ fontSize: 36, fontWeight: 300, color: "rgba(255,255,255,0.4)", fontFamily, marginTop: 20 }}>
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+      <Vignette strength={0.6} />
+    </AbsoluteFill>
+  );
+};
+
+export const StockChartScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+
+  const stockData = [42, 38, 45, 41, 55, 52, 48, 61, 58, 65, 70, 68, 75, 72, 80, 85, 82, 90, 88, 95];
+  const W = 900, H = 400, pad = 40;
+  const cW = W - pad * 2, cH = H - pad * 2;
+  const maxVal = Math.max(...stockData);
+  const minVal = Math.min(...stockData);
+
+  const revealed = interpolate(frame, [6, 90], [0, stockData.length], { extrapolateRight: "clamp", easing: E_OUT });
+  const visibleData = stockData.slice(0, Math.max(2, Math.round(revealed)));
+
+  const points = visibleData.map((v, i) => ({
+    x: pad + (i / (stockData.length - 1)) * cW,
+    y: pad + cH - ((v - minVal) / (maxVal - minVal)) * cH,
+    value: v,
+  }));
+
+  const pathD = points.length >= 2 ? points.map((p, i) =>
+    i === 0 ? `M ${p.x} ${p.y}` : `C ${points[i-1].x + 25} ${points[i-1].y} ${p.x - 25} ${p.y} ${p.x} ${p.y}`
+  ).join(" ") : "";
+
+  const fillPath = pathD + ` L ${points[points.length-1].x} ${pad + cH} L ${pad} ${pad + cH} Z`;
+  const isUp = stockData[stockData.length - 1] > stockData[0];
+  const chartColor = isUp ? "#30d158" : "#ff3b30";
+  const lastValue = visibleData[visibleData.length - 1] || stockData[0];
+  const changePercent = ((lastValue - stockData[0]) / stockData[0] * 100).toFixed(1);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 16, padding: "0 60px" }}>
+        {/* Header */}
+        <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+          <div>
+            <div style={{ fontSize: 28, fontWeight: 300, color: isLight(bg) ? "#888" : "#555", fontFamily }}>{scene.text || "MOTION AI"}</div>
+            <div style={{ fontSize: 72, fontWeight: 900, fontFamily, color: textColor(bg), letterSpacing: "-0.04em" }}>
+              ${lastValue.toFixed(2)}
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 36, fontWeight: 700, color: chartColor, fontFamily }}>
+              {isUp ? "▲" : "▼"} {Math.abs(Number(changePercent))}%
+            </div>
+            <div style={{ fontSize: 20, color: isLight(bg) ? "#888" : "#555", fontFamily }}>Today</div>
+          </div>
+        </div>
+        {/* Chart */}
+        <svg width={W} height={H} style={{ overflow: "visible" }}>
+          <defs>
+            <linearGradient id="stockFill" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor={chartColor} stopOpacity="0.25" />
+              <stop offset="100%" stopColor={chartColor} stopOpacity="0.02" />
+            </linearGradient>
+          </defs>
+          {pathD && (
+            <>
+              <path d={fillPath} fill="url(#stockFill)" />
+              <path d={pathD} fill="none" stroke={chartColor} strokeWidth="3"
+                strokeLinecap="round" strokeLinejoin="round"
+                style={{ filter: `drop-shadow(0 0 8px ${chartColor})` }}
+              />
+              {/* Last point */}
+              {points.length > 0 && (
+                <g>
+                  <circle cx={points[points.length-1].x} cy={points[points.length-1].y} r="16" fill={chartColor} opacity="0.2" />
+                  <circle cx={points[points.length-1].x} cy={points[points.length-1].y} r="6" fill={chartColor}
+                    style={{ filter: `drop-shadow(0 0 8px ${chartColor})` }}
+                  />
+                </g>
+              )}
+            </>
+          )}
+        </svg>
+      </AbsoluteFill>
+      <Vignette />
+    </AbsoluteFill>
+  );
+};
+
+export const HologramScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const fade = useFade();
+  const bg = "#000510";
+  const scanLine = (frame * 8) % 1920;
+  const glitch = frame % 40 < 2 ? Math.random() * 20 - 10 : 0;
+  const fontSize = autoFontSize(scene.text || "", 130, 60);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Grain />
+      {/* Grid holographique */}
+      <div style={{
+        position: "absolute", inset: 0,
+        backgroundImage: `
+          linear-gradient(rgba(0,200,255,0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0,200,255,0.05) 1px, transparent 1px)
+        `,
+        backgroundSize: "80px 80px",
+        opacity: 0.6,
+      }} />
+      {/* Scan line */}
+      <div style={{
+        position: "absolute", left: 0, right: 0, height: 2,
+        top: scanLine,
+        background: "linear-gradient(90deg, transparent, rgba(0,200,255,0.6), transparent)",
+        pointerEvents: "none",
+      }} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 24 }}>
+        <div style={{
+          fontSize, fontWeight: 900, fontFamily,
+          letterSpacing: autoTracking(fontSize),
+          color: "#00c8ff",
+          textShadow: `
+            0 0 10px #00c8ff,
+            0 0 20px #00c8ff88,
+            0 0 40px #00c8ff44,
+            ${glitch}px 0 rgba(255,0,80,0.5),
+            ${-glitch}px 0 rgba(0,255,200,0.5)
+          `,
+          textAlign: "center", padding: "0 80px",
+          transform: `translateX(${glitch * 0.5}px)`,
+        }}>
+          {scene.text}
+        </div>
+        {scene.text2 && (
+          <div style={{ fontSize: 32, fontWeight: 300, color: "rgba(0,200,255,0.6)", fontFamily, letterSpacing: "0.1em" }}>
+            {scene.text2}
+          </div>
+        )}
+      </AbsoluteFill>
+      <Vignette strength={0.6} />
+    </AbsoluteFill>
+  );
+};
+
+export const MoneyRainScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+  const fontSize = autoFontSize(scene.text || "", 120, 60);
+
+  const bills = Array.from({ length: 25 }, (_, i) => ({
+    x: (i * 43 + Math.sin(i * 1.5) * 100) % 1080,
+    y: ((frame * (3 + i % 3) + i * 80) % 2200) - 200,
+    rotation: Math.sin(frame * 0.05 + i) * 30,
+    scale: 0.6 + (i % 4) * 0.15,
+    opacity: 0.3 + Math.sin(frame * 0.08 + i) * 0.2,
+  }));
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      {/* Billets */}
+      <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+        {bills.map((bill, i) => (
+          <div key={i} style={{
+            position: "absolute",
+            left: bill.x, top: bill.y,
+            fontSize: 40 * bill.scale,
+            transform: `rotate(${bill.rotation}deg)`,
+            opacity: bill.opacity,
+          }}>
+            💵
+          </div>
+        ))}
+      </div>
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 16 }}>
+        {scene.text && (
+          <div style={{
+            fontSize, fontWeight: 900, fontFamily,
+            letterSpacing: autoTracking(fontSize),
+            color: "#30d158",
+            textShadow: "0 0 40px rgba(48,209,88,0.5)",
+            textAlign: "center", padding: "0 80px",
+          }}>
+            {scene.text}
+          </div>
+        )}
+        {scene.counterTo && (
+          <div style={{ fontSize: 80, fontWeight: 900, fontFamily, color: "#30d158", letterSpacing: "-0.04em" }}>
+            ${scene.counterTo.toLocaleString()}
+          </div>
+        )}
+        <AccentLine accent="#30d158" delay={20} width={80} />
+      </AbsoluteFill>
+      <Vignette strength={0.5} />
+    </AbsoluteFill>
+  );
+};
+
+export const TitleCardScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const fade = useFade();
+  const bg = scene.bg || "#0a0a0a";
+  const lineW = interpolate(frame, [10, 40], [0, 800], { extrapolateRight: "clamp", easing: E_OUT });
+  const titleOp = interpolate(frame, [20, 45], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
+  const titleY = interpolate(frame, [20, 45], [24, 0], { extrapolateRight: "clamp", easing: E_OUT });
+  const subOp = interpolate(frame, [35, 55], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
+  const fontSize = autoFontSize(scene.text || "", 100, 48);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <Grain />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "flex-start", opacity: fade, padding: "0 120px", flexDirection: "column", gap: 20 }}>
+        {/* Ligne accent */}
+        <div style={{ width: lineW, height: 4, background: safeAccent(scene.accentColor, bg), borderRadius: 2,
+          boxShadow: `0 0 20px ${scene.accentColor}` }} />
+        {/* Titre */}
+        <div style={{
+          fontSize, fontWeight: 900, fontFamily,
+          letterSpacing: autoTracking(fontSize),
+          color: textColor(bg), lineHeight: autoLineHeight(fontSize),
+          opacity: titleOp, transform: `translateY(${titleY}px)`,
+        }}>
+          {scene.text}
+        </div>
+        {scene.text2 && (
+          <div style={{
+            fontSize: Math.round(fontSize * 0.3), fontWeight: 300,
+            color: isLight(bg) ? "#888" : "#555", fontFamily,
+            letterSpacing: "0.08em", textTransform: "uppercase",
+            opacity: subOp,
+          }}>
+            {scene.text2}
+          </div>
+        )}
+      </AbsoluteFill>
+      <Vignette />
     </AbsoluteFill>
   );
 };
