@@ -63,6 +63,7 @@ app.post("/voice", async (req, res) => {
     fs.writeFileSync(audioPath, audioBuffer);
 
     const audioUrl = `${process.env.RENDER_SERVER_URL}/audio/${audioFileName}`;
+    console.log("🎵 Audio URL:", audioUrl);
 
     const fps = 60;
     const charTimes = data.alignment?.character_start_times_seconds || [];
