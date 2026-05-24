@@ -41,6 +41,13 @@ import {
   EndCreditsScene, WipeTransitionScene, DollyZoomScene,
   StepsScene, CompareScene, QuoteRevealScene, BenefitsScene,
   MoodBoardScene, MinimalistScene, GradientBgScene, PriceRevealScene,
+  LogoRevealScene, BrandIntroScene, ColorPaletteScene,
+  PropertyScene, ScoreboardScene, PlayerStatScene,
+  MenuItemScene, HeartbeatScene,
+  GeometricScene, LiquidScene, MorphShapeScene, DNAScene,
+  SwipeScene, ClickScene, LoadingScene,
+  AudioWaveformScene, VinylScene,
+  MagazineCoverScene, PullQuoteScene, InfographicScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -354,6 +361,26 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({ scene, i
     case "minimalist":      return <MinimalistScene scene={s} sceneIndex={index} />;
     case "gradientbg":      return <GradientBgScene scene={s} sceneIndex={index} />;
     case "pricereveal":     return <PriceRevealScene scene={s} sceneIndex={index} />;
+    case "logoreveal":      return <LogoRevealScene scene={s} sceneIndex={index} />;
+    case "brandintro":      return <BrandIntroScene scene={s} sceneIndex={index} />;
+    case "colorpalette":    return <ColorPaletteScene scene={s} sceneIndex={index} />;
+    case "property":        return <PropertyScene scene={s} sceneIndex={index} />;
+    case "scoreboard":      return <ScoreboardScene scene={s} sceneIndex={index} />;
+    case "playerstat":      return <PlayerStatScene scene={s} sceneIndex={index} />;
+    case "menuitem":        return <MenuItemScene scene={s} sceneIndex={index} />;
+    case "heartbeat":       return <HeartbeatScene scene={s} sceneIndex={index} />;
+    case "geometric":       return <GeometricScene scene={s} sceneIndex={index} />;
+    case "liquid":          return <LiquidScene scene={s} sceneIndex={index} />;
+    case "morphshape":      return <MorphShapeScene scene={s} sceneIndex={index} />;
+    case "dna":             return <DNAScene scene={s} sceneIndex={index} />;
+    case "swipe":           return <SwipeScene scene={s} sceneIndex={index} />;
+    case "click":           return <ClickScene scene={s} sceneIndex={index} />;
+    case "loading":         return <LoadingScene scene={s} sceneIndex={index} />;
+    case "audiowaveform":   return <AudioWaveformScene scene={s} sceneIndex={index} />;
+    case "vinyl":           return <VinylScene scene={s} sceneIndex={index} />;
+    case "magazinecover":   return <MagazineCoverScene scene={s} sceneIndex={index} />;
+    case "pullquote":       return <PullQuoteScene scene={s} sceneIndex={index} />;
+    case "infographic":     return <InfographicScene scene={s} sceneIndex={index} />;
     default:              return <WordScene                scene={s} sceneIndex={index} />;
   }
 };
