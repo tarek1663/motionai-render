@@ -77,7 +77,12 @@ app.post("/voice", async (req, res) => {
         body: JSON.stringify({
           text,
           model_id: "eleven_multilingual_v2",
-          voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+          voice_settings: {
+            stability: 0.75,
+            similarity_boost: 0.85,
+            style: 0.3,
+            use_speaker_boost: true,
+          },
         }),
       }
     );
@@ -270,6 +275,14 @@ app.post("/render", async (req, res) => {
         inputProps: renderInputProps,
       });
 
+      console.log(
+        "📐 Composition duration:",
+        composition.durationInFrames,
+        "frames =",
+        composition.durationInFrames / 60,
+        "seconds"
+      );
+
       await renderMedia({
         composition,
         serveUrl: bundleLocation,
@@ -280,10 +293,15 @@ app.post("/render", async (req, res) => {
         chromiumOptions: {
           disableWebSecurity: true,
           ignoreCertificateErrors: true,
-          args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+          ],
         },
-        concurrency: 2,
-        crf: 18,
+        concurrency: 6,
+        crf: 20,
         pixelFormat: "yuv420p",
         onProgress: ({ progress }) => {
           console.log(`📊 Render progress: ${Math.round(progress * 100)}%`);

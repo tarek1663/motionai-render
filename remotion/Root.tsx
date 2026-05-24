@@ -47,13 +47,14 @@ const RemotionRoot = () => (
       const p = props as MotionVideoProps;
       const total = p.totalFrames || 1800;
 
-      const fmt = (p as any).format || "9:16";
-      const { width: w, height: h } = getDimensions(fmt);
+      console.log("📐 calculateMetadata totalFrames:", total, "=", total / 60, "seconds");
 
-      console.log("📐 calculateMetadata format:", fmt, w, "x", h);
+      const fmt = (p as any).format || "9:16";
+      const w = fmt === "16:9" ? 1920 : 1080;
+      const h = fmt === "16:9" ? 1080 : fmt === "1:1" ? 1080 : 1920;
 
       return {
-        durationInFrames: Math.max(total + 60, 120),
+        durationInFrames: total,
         fps: 60,
         width: w,
         height: h,
