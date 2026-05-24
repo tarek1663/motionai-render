@@ -135,6 +135,13 @@ app.post("/photos", async (req, res) => {
     const { query } = req.body;
     const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
 
+    if (!PEXELS_API_KEY) {
+      console.log("⚠️ No Pexels API key");
+      return res.json({ photoUrl: null });
+    }
+
+    console.log("🖼️ Fetching photo for:", query);
+
     const response = await fetch(
       `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=1&orientation=portrait`,
       { headers: { Authorization: PEXELS_API_KEY } }
@@ -142,18 +149,25 @@ app.post("/photos", async (req, res) => {
 
     const data = await response.json();
     const photo = data.photos?.[0];
-    if (!photo) return res.json({ photoUrl: null });
 
-    const photoResponse = await fetch(photo.src.large);
+    if (!photo) {
+      console.log("⚠️ No photo found for:", query);
+      return res.json({ photoUrl: null });
+    }
+
+    const photoResponse = await fetch(photo.src.large2x || photo.src.large);
     const photoBuffer = Buffer.from(await photoResponse.arrayBuffer());
     const photoFileName = `${uuidv4()}.jpg`;
     const photoPath = path.join(PHOTOS_DIR, photoFileName);
     fs.writeFileSync(photoPath, photoBuffer);
 
     const photoUrl = `${process.env.RENDER_SERVER_URL}/photos/${photoFileName}`;
+    console.log("✅ Photo saved:", photoUrl);
+
     res.json({ photoUrl });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("❌ Photo error:", err.message);
+    res.json({ photoUrl: null });
   }
 });
 
