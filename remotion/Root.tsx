@@ -1,7 +1,7 @@
 import { registerRoot, Composition } from "remotion";
 import { MotionVideo, MotionVideoProps } from "./MotionVideo";
 
-const fps = 60;
+const fps = 30;
 
 const getDimensions = (fmt: string) => {
   if (fmt === "16:9") return { width: 1920, height: 1080 };
@@ -86,8 +86,10 @@ const RemotionRoot = () => (
       console.log("📐 calculateMetadata format:", fmt, w, "x", h);
 
       return {
-        durationInFrames: Math.max(total + 60, 120),
-        fps: 60, width: w, height: h,
+        durationInFrames: Math.max(total + 30, 60),
+        fps: 30,
+        width: w,
+        height: h,
       };
     }}
   />

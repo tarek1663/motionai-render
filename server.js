@@ -8,11 +8,7 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
 const { v4: uuidv4 } = require("uuid");
-const { renderMedia, selectComposition } = require("@remotion/renderer");
-const { bundle } = require("@remotion/bundler");
-
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
@@ -24,6 +20,42 @@ const PHOTOS_DIR = path.join(__dirname, "photos");
 fs.mkdirSync(RENDERS_DIR, { recursive: true });
 fs.mkdirSync(AUDIO_DIR, { recursive: true });
 fs.mkdirSync(PHOTOS_DIR, { recursive: true });
+
+// Bundle cache — éviter de rebundler à chaque rendu
+const bundleCache = new Map();
+
+const getBundleLocation = async () => {
+  if (bundleCache.has("bundle")) {
+    console.log("📦 Using cached bundle");
+    return bundleCache.get("bundle");
+  }
+  console.log("📦 Building bundle...");
+  const location = await require("@remotion/bundler").bundle({
+    entryPoint: path.join(__dirname, "remotion", "Root.tsx"),
+    webpackOverride: (config) => config,
+  });
+  bundleCache.set("bundle", location);
+  console.log("📦 Bundle cached:", location);
+  return location;
+};
+
+// Chrome persistant
+let browserInstance = null;
+
+const getChrome = async () => {
+  if (browserInstance) return browserInstance;
+  const { openBrowser } = require("@remotion/renderer");
+  browserInstance = await openBrowser("chrome", {
+    browserExecutable: "/usr/bin/chromium",
+    chromiumOptions: {
+      disableWebSecurity: true,
+      ignoreCertificateErrors: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    },
+  });
+  console.log("🌐 Chrome instance cached");
+  return browserInstance;
+};
 
 // ── Health check ──────────────────────────────────────
 app.get("/health", (req, res) => res.json({ status: "ok" }));
@@ -65,7 +97,7 @@ app.post("/voice", async (req, res) => {
     const audioUrl = `${process.env.RENDER_SERVER_URL}/audio/${audioFileName}`;
     console.log("🎵 Audio URL:", audioUrl);
 
-    const fps = 60;
+    const fps = 30;
     const charTimes = data.alignment?.character_start_times_seconds || [];
     const charEndTimes = data.alignment?.character_end_times_seconds || [];
 
@@ -202,13 +234,6 @@ app.post("/render", async (req, res) => {
     })
   );
 
-  const getDimensions = (fmt) => {
-    if (fmt === "16:9") return { width: 1920, height: 1080 };
-    if (fmt === "1:1") return { width: 1080, height: 1080 };
-    return { width: 1080, height: 1920 };
-  };
-  const { width, height } = getDimensions(format || "9:16");
-
   const inputProps = {
     scenes,
     sceneDurations,
@@ -221,28 +246,28 @@ app.post("/render", async (req, res) => {
 
   (async () => {
     try {
-      console.log("🎬 Starting render:", jobId);
+      const { renderMedia, selectComposition } = require("@remotion/renderer");
 
-      // Forcer le chemin Chrome AVANT tout
-      process.env.PUPPETEER_EXECUTABLE_PATH = "/usr/bin/chromium";
-      process.env.REMOTION_CHROME_EXECUTABLE_PATH = "/usr/bin/chromium";
+      const bundleLocation = await getBundleLocation();
 
-      try {
-        const chromePath = execSync("which chromium").toString().trim();
-        console.log("✅ Chromium found at:", chromePath);
-      } catch (e) {
-        console.log("❌ Chromium not found, using bundled");
-      }
-
-      const bundleLocation = await bundle({
-        entryPoint: path.join(__dirname, "remotion", "Root.tsx"),
-        webpackOverride: (config) => config,
-      });
+      const normalizedProps = {
+        ...inputProps,
+        audioSrc: inputProps.audioSrc?.startsWith("http")
+          ? inputProps.audioSrc
+          : inputProps.audioSrc
+            ? `${process.env.RENDER_SERVER_URL}${inputProps.audioSrc}`
+            : null,
+        musicSrc: inputProps.musicSrc?.startsWith("http")
+          ? inputProps.musicSrc
+          : inputProps.musicSrc
+            ? `${process.env.RENDER_SERVER_URL}${inputProps.musicSrc}`
+            : null,
+      };
 
       const composition = await selectComposition({
         serveUrl: bundleLocation,
         id: "MotionVideo",
-        inputProps,
+        inputProps: normalizedProps,
       });
 
       await renderMedia({
@@ -250,28 +275,25 @@ app.post("/render", async (req, res) => {
         serveUrl: bundleLocation,
         codec: "h264",
         outputLocation: outPath,
-        inputProps: {
-          ...inputProps,
-          audioSrc: inputProps.audioSrc?.startsWith("http")
-            ? inputProps.audioSrc
-            : inputProps.audioSrc
-              ? `${process.env.RENDER_SERVER_URL}${inputProps.audioSrc}`
-              : null,
-          musicSrc: inputProps.musicSrc?.startsWith("http")
-            ? inputProps.musicSrc
-            : inputProps.musicSrc
-              ? `${process.env.RENDER_SERVER_URL}${inputProps.musicSrc}`
-              : null,
-        },
+        inputProps: normalizedProps,
         browserExecutable: "/usr/bin/chromium",
         chromiumOptions: {
           disableWebSecurity: true,
           ignoreCertificateErrors: true,
-          args: ["--no-sandbox", "--disable-setuid-sandbox"],
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--no-first-run",
+            "--no-zygote",
+          ],
         },
-        crf: 18,
-        width,
-        height,
+        concurrency: 4,
+        crf: 23,
+        fps: 30,
+        pixelFormat: "yuv420p",
+        videoBitrate: "2M",
         onProgress: ({ progress }) => {
           console.log(`📊 Render progress: ${Math.round(progress * 100)}%`);
         },
