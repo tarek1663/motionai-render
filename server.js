@@ -307,8 +307,8 @@ app.post("/render", async (req, res) => {
             "--disable-gpu",
           ],
         },
-        concurrency: 6,
-        crf: 20,
+        concurrency: 1,
+        crf: 22,
         pixelFormat: "yuv420p",
         onProgress: ({ progress }) => {
           console.log(`📊 Render progress: ${Math.round(progress * 100)}%`);
