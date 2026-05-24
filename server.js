@@ -97,7 +97,7 @@ app.post("/voice", async (req, res) => {
     const audioUrl = `${process.env.RENDER_SERVER_URL}/audio/${audioFileName}`;
     console.log("🎵 Audio URL:", audioUrl);
 
-    const fps = 30;
+    const fps = 60;
     const charTimes = data.alignment?.character_start_times_seconds || [];
     const charEndTimes = data.alignment?.character_end_times_seconds || [];
 
@@ -250,7 +250,7 @@ app.post("/render", async (req, res) => {
 
       const bundleLocation = await getBundleLocation();
 
-      const normalizedProps = {
+      const renderInputProps = {
         ...inputProps,
         audioSrc: inputProps.audioSrc?.startsWith("http")
           ? inputProps.audioSrc
@@ -267,7 +267,7 @@ app.post("/render", async (req, res) => {
       const composition = await selectComposition({
         serveUrl: bundleLocation,
         id: "MotionVideo",
-        inputProps: normalizedProps,
+        inputProps: renderInputProps,
       });
 
       await renderMedia({
@@ -275,23 +275,15 @@ app.post("/render", async (req, res) => {
         serveUrl: bundleLocation,
         codec: "h264",
         outputLocation: outPath,
-        inputProps: normalizedProps,
+        inputProps: renderInputProps,
         browserExecutable: "/usr/bin/chromium",
         chromiumOptions: {
           disableWebSecurity: true,
           ignoreCertificateErrors: true,
-          args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-gpu",
-            "--no-first-run",
-            "--no-zygote",
-          ],
+          args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
         },
-        concurrency: 4,
-        crf: 23,
-        fps: 30,
+        concurrency: 2,
+        crf: 18,
         pixelFormat: "yuv420p",
         onProgress: ({ progress }) => {
           console.log(`📊 Render progress: ${Math.round(progress * 100)}%`);
