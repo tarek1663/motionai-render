@@ -282,15 +282,22 @@ app.get("/render/:jobId", (req, res) => {
   const outPath = path.join(RENDERS_DIR, `${jobId}.mp4`);
   const errPath = path.join(RENDERS_DIR, `${jobId}.error`);
 
+  console.log("🔍 Checking render:", jobId);
+  console.log("🔍 File exists:", fs.existsSync(outPath));
+
   if (fs.existsSync(errPath)) {
-    return res.json({ status: "error", error: fs.readFileSync(errPath, "utf-8") });
+    const err = fs.readFileSync(errPath, "utf-8");
+    console.log("❌ Error file:", err);
+    return res.json({ status: "error", error: err });
   }
+
   if (fs.existsSync(outPath)) {
-    return res.json({
-      status: "done",
-      videoUrl: `${process.env.RENDER_SERVER_URL}/video/${jobId}.mp4`,
-    });
+    const videoUrl = `${process.env.RENDER_SERVER_URL}/video/${jobId}.mp4`;
+    console.log("✅ Video URL:", videoUrl);
+    return res.json({ status: "done", videoUrl });
   }
+
+  console.log("⏳ Still rendering...");
   res.json({ status: "rendering" });
 });
 
