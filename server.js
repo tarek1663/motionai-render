@@ -293,7 +293,6 @@ app.post("/render", async (req, res) => {
         crf: 23,
         fps: 30,
         pixelFormat: "yuv420p",
-        videoBitrate: "2M",
         onProgress: ({ progress }) => {
           console.log(`📊 Render progress: ${Math.round(progress * 100)}%`);
         },
