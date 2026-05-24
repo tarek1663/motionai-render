@@ -33,6 +33,14 @@ import {
   StarfieldScene, AuroraScene, MatrixRainScene, CountdownRingScene,
   XPBarScene, FlightBoardScene, StockChartScene, HologramScene,
   MoneyRainScene, TitleCardScene,
+  MagneticTextScene, GradientSlideScene, CascadeScene, BlurFocusScene,
+  ParticleRainScene, FireParticlesScene, SnowFallScene, SunRayScene,
+  FunnelScene, ComparisonBarsScene, ROIScene,
+  AchievementScene, CircuitBoardScene, GlitchScreenScene,
+  PollResultsScene, CommentThreadScene,
+  EndCreditsScene, WipeTransitionScene, DollyZoomScene,
+  StepsScene, CompareScene, QuoteRevealScene, BenefitsScene,
+  MoodBoardScene, MinimalistScene, GradientBgScene, PriceRevealScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -319,6 +327,33 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({ scene, i
     case "hologram":        return <HologramScene scene={s} sceneIndex={index} />;
     case "moneyrain":       return <MoneyRainScene scene={s} sceneIndex={index} />;
     case "titlecard":       return <TitleCardScene scene={s} sceneIndex={index} />;
+    case "magnetic":        return <MagneticTextScene scene={s} sceneIndex={index} />;
+    case "gradientslide":   return <GradientSlideScene scene={s} sceneIndex={index} />;
+    case "cascade":         return <CascadeScene scene={s} sceneIndex={index} />;
+    case "blurfocus":       return <BlurFocusScene scene={s} sceneIndex={index} />;
+    case "particlerain":    return <ParticleRainScene scene={s} sceneIndex={index} />;
+    case "fire":            return <FireParticlesScene scene={s} sceneIndex={index} />;
+    case "snow":            return <SnowFallScene scene={s} sceneIndex={index} />;
+    case "sunray":          return <SunRayScene scene={s} sceneIndex={index} />;
+    case "funnel":          return <FunnelScene scene={s} sceneIndex={index} />;
+    case "comparisonbars":  return <ComparisonBarsScene scene={s} sceneIndex={index} />;
+    case "roi":             return <ROIScene scene={s} sceneIndex={index} />;
+    case "achievement":     return <AchievementScene scene={s} sceneIndex={index} />;
+    case "circuit":         return <CircuitBoardScene scene={s} sceneIndex={index} />;
+    case "glitchscreen":    return <GlitchScreenScene scene={s} sceneIndex={index} />;
+    case "pollresults":     return <PollResultsScene scene={s} sceneIndex={index} />;
+    case "commentthread":   return <CommentThreadScene scene={s} sceneIndex={index} />;
+    case "endcredits":      return <EndCreditsScene scene={s} sceneIndex={index} />;
+    case "wipe":            return <WipeTransitionScene scene={s} sceneIndex={index} />;
+    case "dollyzoom":       return <DollyZoomScene scene={s} sceneIndex={index} />;
+    case "steps":           return <StepsScene scene={s} sceneIndex={index} />;
+    case "compare":         return <CompareScene scene={s} sceneIndex={index} />;
+    case "quotereveal":     return <QuoteRevealScene scene={s} sceneIndex={index} />;
+    case "benefits":        return <BenefitsScene scene={s} sceneIndex={index} />;
+    case "moodboard":       return <MoodBoardScene scene={s} sceneIndex={index} />;
+    case "minimalist":      return <MinimalistScene scene={s} sceneIndex={index} />;
+    case "gradientbg":      return <GradientBgScene scene={s} sceneIndex={index} />;
+    case "pricereveal":     return <PriceRevealScene scene={s} sceneIndex={index} />;
     default:              return <WordScene                scene={s} sceneIndex={index} />;
   }
 };
