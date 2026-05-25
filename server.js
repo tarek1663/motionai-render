@@ -323,8 +323,8 @@ app.post("/render", async (req, res) => {
             "--no-zygote",
           ],
         },
-        concurrency: 4,
-        crf: 18,
+        concurrency: 6,
+        crf: 20,
         pixelFormat: "yuv420p",
         onProgress: ({ progress }) => {
           console.log(`📊 Render progress: ${Math.round(progress * 100)}%`);
