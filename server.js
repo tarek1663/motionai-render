@@ -39,6 +39,12 @@ const getBundleLocation = async () => {
   return location;
 };
 
+const toAbsoluteAssetUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  return `${process.env.RENDER_SERVER_URL}${url}`;
+};
+
 // Chrome persistant
 let browserInstance = null;
 
@@ -223,10 +229,24 @@ app.post("/render", async (req, res) => {
     duration,
     accentColor,
     formatName,
+    quality = "fast",
   } = req.body;
 
   const outPath = path.join(RENDERS_DIR, `${jobId}.mp4`);
+  const errPath = path.join(RENDERS_DIR, `${jobId}.error`);
   const metaPath = path.join(RENDERS_DIR, `${jobId}.meta.json`);
+  const progressPath = path.join(RENDERS_DIR, `${jobId}.progress`);
+
+  const qualitySettings = {
+    fast: { crf: 28, concurrency: 8, scale: 0.75 },
+    high: { crf: 18, concurrency: 4, scale: 1 },
+  };
+
+  const settings = qualitySettings[quality] || qualitySettings.fast;
+
+  if (fs.existsSync(errPath)) fs.unlinkSync(errPath);
+  if (fs.existsSync(progressPath)) fs.unlinkSync(progressPath);
+  fs.writeFileSync(progressPath, JSON.stringify({ progress: 0 }));
 
   fs.writeFileSync(
     metaPath,
@@ -236,6 +256,7 @@ app.post("/render", async (req, res) => {
       duration,
       accentColor,
       formatName,
+      quality,
     })
   );
 
@@ -265,16 +286,8 @@ app.post("/render", async (req, res) => {
       const renderInputProps = {
         ...inputProps,
         totalFrames,
-        audioSrc: inputProps.audioSrc?.startsWith("http")
-          ? inputProps.audioSrc
-          : inputProps.audioSrc
-            ? `${process.env.RENDER_SERVER_URL}${inputProps.audioSrc}`
-            : null,
-        musicSrc: inputProps.musicSrc?.startsWith("http")
-          ? inputProps.musicSrc
-          : inputProps.musicSrc
-            ? `${process.env.RENDER_SERVER_URL}${inputProps.musicSrc}`
-            : null,
+        audioSrc: toAbsoluteAssetUrl(inputProps.audioSrc),
+        musicSrc: toAbsoluteAssetUrl(inputProps.musicSrc),
       };
 
       const composition = await selectComposition({
@@ -297,19 +310,7 @@ app.post("/render", async (req, res) => {
         serveUrl: bundleLocation,
         codec: "h264",
         outputLocation: outPath,
-        inputProps: {
-          ...inputProps,
-          audioSrc: inputProps.audioSrc?.startsWith("http")
-            ? inputProps.audioSrc
-            : inputProps.audioSrc
-              ? `${process.env.RENDER_SERVER_URL}${inputProps.audioSrc}`
-              : null,
-          musicSrc: inputProps.musicSrc?.startsWith("http")
-            ? inputProps.musicSrc
-            : inputProps.musicSrc
-              ? `${process.env.RENDER_SERVER_URL}${inputProps.musicSrc}`
-              : null,
-        },
+        inputProps: renderInputProps,
         browserExecutable: "/usr/bin/chromium",
         chromiumOptions: {
           disableWebSecurity: true,
@@ -323,21 +324,22 @@ app.post("/render", async (req, res) => {
             "--no-zygote",
           ],
         },
-        concurrency: 6,
-        crf: 20,
+        concurrency: settings.concurrency,
+        crf: settings.crf,
         pixelFormat: "yuv420p",
+        // `scale` n'est pas supporté par renderMedia programmatique.
         onProgress: ({ progress }) => {
-          console.log(`📊 Render progress: ${Math.round(progress * 100)}%`);
+          const pct = Math.round(progress * 100);
+          fs.writeFileSync(progressPath, JSON.stringify({ progress: pct }));
+          console.log(`📊 Render progress: ${pct}%`);
         },
       });
 
+      fs.writeFileSync(progressPath, JSON.stringify({ progress: 100 }));
       console.log("✅ Render done:", jobId);
     } catch (err) {
       console.error("❌ Render error:", err.message);
-      fs.writeFileSync(
-        path.join(RENDERS_DIR, `${jobId}.error`),
-        err.message
-      );
+      fs.writeFileSync(errPath, err.message);
     }
   })();
 });
@@ -347,24 +349,29 @@ app.get("/render/:jobId", (req, res) => {
   const { jobId } = req.params;
   const outPath = path.join(RENDERS_DIR, `${jobId}.mp4`);
   const errPath = path.join(RENDERS_DIR, `${jobId}.error`);
-
-  console.log("🔍 Checking render:", jobId);
-  console.log("🔍 File exists:", fs.existsSync(outPath));
+  const progressPath = path.join(RENDERS_DIR, `${jobId}.progress`);
 
   if (fs.existsSync(errPath)) {
-    const err = fs.readFileSync(errPath, "utf-8");
-    console.log("❌ Error file:", err);
-    return res.json({ status: "error", error: err });
+    return res.json({ status: "error", error: fs.readFileSync(errPath, "utf-8") });
   }
 
   if (fs.existsSync(outPath)) {
-    const videoUrl = `${process.env.RENDER_SERVER_URL}/video/${jobId}.mp4`;
-    console.log("✅ Video URL:", videoUrl);
-    return res.json({ status: "done", videoUrl });
+    return res.json({
+      status: "done",
+      videoUrl: `${process.env.RENDER_SERVER_URL}/video/${jobId}.mp4`,
+      progress: 100,
+    });
   }
 
-  console.log("⏳ Still rendering...");
-  res.json({ status: "rendering" });
+  let progress = 0;
+  if (fs.existsSync(progressPath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(progressPath, "utf-8"));
+      progress = data.progress || 0;
+    } catch {}
+  }
+
+  res.json({ status: "rendering", progress });
 });
 
 // ── Metadata ──────────────────────────────────────────
