@@ -407,11 +407,16 @@ const MusicAudio: React.FC<{
 const getTimingValue = (
   timing: number | { startFrame?: number; endFrame?: number; durationFrames?: number } | undefined,
 ): number => {
-  if (typeof timing === "number") return timing;
+  if (typeof timing === "number") return Number.isFinite(timing) && timing > 0 ? timing : 90;
   if (!timing) return 90;
-  if (typeof timing.durationFrames === "number") return timing.durationFrames;
+  if (typeof timing.durationFrames === "number") {
+    return Number.isFinite(timing.durationFrames) && timing.durationFrames > 0
+      ? timing.durationFrames
+      : 90;
+  }
   if (typeof timing.startFrame === "number" && typeof timing.endFrame === "number") {
-    return timing.endFrame - timing.startFrame;
+    const duration = timing.endFrame - timing.startFrame;
+    return Number.isFinite(duration) && duration > 0 ? duration : 90;
   }
   return 90;
 };
@@ -421,11 +426,17 @@ const getSceneStartFrame = (
   index: number,
 ): number => {
   const timing = timings?.[index];
-  if (timing && typeof timing !== "number" && typeof timing.startFrame === "number") {
+  if (
+    timing &&
+    typeof timing !== "number" &&
+    typeof timing.startFrame === "number" &&
+    Number.isFinite(timing.startFrame)
+  ) {
     return timing.startFrame;
   }
 
-  return (timings || []).slice(0, index).reduce((acc, entry) => acc + getTimingValue(entry), 0);
+  const offset = (timings || []).slice(0, index).reduce((acc, entry) => acc + getTimingValue(entry), 0);
+  return Number.isFinite(offset) ? offset : 0;
 };
 
 // ─────────────────────────────────────────────────────────
@@ -456,8 +467,12 @@ export const MotionVideo: React.FC<MotionVideoProps> = ({
       )}
 
       {scenes.map((scene, index) => {
-        const startFrame = getSceneStartFrame(sceneDurations, index);
-        const duration = Math.max(1, getTimingValue(sceneDurations?.[index]));
+        const from = getSceneStartFrame(sceneDurations, index);
+        const durationInFrames = getTimingValue(sceneDurations?.[index]);
+        const startFrame = Number.isFinite(from) ? from : 0;
+        const duration = Number.isFinite(durationInFrames) && durationInFrames > 0
+          ? durationInFrames
+          : 90;
 
         return (
           <Sequence

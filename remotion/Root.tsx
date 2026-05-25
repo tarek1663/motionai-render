@@ -45,7 +45,9 @@ const RemotionRoot = () => (
     } as MotionVideoProps}
     calculateMetadata={async ({ props }) => {
       const p = props as MotionVideoProps;
-      const total = p.totalFrames || 1800;
+      const total = Number.isFinite(p.totalFrames) && p.totalFrames > 0
+        ? p.totalFrames
+        : 1800;
 
       console.log("📐 calculateMetadata totalFrames:", total, "=", total / 60, "seconds");
 
