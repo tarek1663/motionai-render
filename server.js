@@ -109,41 +109,36 @@ app.post("/voice", async (req, res) => {
     console.log("🎵 Audio URL:", audioUrl);
 
     const fps = 60;
-    const characters = data.alignment?.characters || [];
     const charTimes = data.alignment?.character_start_times_seconds || [];
     const charEndTimes = data.alignment?.character_end_times_seconds || [];
 
-    const sentences = text.split(/(?<=[.!?,\n])\s+/).filter((s) => s.trim().length > 0);
+    const sentences = text
+      .split(/\n/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
     let charIndex = 0;
-
     const phraseTimestamps = sentences.map((sentence, i) => {
-      const trimmed = sentence.trim();
-
-      while (
-        charIndex < characters.length &&
-        typeof characters[charIndex] === "string" &&
-        /\s/.test(characters[charIndex])
-      ) {
-        charIndex += 1;
-      }
-
       const startTime = charTimes[charIndex] || 0;
-      const endCharIndex = Math.min(charIndex + trimmed.length - 1, charEndTimes.length - 1);
+      const endCharIndex = Math.min(charIndex + sentence.length - 1, charEndTimes.length - 1);
       const endTime = charEndTimes[endCharIndex] || startTime + 2;
-      const adjustedEndTime = i < sentences.length - 1 ? endTime + 0.1 : endTime + 0.3;
 
-      charIndex += trimmed.length + 1;
+      const adjustedEndTime = i < sentences.length - 1
+        ? endTime + 0.05
+        : endTime + 0.3;
 
-      const startFrame = Math.round(startTime * fps);
-      const endFrame = Math.round(adjustedEndTime * fps);
+      charIndex += sentence.length + 1;
 
       return {
-        phrase: trimmed,
-        startFrame,
-        endFrame,
-        durationFrames: Math.max(30, endFrame - startFrame),
+        phrase: sentence,
+        startFrame: Math.round(startTime * fps),
+        endFrame: Math.round(adjustedEndTime * fps),
+        durationFrames: Math.max(30, Math.round((adjustedEndTime - startTime) * fps)),
       };
     });
+
+    console.log("📝 Phrases count:", phraseTimestamps.length);
+    console.log("📝 First phrase:", phraseTimestamps[0]);
 
     const durationSeconds = charEndTimes[charEndTimes.length - 1] || 30;
 
