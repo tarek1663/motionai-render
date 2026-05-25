@@ -411,19 +411,14 @@ const getSceneTiming = (
   index: number,
 ): { from: number; duration: number } => {
   const timing = timings[index];
-  if (
-    timing &&
-    typeof timing !== "number" &&
-    typeof timing.startFrame === "number" &&
-    typeof timing.durationFrames === "number" &&
-    Number.isFinite(timing.startFrame) &&
-    Number.isFinite(timing.durationFrames) &&
-    timing.durationFrames > 0
-  ) {
-    return {
-      from: timing.startFrame,
-      duration: timing.durationFrames,
-    };
+
+  if (timing && typeof timing !== "number") {
+    const from = timing.startFrame ?? (timing as { from?: number }).from ?? 0;
+    const duration = timing.durationFrames ?? (timing as { duration?: number }).duration ?? 0;
+
+    if (Number.isFinite(from) && Number.isFinite(duration) && duration > 0) {
+      return { from, duration };
+    }
   }
 
   const safeScenesCount = Math.max(scenesCount, 1);
@@ -475,7 +470,7 @@ export const MotionVideo: React.FC<MotionVideoProps> = ({
         return (
           <Sequence
             key={index}
-            from={startFrame}
+            from={from}
             durationInFrames={duration}
           >
             <SceneRenderer scene={scene} index={index} />
