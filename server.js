@@ -109,22 +109,39 @@ app.post("/voice", async (req, res) => {
     console.log("🎵 Audio URL:", audioUrl);
 
     const fps = 60;
+    const characters = data.alignment?.characters || [];
     const charTimes = data.alignment?.character_start_times_seconds || [];
     const charEndTimes = data.alignment?.character_end_times_seconds || [];
 
-    const fullText = text;
-    const sentences = fullText.split(/(?<=[.!?\n])\s*/).filter((s) => s.trim().length > 0);
+    const sentences = text.split(/(?<=[.!?,\n])\s+/).filter((s) => s.trim().length > 0);
     let charIndex = 0;
-    const phraseTimestamps = sentences.map((sentence) => {
+
+    const phraseTimestamps = sentences.map((sentence, i) => {
+      const trimmed = sentence.trim();
+
+      while (
+        charIndex < characters.length &&
+        typeof characters[charIndex] === "string" &&
+        /\s/.test(characters[charIndex])
+      ) {
+        charIndex += 1;
+      }
+
       const startTime = charTimes[charIndex] || 0;
-      const endIndex = Math.min(charIndex + sentence.length - 1, charTimes.length - 1);
-      const endTime = charEndTimes[endIndex] || startTime + 2;
-      charIndex += sentence.length + 1;
+      const endCharIndex = Math.min(charIndex + trimmed.length - 1, charEndTimes.length - 1);
+      const endTime = charEndTimes[endCharIndex] || startTime + 2;
+      const adjustedEndTime = i < sentences.length - 1 ? endTime + 0.1 : endTime + 0.3;
+
+      charIndex += trimmed.length + 1;
+
+      const startFrame = Math.round(startTime * fps);
+      const endFrame = Math.round(adjustedEndTime * fps);
+
       return {
-        phrase: sentence.trim(),
-        startFrame: Math.round(startTime * fps),
-        endFrame: Math.round(endTime * fps),
-        durationFrames: Math.round((endTime - startTime) * fps),
+        phrase: trimmed,
+        startFrame,
+        endFrame,
+        durationFrames: Math.max(30, endFrame - startFrame),
       };
     });
 

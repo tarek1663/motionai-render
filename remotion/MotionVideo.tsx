@@ -1,6 +1,6 @@
 import {
   AbsoluteFill,
-  Audio, interpolate, Easing, useVideoConfig, useCurrentFrame,
+  Audio, interpolate, Easing, useVideoConfig, useCurrentFrame, Sequence,
 } from "remotion";
 import {
   linearTiming,
@@ -52,7 +52,9 @@ import {
 
 export type MotionVideoProps = {
   scenes: SceneData[];
-  sceneDurations: number[];
+  sceneDurations: Array<
+    number | { startFrame?: number; endFrame?: number; durationFrames?: number }
+  >;
   totalFrames: number;
   audioSrc?: string | null;
   musicSrc?: string | null;
@@ -402,6 +404,30 @@ const MusicAudio: React.FC<{
   return <Audio src={src} volume={volume} />;
 };
 
+const getTimingValue = (
+  timing: number | { startFrame?: number; endFrame?: number; durationFrames?: number } | undefined,
+): number => {
+  if (typeof timing === "number") return timing;
+  if (!timing) return 90;
+  if (typeof timing.durationFrames === "number") return timing.durationFrames;
+  if (typeof timing.startFrame === "number" && typeof timing.endFrame === "number") {
+    return timing.endFrame - timing.startFrame;
+  }
+  return 90;
+};
+
+const getSceneStartFrame = (
+  timings: MotionVideoProps["sceneDurations"],
+  index: number,
+): number => {
+  const timing = timings?.[index];
+  if (timing && typeof timing !== "number" && typeof timing.startFrame === "number") {
+    return timing.startFrame;
+  }
+
+  return (timings || []).slice(0, index).reduce((acc, entry) => acc + getTimingValue(entry), 0);
+};
+
 // ─────────────────────────────────────────────────────────
 // MOTION VIDEO
 // ─────────────────────────────────────────────────────────
@@ -429,29 +455,20 @@ export const MotionVideo: React.FC<MotionVideoProps> = ({
         />
       )}
 
-      <TransitionSeries>
-        {scenes.map((scene, i) => {
-          const dur = sceneDurations?.[i] || 120;
-          const nextScene = scenes[i + 1];
-          const transition = i < scenes.length - 1
-            ? getTransition(scene, nextScene, i)
-            : null;
+      {scenes.map((scene, index) => {
+        const startFrame = getSceneStartFrame(sceneDurations, index);
+        const duration = Math.max(1, getTimingValue(sceneDurations?.[index]));
 
-          return (
-            <React.Fragment key={i}>
-              <TransitionSeries.Sequence durationInFrames={dur}>
-                <SceneRenderer scene={scene} index={i} />
-              </TransitionSeries.Sequence>
-              {transition && (
-                <TransitionSeries.Transition
-                  presentation={transition.presentation}
-                  timing={transition.timing}
-                />
-              )}
-            </React.Fragment>
-          );
-        })}
-      </TransitionSeries>
+        return (
+          <Sequence
+            key={index}
+            from={startFrame}
+            durationInFrames={duration}
+          >
+            <SceneRenderer scene={scene} index={index} />
+          </Sequence>
+        );
+      })}
     </AbsoluteFill>
   );
 };
