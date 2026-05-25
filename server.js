@@ -323,10 +323,9 @@ app.post("/render", async (req, res) => {
             "--no-zygote",
           ],
         },
-        concurrency: 8,
-        crf: 23,
+        concurrency: 4,
+        crf: 18,
         pixelFormat: "yuv420p",
-        scale: 0.5, // Render in 540p, then upscale.
         onProgress: ({ progress }) => {
           console.log(`📊 Render progress: ${Math.round(progress * 100)}%`);
         },
