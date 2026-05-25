@@ -404,39 +404,35 @@ const MusicAudio: React.FC<{
   return <Audio src={src} volume={volume} />;
 };
 
-const getTimingValue = (
-  timing: number | { startFrame?: number; endFrame?: number; durationFrames?: number } | undefined,
-): number => {
-  if (typeof timing === "number") return Number.isFinite(timing) && timing > 0 ? timing : 90;
-  if (!timing) return 90;
-  if (typeof timing.durationFrames === "number") {
-    return Number.isFinite(timing.durationFrames) && timing.durationFrames > 0
-      ? timing.durationFrames
-      : 90;
-  }
-  if (typeof timing.startFrame === "number" && typeof timing.endFrame === "number") {
-    const duration = timing.endFrame - timing.startFrame;
-    return Number.isFinite(duration) && duration > 0 ? duration : 90;
-  }
-  return 90;
-};
-
-const getSceneStartFrame = (
+const getSceneTiming = (
   timings: MotionVideoProps["sceneDurations"],
+  totalFrames: number,
+  scenesCount: number,
   index: number,
-): number => {
-  const timing = timings?.[index];
+): { from: number; duration: number } => {
+  const timing = timings[index];
   if (
     timing &&
     typeof timing !== "number" &&
     typeof timing.startFrame === "number" &&
-    Number.isFinite(timing.startFrame)
+    typeof timing.durationFrames === "number" &&
+    Number.isFinite(timing.startFrame) &&
+    Number.isFinite(timing.durationFrames) &&
+    timing.durationFrames > 0
   ) {
-    return timing.startFrame;
+    return {
+      from: timing.startFrame,
+      duration: timing.durationFrames,
+    };
   }
 
-  const offset = (timings || []).slice(0, index).reduce((acc, entry) => acc + getTimingValue(entry), 0);
-  return Number.isFinite(offset) ? offset : 0;
+  const safeScenesCount = Math.max(scenesCount, 1);
+  const uniformDuration = Math.max(1, Math.floor(totalFrames / safeScenesCount));
+
+  return {
+    from: index * uniformDuration,
+    duration: uniformDuration,
+  };
 };
 
 // ─────────────────────────────────────────────────────────
@@ -447,6 +443,9 @@ export const MotionVideo: React.FC<MotionVideoProps> = ({
 }) => {
   const { durationInFrames } = useVideoConfig();
   const FADE_MUSIC = 30;
+  const safeTotalFrames = Number.isFinite(totalFrames) && totalFrames > 0 ? totalFrames : 1800;
+  const allScenes = scenes || [];
+  const timings = sceneDurations || [];
 
   return (
     <AbsoluteFill>
@@ -466,13 +465,12 @@ export const MotionVideo: React.FC<MotionVideoProps> = ({
         />
       )}
 
-      {scenes.map((scene, index) => {
-        const from = getSceneStartFrame(sceneDurations, index);
-        const durationInFrames = getTimingValue(sceneDurations?.[index]);
-        const startFrame = Number.isFinite(from) ? from : 0;
-        const duration = Number.isFinite(durationInFrames) && durationInFrames > 0
-          ? durationInFrames
-          : 90;
+      {allScenes.map((scene, index) => {
+        const { from, duration } = getSceneTiming(timings, safeTotalFrames, allScenes.length, index);
+
+        if (!Number.isFinite(from) || !Number.isFinite(duration) || duration <= 0) {
+          return null;
+        }
 
         return (
           <Sequence
