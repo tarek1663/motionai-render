@@ -295,7 +295,19 @@ app.post("/render", async (req, res) => {
         serveUrl: bundleLocation,
         codec: "h264",
         outputLocation: outPath,
-        inputProps: renderInputProps,
+        inputProps: {
+          ...inputProps,
+          audioSrc: inputProps.audioSrc?.startsWith("http")
+            ? inputProps.audioSrc
+            : inputProps.audioSrc
+              ? `${process.env.RENDER_SERVER_URL}${inputProps.audioSrc}`
+              : null,
+          musicSrc: inputProps.musicSrc?.startsWith("http")
+            ? inputProps.musicSrc
+            : inputProps.musicSrc
+              ? `${process.env.RENDER_SERVER_URL}${inputProps.musicSrc}`
+              : null,
+        },
         browserExecutable: "/usr/bin/chromium",
         chromiumOptions: {
           disableWebSecurity: true,
@@ -305,11 +317,14 @@ app.post("/render", async (req, res) => {
             "--disable-setuid-sandbox",
             "--disable-dev-shm-usage",
             "--disable-gpu",
+            "--single-process",
+            "--no-zygote",
           ],
         },
-        concurrency: 1,
-        crf: 22,
+        concurrency: 8,
+        crf: 23,
         pixelFormat: "yuv420p",
+        scale: 0.5, // Render in 540p, then upscale.
         onProgress: ({ progress }) => {
           console.log(`📊 Render progress: ${Math.round(progress * 100)}%`);
         },
