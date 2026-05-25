@@ -249,6 +249,8 @@ app.post("/render", async (req, res) => {
     musicVolume: musicVolume || 0.07,
   };
 
+  res.json({ jobId });
+
   (async () => {
     try {
       console.log("📐 Props totalFrames:", inputProps.totalFrames);
@@ -339,8 +341,6 @@ app.post("/render", async (req, res) => {
       );
     }
   })();
-
-  res.json({ jobId });
 });
 
 // ── Status rendu ──────────────────────────────────────
