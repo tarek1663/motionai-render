@@ -60,6 +60,7 @@ export type MotionVideoProps = {
   musicSrc?: string | null;
   musicVolume?: number;
   format?: string;
+  showWatermark?: boolean;
 };
 
 // ─────────────────────────────────────────────────────────
@@ -435,6 +436,7 @@ const getSceneTiming = (
 // ─────────────────────────────────────────────────────────
 export const MotionVideo: React.FC<MotionVideoProps> = ({
   scenes, sceneDurations, totalFrames, audioSrc, musicSrc, musicVolume = 0.18,
+  showWatermark,
 }) => {
   const { durationInFrames } = useVideoConfig();
   const FADE_MUSIC = 30;
@@ -477,6 +479,53 @@ export const MotionVideo: React.FC<MotionVideoProps> = ({
           </Sequence>
         );
       })}
+
+      {showWatermark && (
+        <AbsoluteFill style={{ pointerEvents: "none" }}>
+          <div
+            style={{
+              position: "absolute",
+              bottom: 24,
+              right: 24,
+              background: "rgba(0,0,0,0.5)",
+              backdropFilter: "blur(8px)",
+              borderRadius: 8,
+              padding: "4px 10px",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              border: "1px solid rgba(255,255,255,0.1)",
+            }}
+          >
+            <div
+              style={{
+                width: 14,
+                height: 14,
+                borderRadius: 3,
+                background: "#10B981",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 7,
+                fontWeight: 900,
+                color: "#fff",
+              }}
+            >
+              M
+            </div>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: "rgba(255,255,255,0.7)",
+                letterSpacing: "0.04em",
+              }}
+            >
+              Motionr
+            </span>
+          </div>
+        </AbsoluteFill>
+      )}
     </AbsoluteFill>
   );
 };
