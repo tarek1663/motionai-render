@@ -8671,15 +8671,14 @@ export const CleanTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
         </div>
         {scene.text2 && (
           <div style={{
-            fontSize: Math.round(fontSize * 0.28), fontWeight: 400,
-            color: isLight(bg) ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)",
+            fontSize: Math.round(fontSize * 0.32), fontWeight: 400,
+            color: isLight(bg) ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.45)",
             fontFamily, letterSpacing: "-0.01em", lineHeight: 1.5,
             opacity: op2, transform: `translateY(${y2}px)`, filter: `blur(${b2}px)`,
           }}>
             {scene.text2}
           </div>
         )}
-        <AccentLine accent={safeAccent(scene.accentColor, bg)} delay={20} />
       </AbsoluteFill>
       <Vignette />
     </AbsoluteFill>
@@ -9027,7 +9026,6 @@ export const StatScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({
             {scene.text2}
           </div>
         )}
-        <AccentLine accent={safeAccent(scene.accentColor, bg)} delay={24} />
       </AbsoluteFill>
       <Vignette />
     </AbsoluteFill>
