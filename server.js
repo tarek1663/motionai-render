@@ -21,6 +21,31 @@ fs.mkdirSync(RENDERS_DIR, { recursive: true });
 fs.mkdirSync(AUDIO_DIR, { recursive: true });
 fs.mkdirSync(PHOTOS_DIR, { recursive: true });
 
+const cleanOldFiles = () => {
+  const dirs = [RENDERS_DIR, AUDIO_DIR, PHOTOS_DIR];
+  const maxAge = 7 * 24 * 60 * 60 * 1000;
+
+  dirs.forEach((dir) => {
+    try {
+      const files = fs.readdirSync(dir);
+      files.forEach((file) => {
+        const filePath = path.join(dir, file);
+        const stats = fs.statSync(filePath);
+        const age = Date.now() - stats.mtimeMs;
+        if (age > maxAge) {
+          fs.unlinkSync(filePath);
+          console.log("🗑️ Cleaned:", file);
+        }
+      });
+    } catch (err) {
+      console.error("Cleanup error:", err.message);
+    }
+  });
+};
+
+cleanOldFiles();
+setInterval(cleanOldFiles, 60 * 60 * 1000);
+
 // Bundle cache — éviter de rebundler à chaque rendu
 const bundleCache = new Map();
 
