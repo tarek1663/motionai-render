@@ -42,6 +42,9 @@ import {
   NetflixRevealScene, TimerScene, GithubStarsScene, SquiggleTextScene,
   MCPAnimationScene, GlowTextScene, ASCIIScene, PriceTagScene,
   MusicVisualizerScene, SplitRevealScene, CounterPunchScene,
+  CleanTextScene, HighlightWordScene, PhotoTextScene, IconTextScene,
+  StatScene, CleanListScene, CleanQuoteScene, CleanCTAScene,
+  UnderlineScene, SplitTextScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -184,6 +187,16 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({ scene, i
     case "musicvisualizer":   return <MusicVisualizerScene scene={s} sceneIndex={index} />;
     case "splitreveal":       return <SplitRevealScene scene={s} sceneIndex={index} />;
     case "counterpunch":      return <CounterPunchScene scene={s} sceneIndex={index} />;
+    case "cleantext":         return <CleanTextScene scene={s} sceneIndex={index} />;
+    case "highlightword":     return <HighlightWordScene scene={s} sceneIndex={index} />;
+    case "phototext":         return <PhotoTextScene scene={s} sceneIndex={index} />;
+    case "icontext":          return <IconTextScene scene={s} sceneIndex={index} />;
+    case "stat":              return <StatScene scene={s} sceneIndex={index} />;
+    case "cleanlist":         return <CleanListScene scene={s} sceneIndex={index} />;
+    case "cleanquote":        return <CleanQuoteScene scene={s} sceneIndex={index} />;
+    case "cleancta":          return <CleanCTAScene scene={s} sceneIndex={index} />;
+    case "underline":         return <UnderlineScene scene={s} sceneIndex={index} />;
+    case "splittext":         return <SplitTextScene scene={s} sceneIndex={index} />;
     default:              return <WordScene                scene={s} sceneIndex={index} />;
   }
 };
