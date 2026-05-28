@@ -402,70 +402,24 @@ const BgPattern: React.FC<{
 // ─────────────────────────────────────────────────────────
 const Bg: React.FC<{
   color: string;
-  accent: string;
+  accent?: string;
   sceneIndex?: number;
-}> = ({ color, accent, sceneIndex = 0 }) => {
-  const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
-  const d = useDrift();
+}> = ({ color, sceneIndex = 0 }) => {
+  const patterns = [
+    `radial-gradient(circle, ${isLight(color) ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.03)"} 1px, transparent 1px)`,
+    `repeating-linear-gradient(0deg, transparent, transparent 80px, ${isLight(color) ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.02)"} 80px, ${isLight(color) ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.02)"} 81px)`,
+    "none",
+  ];
 
-  const kb = interpolate(frame, [0, durationInFrames], [1.0, 1.06], {
-    extrapolateRight: "clamp", easing: Easing.out(Easing.cubic),
-  });
-
-  const patternOp = interpolate(frame, [0, 20], [0, 1], {
-    extrapolateRight: "clamp", easing: E_OUT,
-  });
-
-  const ambX = 50 + Math.sin(frame * 0.008) * 15;
-  const ambY = 45 + Math.cos(frame * 0.006) * 10;
-  const ambS = 1 + Math.sin(frame * 0.022) * 0.06;
-  const light = isLight(color);
+  const pattern = patterns[sceneIndex % patterns.length];
 
   return (
-    <>
-      {/* Fond base + Ken Burns */}
-      <div style={{
-        position: "absolute", inset: "-8%",
-        background: color,
-        transform: `scale(${d.s * kb}) translate(${d.x}px, ${d.y}px) rotate(${d.r}deg)`,
-      }}>
-        {!light && (
-          <div style={{
-            position: "absolute", inset: 0,
-            background: `radial-gradient(ellipse 60% 50% at ${ambX}% ${ambY}%, ${accent}14 0%, transparent 55%)`,
-            transform: `scale(${ambS})`,
-          }} />
-        )}
-        <div style={{
-          position: "absolute", inset: 0,
-          background: light
-            ? "radial-gradient(ellipse 90% 90% at center, transparent 40%, rgba(0,0,0,0.06) 100%)"
-            : "radial-gradient(ellipse 90% 90% at center, transparent 38%, rgba(0,0,0,0.5) 100%)",
-        }} />
-      </div>
-
-      {/* Pattern TOUJOURS visible — opacité forcée */}
-      <div style={{
-        position: "absolute", inset: 0,
-        opacity: patternOp,
-        overflow: "hidden",
-        zIndex: 1,
-      }}>
-        {light ? (
-          <div style={{
-            position: "absolute", inset: "-15%",
-            backgroundImage: `
-              linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)
-            `,
-            backgroundSize: "60px 60px",
-          }} />
-        ) : (
-          <BgPattern patternIndex={sceneIndex} frame={frame} bg={color} />
-        )}
-      </div>
-    </>
+    <div style={{
+      position: "absolute", inset: 0,
+      background: color,
+      backgroundImage: pattern === "none" ? undefined : pattern,
+      backgroundSize: pattern === "none" ? undefined : "40px 40px",
+    }} />
   );
 };
 
@@ -510,7 +464,7 @@ const AccentLine: React.FC<{ accent: string; delay?: number; width?: number }> =
 };
 
 // FADE — entrée/sortie fluides (évite flash noir entre scènes)
-const useFade = (durationIn = 8, durationOut = 8) => {
+const useFade = (durationIn = 12, durationOut = 10) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
 
@@ -588,62 +542,54 @@ export const WordScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({
   const { fps } = useVideoConfig();
   const fade = useFade();
   const bg = scene.bg || "#0a0a0a";
-  const light = isLight(bg);
-  const fontSize = autoFontSize(scene.text || "", 220);
-  const useGradient = !light && sceneIndex % 2 === 0;
-
-  const blur = interpolate(frame, [0, 20], [28, 0], { extrapolateRight: "clamp", easing: E_OUT });
-  const s    = spring({ frame, fps, config: { damping: 32, stiffness: 260 }, from: 0.9, to: 1 });
-  const idle = Math.sin(frame * 0.022) * 2;
-
-  const push = scene.text2
-    ? interpolate(Math.max(0, frame - 8), [0, 18], [0, -28], { extrapolateRight: "clamp", easing: E_OUT })
-    : 0;
-
-  const sub2Op = interpolate(Math.max(0, frame - 12), [0, 16], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
-  const sub2Y  = interpolate(Math.max(0, frame - 12), [0, 16], [16, 0], { extrapolateRight: "clamp", easing: E_OUT });
+  const words = (scene.text || "").split(" ");
+  const fontSize = autoFontSize(scene.text || "", 160, 70);
 
   return (
-    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+    <AbsoluteFill style={{ background: bg }}>
       <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
-      <DepthRings accent={scene.accentColor} />
       <Grain />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
-        flexDirection: "column", gap: 14,
-        opacity: fade, padding: "60px 120px", textAlign: "center" as const,
+        flexWrap: "wrap", gap: 16, padding: "0 80px",
+        opacity: fade,
       }}>
-        <div style={{
-          ...MAIN_TEXT_BOX,
-          fontSize, fontWeight: 900,
-          lineHeight: autoLineHeight(fontSize),
-          letterSpacing: autoTracking(fontSize),
-          filter: `blur(${blur}px)`,
-          transform: `scale(${s}) translateY(${idle + push}px)`,
-          ...(useGradient && !isLight(bg) ? {
-            background: `linear-gradient(145deg, #ffffff 0%, ${scene.accentColor} 100%)`,
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-          } : {
-            color: textColor(bg),
-          }),
-        }}>
-          {scene.text}
-        </div>
+        {words.map((word, i) => {
+          const delay = i * 8;
+          const s = spring({
+            frame: Math.max(0, frame - delay),
+            fps,
+            config: { damping: 28, stiffness: 300, mass: 0.6 },
+            from: 0,
+            to: 1,
+          });
+          const y = interpolate(Math.max(0, frame - delay), [0, 20], [40, 0], {
+            extrapolateRight: "clamp",
+            easing: Easing.out(Easing.cubic),
+          });
+          const op = interpolate(Math.max(0, frame - delay), [0, 14], [0, 1], {
+            extrapolateRight: "clamp",
+            extrapolateLeft: "clamp",
+          });
 
-        <AccentLine accent={scene.accentColor} delay={6} />
-
-        {scene.text2 && (
-          <div style={{
-            fontSize: Math.max(36, Math.round(fontSize * 0.25)),
-            fontWeight: 200, color: light ? "#6e6e73" : "#666",
-            fontFamily, letterSpacing: "-0.02em",
-            opacity: sub2Op, transform: `translateY(${sub2Y}px)`,
-          }}>
-            {scene.text2}
-          </div>
-        )}
+          return (
+            <span key={i} style={{
+              fontSize,
+              fontWeight: 900,
+              fontFamily,
+              letterSpacing: autoTracking(fontSize),
+              color: i % 2 === 0 ? textColor(bg) : safeAccent(scene.accentColor, bg),
+              transform: `translateY(${y}px) scale(${s})`,
+              opacity: op,
+              display: "inline-block",
+              lineHeight: autoLineHeight(fontSize),
+            }}>
+              {word}
+            </span>
+          );
+        })}
       </AbsoluteFill>
-      <Vignette strength={light ? 0.1 : 0.65} />
+      <Vignette />
     </AbsoluteFill>
   );
 };
@@ -1158,174 +1104,123 @@ export const CardScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({
 // ---------------------------------------------------------
 // 9. CTA SCENE
 // ---------------------------------------------------------
-export const CTAScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
+export const CTAScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const fade = useFade();
-  const bg = scene.bg || "#0a0a0a";
-  const light = isLight(bg);
-  const lum = getLuminance(bg);
-  const mainCol = getMainColor(bg);
-  const fontSize = autoFontSize(scene.text || "", 120, 72);
+  const bg = scene.bg || scene.accentColor || "#7C3AED";
+  const fontSize = autoFontSize(scene.text || "", 140, 60);
 
-  const s      = spring({ frame, fps, config: { damping: 30, stiffness: 240 }, from: 0.88, to: 1 });
-  const textOp = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
-  const textBl = interpolate(frame, [0, 18], [20, 0], { extrapolateRight: "clamp" });
-  const textY  = interpolate(frame, [0, 22], [24, 0], { extrapolateRight: "clamp", easing: E_OUT });
-  const btnS   = spring({ frame: Math.max(0, frame - 18), fps, config: { damping: 22, stiffness: 280 }, from: 0, to: 1 });
-  const btnOp  = interpolate(Math.max(0, frame - 18), [0, 14], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
-  const glow   = 0.45 + Math.sin(frame * 0.07) * 0.2;
-  const lineW  = interpolate(Math.max(0, frame - 10), [0, 20], [0, 80], { extrapolateRight: "clamp", easing: E_OUT });
-
-  const btnBg   = lum > 0.3 ? "#0a0a0a" : "#ffffff";
-  const btnText = lum > 0.3 ? "#ffffff" : "#0a0a0a";
+  const s = spring({ frame, fps, config: { damping: 22, stiffness: 250 }, from: 0.8, to: 1 });
+  const op = interpolate(frame, [0, 16], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp", easing: E_OUT });
+  const btnS = spring({ frame: Math.max(0, frame - 20), fps, config: { damping: 20, stiffness: 300 }, from: 0, to: 1 });
 
   return (
-    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
-      <DepthRings accent={scene.accentColor} intensity={0.7} />
+    <AbsoluteFill style={{ background: bg }}>
       <Grain />
-      <div style={{
-        position: "absolute", inset: 0, pointerEvents: "none",
-        backgroundImage: `radial-gradient(circle, ${lum > 0.3 ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)"} 1px, transparent 1px)`,
-        backgroundSize: "50px 50px",
-        opacity: interpolate(frame, [0, 28], [0, 0.7], { extrapolateRight: "clamp" }),
-      }} />
-      <AbsoluteFill style={{
-        justifyContent: "center", alignItems: "center",
-        flexDirection: "column", gap: 20,
-        opacity: fade, padding: "60px 120px", textAlign: "center" as const,
-      }}>
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", flexDirection: "column", gap: 24, opacity: op }}>
         <div style={{
-          opacity: textOp,
-          transform: `scale(${s}) translateY(${textY}px)`,
-          filter: `blur(${textBl}px)`,
+          fontSize,
+          fontWeight: 900,
+          fontFamily,
+          letterSpacing: autoTracking(fontSize),
+          color: isLight(bg) ? "#0a0a0a" : "#ffffff",
+          transform: `scale(${s})`,
+          textAlign: "center",
+          padding: "0 80px",
+          lineHeight: autoLineHeight(fontSize),
         }}>
-          <div style={{
-            fontSize, fontWeight: 900, color: mainCol,
-            fontFamily, letterSpacing: autoTracking(fontSize),
-            lineHeight: autoLineHeight(fontSize),
-          }}>
-            {scene.text}
-          </div>
+          {scene.text}
         </div>
 
-        <div style={{
-          width: lineW, height: 3,
-          background: `linear-gradient(90deg, ${safeAccent(scene.accentColor, bg)}66, ${safeAccent(scene.accentColor, bg)}, ${safeAccent(scene.accentColor, bg)}66)`,
-          borderRadius: 2,
-          boxShadow: `0 0 20px ${safeAccent(scene.accentColor, bg)}`,
-        }} />
-
-        <div style={{ transform: `scale(${btnS})`, opacity: btnOp, position: "relative", marginTop: 8 }}>
+        {scene.text2 && (
           <div style={{
-            position: "absolute", inset: -24,
-            background: btnBg, borderRadius: 80,
-            filter: "blur(36px)", opacity: glow * 0.4,
-          }} />
-          <div style={{
-            background: btnBg, borderRadius: 64, padding: "28px 80px",
-            fontSize: 40, fontWeight: 900, color: btnText,
-            fontFamily, letterSpacing: "-0.03em", position: "relative",
-            boxShadow: `0 32px 90px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15)`,
+            fontSize: 32, fontWeight: 400,
+            color: isLight(bg) ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.6)",
+            fontFamily, transform: `scale(${btnS})`, opacity: btnS,
           }}>
-            {scene.text2 || "Découvrir →"}
+            {scene.text2}
           </div>
+        )}
+
+        <div style={{
+          marginTop: 8,
+          background: isLight(bg) ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.15)",
+          backdropFilter: "blur(20px)",
+          borderRadius: 100,
+          padding: "16px 40px",
+          transform: `scale(${btnS})`,
+          opacity: btnS,
+          border: `1px solid ${isLight(bg) ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.2)"}`,
+        }}>
+          <span style={{
+            fontSize: 22, fontWeight: 700, fontFamily,
+            color: isLight(bg) ? "#0a0a0a" : "#ffffff",
+            letterSpacing: "-0.01em",
+          }}>
+            {scene.text2 || "En savoir plus →"}
+          </span>
         </div>
       </AbsoluteFill>
-      <Vignette strength={light ? 0.1 : 0.65} />
+      <Vignette strength={0.2} />
     </AbsoluteFill>
   );
 };
 // ---------------------------------------------------------
-// 10. KINETIC SCENE — mots qui s'enchaînent en rafale
-// Chaque mot occupe tout l'écran une fraction de seconde
+// 10. KINETIC SCENE
 // ---------------------------------------------------------
 export const KineticScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
   const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
+  const { fps } = useVideoConfig();
   const fade = useFade();
   const bg = scene.bg || "#0a0a0a";
-  const light = isLight(bg);
-  const mainColor = getMainColor(bg);
-  const subColor = subTextColor(bg);
-
   const words = (scene.text || "").split(" ");
-  const framesPerWord = Math.floor(durationInFrames / (words.length + 1));
-
-  const currentWordIndex = Math.floor(frame / framesPerWord);
-  const localFrame = frame % framesPerWord;
-
-  // Directions alternées pour chaque mot
-  const directions = ["up", "down", "left", "right", "scale", "up", "scale", "down"];
+  const fontSize = autoFontSize(scene.text || "", 150, 64);
 
   return (
-    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+    <AbsoluteFill style={{ background: bg }}>
       <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
+      <AbsoluteFill style={{
+        justifyContent: "center", alignItems: "center",
+        padding: "0 60px", flexWrap: "wrap", gap: 12,
+        opacity: fade,
+      }}>
+        {words.map((word, i) => {
+          const delay = i * 6;
+          const s = spring({
+            frame: Math.max(0, frame - delay),
+            fps,
+            config: { damping: 24, stiffness: 400, mass: 0.5 },
+            from: 0.5,
+            to: 1,
+          });
+          const op = interpolate(Math.max(0, frame - delay), [0, 12], [0, 1], {
+            extrapolateRight: "clamp",
+            extrapolateLeft: "clamp",
+          });
+          const isHighlight = i === Math.floor(words.length / 2);
 
-      {words.map((word, i) => {
-        if (i !== currentWordIndex) return null;
-
-        const dir = directions[i % directions.length];
-        const entryProgress = interpolate(localFrame, [0, Math.min(12, framesPerWord * 0.4)], [0, 1], {
-          extrapolateRight: "clamp", easing: E_OUT,
-        });
-        const exitProgress = interpolate(localFrame, [framesPerWord - 12, framesPerWord], [0, 1], {
-          extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
-        });
-
-        const opacity = entryProgress * (1 - exitProgress);
-
-        let transform = "";
-        if (dir === "up") {
-          const y = interpolate(entryProgress, [0, 1], [80, 0], { easing: E_OUT });
-          const ey = interpolate(exitProgress, [0, 1], [0, -80], { easing: E_IN });
-          transform = `translateY(${y + ey}px)`;
-        } else if (dir === "down") {
-          const y = interpolate(entryProgress, [0, 1], [-80, 0], { easing: E_OUT });
-          const ey = interpolate(exitProgress, [0, 1], [0, 80], { easing: E_IN });
-          transform = `translateY(${y + ey}px)`;
-        } else if (dir === "left") {
-          const x = interpolate(entryProgress, [0, 1], [120, 0], { easing: E_OUT });
-          const ex = interpolate(exitProgress, [0, 1], [0, -120], { easing: E_IN });
-          transform = `translateX(${x + ex}px)`;
-        } else if (dir === "right") {
-          const x = interpolate(entryProgress, [0, 1], [-120, 0], { easing: E_OUT });
-          const ex = interpolate(exitProgress, [0, 1], [0, 120], { easing: E_IN });
-          transform = `translateX(${x + ex}px)`;
-        } else if (dir === "scale") {
-          const s = interpolate(entryProgress, [0, 1], [2.5, 1], { easing: E_OUT });
-          const es = interpolate(exitProgress, [0, 1], [1, 0.3], { easing: E_IN });
-          transform = `scale(${s * es})`;
-        }
-
-        const isAccent = i % 3 === 1;
-        const fontSize = autoFontSize(word, 200, 100);
-        const blur = interpolate(entryProgress, [0, 1], [12, 0], { easing: E_OUT });
-
-        return (
-          <AbsoluteFill key={i} style={{
-            justifyContent: "center", alignItems: "center",
-            opacity: opacity * fade,
-          }}>
-            <div style={{
-              fontSize, fontWeight: 900,
-              ...(isAccent ? {
-                background: `linear-gradient(135deg, ${safeAccent(scene.accentColor, bg)}, #ffffff)`,
-                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-              } : { color: mainColor }),
-              fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 0.9,
-              transform, filter: `blur(${blur}px)`,
-              padding: "60px 120px", textAlign: "center" as const,
+          return (
+            <span key={i} style={{
+              fontSize: isHighlight ? fontSize * 1.1 : fontSize,
+              fontWeight: 900,
+              fontFamily,
+              letterSpacing: autoTracking(fontSize),
+              color: isHighlight
+                ? safeAccent(scene.accentColor, bg)
+                : textColor(bg),
+              transform: `scale(${s})`,
+              opacity: op,
+              display: "inline-block",
+              lineHeight: autoLineHeight(fontSize),
+              textShadow: isHighlight ? `0 0 30px ${scene.accentColor}44` : "none",
             }}>
               {word}
-            </div>
-          </AbsoluteFill>
-        );
-      })}
-
-      <Vignette strength={0.5} />
+            </span>
+          );
+        })}
+      </AbsoluteFill>
+      <Vignette />
     </AbsoluteFill>
   );
 };
@@ -3030,8 +2925,9 @@ export const SplitScreenScene: React.FC<{ scene: SceneData; sceneIndex?: number 
   const directions = ["up", "right", "down"] as const;
 
   return (
-    <AbsoluteFill style={{ overflow: "hidden", opacity: fade, background: "#0a0a0a" }}>
+    <AbsoluteFill style={{ overflow: "hidden", background: "#0a0a0a" }}>
       <Grain />
+      <AbsoluteFill style={{ opacity: fade }}>
       <div style={{ display: "flex", height: "100%", flexDirection: "column" }}>
         {titles.slice(0, count).map((title, i) => {
           const dir = directions[i % 3];
@@ -3078,6 +2974,7 @@ export const SplitScreenScene: React.FC<{ scene: SceneData; sceneIndex?: number 
           );
         })}
       </div>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };

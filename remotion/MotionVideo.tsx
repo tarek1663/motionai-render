@@ -1,19 +1,7 @@
 import {
   AbsoluteFill,
-  Audio, interpolate, Easing, useVideoConfig, useCurrentFrame,
+  Audio, interpolate, Easing, useVideoConfig, useCurrentFrame, Sequence,
 } from "remotion";
-import {
-  linearTiming,
-  TransitionSeries,
-  TransitionPresentation,
-  type TransitionPresentationComponentProps,
-} from "@remotion/transitions";
-
-type TransitionProps = Record<string, unknown>;
-type TransitionComponentProps = TransitionPresentationComponentProps<TransitionProps>;
-import { fade } from "@remotion/transitions/fade";
-import { slide } from "@remotion/transitions/slide";
-import { wipe } from "@remotion/transitions/wipe";
 import React from "react";
 
 const E_OUT = Easing.bezier(0.16, 1, 0.3, 1);
@@ -69,229 +57,7 @@ export type MotionVideoProps = {
   showWatermark?: boolean;
 };
 
-const TRANSITION_FRAMES = 8;
 const MIN_SCENE_FRAMES = 90;
-
-const getBetweenSceneTransition = (index: number): TransitionPresentation<TransitionProps> => {
-  const transitions = [
-    fade(),
-    slide({ direction: "from-right" }),
-    wipe({ direction: "from-left" }),
-    fade(),
-  ];
-  return transitions[index % transitions.length];
-};
-
-// ─────────────────────────────────────────────────────────
-// 8 TRANSITIONS PREMIUM — jamais 2x la même famille
-// ─────────────────────────────────────────────────────────
-
-const transitionFade = (): TransitionPresentation<TransitionProps> => fade();
-
-const transitionScaleFade = (): TransitionPresentation<TransitionProps> => ({
-  component: ({ children, presentationDirection, presentationProgress }: TransitionComponentProps) => {
-    const entering = presentationDirection === "entering";
-    const scale = entering
-      ? interpolate(presentationProgress, [0, 1], [1.06, 1], { easing: E_OUT })
-      : interpolate(presentationProgress, [0, 1], [1, 0.96], { easing: E_IN });
-    const opacity = entering
-      ? interpolate(presentationProgress, [0, 1], [0, 1], { easing: E_OUT })
-      : interpolate(presentationProgress, [0, 1], [1, 0], { easing: E_IN });
-    return (
-      <AbsoluteFill style={{ opacity, transform: `scale(${scale})` }}>
-        {children}
-      </AbsoluteFill>
-    );
-  },
-  props: {},
-});
-
-const transitionBlurFade = (): TransitionPresentation<TransitionProps> => ({
-  component: ({ children, presentationDirection, presentationProgress }: TransitionComponentProps) => {
-    const entering = presentationDirection === "entering";
-    const blur = entering
-      ? interpolate(presentationProgress, [0, 1], [16, 0], { easing: E_OUT })
-      : interpolate(presentationProgress, [0, 1], [0, 16], { easing: E_IN });
-    const opacity = entering
-      ? interpolate(presentationProgress, [0, 1], [0, 1], { easing: E_OUT })
-      : interpolate(presentationProgress, [0, 1], [1, 0], { easing: E_IN });
-    return (
-      <AbsoluteFill style={{ opacity, filter: `blur(${blur}px)` }}>
-        {children}
-      </AbsoluteFill>
-    );
-  },
-  props: {},
-});
-
-const transitionScaleDown = (): TransitionPresentation<TransitionProps> => ({
-  component: ({ children, presentationDirection, presentationProgress }: TransitionComponentProps) => {
-    const entering = presentationDirection === "entering";
-    const scale = entering
-      ? interpolate(presentationProgress, [0, 1], [0.94, 1], { easing: E_OUT })
-      : interpolate(presentationProgress, [0, 1], [1, 1.04], { easing: E_IN });
-    const opacity = entering
-      ? interpolate(presentationProgress, [0, 1], [0, 1], { easing: E_OUT })
-      : interpolate(presentationProgress, [0, 1], [1, 0], { easing: E_IN });
-    return (
-      <AbsoluteFill style={{ opacity, transform: `scale(${scale})` }}>
-        {children}
-      </AbsoluteFill>
-    );
-  },
-  props: {},
-});
-
-const transitionDarkFlash = (): TransitionPresentation<TransitionProps> => ({
-  component: ({ children, presentationDirection, presentationProgress }: TransitionComponentProps) => {
-    const entering = presentationDirection === "entering";
-    const opacity = entering
-      ? interpolate(presentationProgress, [0, 1], [0, 1], { easing: E_OUT })
-      : interpolate(presentationProgress, [0, 1], [1, 0], { easing: E_IN });
-    const overlayOp = entering
-      ? interpolate(presentationProgress, [0, 0.4, 1], [0.8, 0.2, 0], { easing: E_OUT })
-      : interpolate(presentationProgress, [0, 0.6, 1], [0, 0.2, 0.8], { easing: E_IN });
-    return (
-      <AbsoluteFill>
-        <AbsoluteFill style={{ opacity }}>{children}</AbsoluteFill>
-        <AbsoluteFill style={{
-          background: "#000000", opacity: overlayOp, pointerEvents: "none",
-        }} />
-      </AbsoluteFill>
-    );
-  },
-  props: {},
-});
-
-const transitionWhiteFlash = (): TransitionPresentation<TransitionProps> => ({
-  component: ({ children, presentationDirection, presentationProgress }: TransitionComponentProps) => {
-    const entering = presentationDirection === "entering";
-    const opacity = entering
-      ? interpolate(presentationProgress, [0, 1], [0, 1], { easing: E_OUT })
-      : interpolate(presentationProgress, [0, 1], [1, 0], { easing: E_IN });
-    const overlayOp = entering
-      ? interpolate(presentationProgress, [0, 0.3, 1], [0.6, 0.1, 0], { easing: E_OUT })
-      : interpolate(presentationProgress, [0, 0.7, 1], [0, 0.1, 0.6], { easing: E_IN });
-    return (
-      <AbsoluteFill>
-        <AbsoluteFill style={{ opacity }}>{children}</AbsoluteFill>
-        <AbsoluteFill style={{
-          background: "#ffffff", opacity: overlayOp, pointerEvents: "none",
-        }} />
-      </AbsoluteFill>
-    );
-  },
-  props: {},
-});
-
-const transitionZoomPunch = (): TransitionPresentation<TransitionProps> => ({
-  component: ({ children, presentationDirection, presentationProgress }: TransitionComponentProps) => {
-    const entering = presentationDirection === "entering";
-    const scale = entering
-      ? interpolate(presentationProgress, [0, 1], [1.4, 1], { easing: E_OUT })
-      : interpolate(presentationProgress, [0, 1], [1, 0.7], { easing: E_IN });
-    const opacity = entering
-      ? interpolate(presentationProgress, [0, 0.3, 1], [0, 1, 1], { easing: E_OUT })
-      : interpolate(presentationProgress, [0, 0.7, 1], [1, 1, 0], { easing: E_IN });
-    const blur = entering
-      ? interpolate(presentationProgress, [0, 1], [8, 0], { easing: E_OUT })
-      : interpolate(presentationProgress, [0, 1], [0, 8], { easing: E_IN });
-    return (
-      <AbsoluteFill style={{
-        opacity,
-        transform: `scale(${scale})`,
-        filter: `blur(${blur}px)`,
-      }}>
-        {children}
-      </AbsoluteFill>
-    );
-  },
-  props: {},
-});
-
-const transitionSlideUp = (): TransitionPresentation<TransitionProps> => ({
-  component: ({ children, presentationDirection, presentationProgress }: TransitionComponentProps) => {
-    const entering = presentationDirection === "entering";
-    const y = entering
-      ? interpolate(presentationProgress, [0, 1], [60, 0], { easing: E_OUT })
-      : interpolate(presentationProgress, [0, 1], [0, -40], { easing: E_IN });
-    const opacity = entering
-      ? interpolate(presentationProgress, [0, 0.3, 1], [0, 1, 1], { easing: E_OUT })
-      : interpolate(presentationProgress, [0, 0.7, 1], [1, 1, 0], { easing: E_IN });
-    return (
-      <AbsoluteFill style={{
-        opacity, transform: `translateY(${y}px)`,
-      }}>
-        {children}
-      </AbsoluteFill>
-    );
-  },
-  props: {},
-});
-
-type TransitionFamily = "fade" | "scale" | "blur" | "scaleDown" | "dark" | "white" | "zoom" | "slideUp";
-
-let lastFamily: TransitionFamily = "fade";
-
-const getTransition = (
-  fromScene: SceneData,
-  toScene: SceneData,
-  index: number
-): {
-  presentation: TransitionPresentation<TransitionProps>;
-  timing: ReturnType<typeof linearTiming>;
-} => {
-  const toType   = toScene?.type;
-  const fromType = fromScene?.type;
-
-  let duration = 22;
-  if (toType === "glitch" || fromType === "glitch")           duration = 10;
-  else if (toType === "zoompunch" || toType === "text3d")     duration = 32;
-  else if (toType === "quote" || fromType === "quote")        duration = 30;
-  else if (toType === "burst" || toType === "particles")      duration = 14;
-  else if (toType === "kinetic" || fromType === "kinetic")    duration = 16;
-  else if (toType === "cta")                                  duration = 28;
-  else if (toType === "photo" || fromType === "photo")        duration = 26;
-  else if (toType === "mockup" || toType === "generatedui")   duration = 30;
-  else if (toType === "timeline")                             duration = 24;
-
-  if (toType === "glitch" || fromType === "glitch") {
-    lastFamily = "dark";
-    return { presentation: transitionDarkFlash(), timing: linearTiming({ durationInFrames: duration }) };
-  }
-  if (toType === "zoompunch" || toType === "text3d") {
-    lastFamily = "zoom";
-    return { presentation: transitionZoomPunch(), timing: linearTiming({ durationInFrames: duration }) };
-  }
-  if (toType === "kinetic" || fromType === "kinetic") {
-    lastFamily = "scaleDown";
-    return { presentation: transitionScaleDown(), timing: linearTiming({ durationInFrames: duration }) };
-  }
-  if (toType === "mockup" || toType === "generatedui") {
-    lastFamily = "blur";
-    return { presentation: transitionBlurFade(), timing: linearTiming({ durationInFrames: duration }) };
-  }
-
-  const allFamilies: { family: TransitionFamily; fn: () => TransitionPresentation<TransitionProps> }[] = [
-    { family: "fade",      fn: transitionFade },
-    { family: "scale",     fn: transitionScaleFade },
-    { family: "blur",      fn: transitionBlurFade },
-    { family: "scaleDown", fn: transitionScaleDown },
-    { family: "dark",      fn: transitionDarkFlash },
-    { family: "white",     fn: transitionWhiteFlash },
-    { family: "zoom",      fn: transitionZoomPunch },
-    { family: "slideUp",   fn: transitionSlideUp },
-  ];
-
-  const available = allFamilies.filter((t) => t.family !== lastFamily);
-  const chosen = available[index % available.length];
-  lastFamily = chosen.family;
-
-  return {
-    presentation: chosen.fn(),
-    timing: linearTiming({ durationInFrames: duration }),
-  };
-};
 
 // ─────────────────────────────────────────────────────────
 // SCENE RENDERER
@@ -478,29 +244,7 @@ export const MotionVideo: React.FC<MotionVideoProps> = ({
   const allScenes = scenes || [];
   const timings = sceneDurations || [];
 
-  const seriesElements: React.ReactNode[] = [];
-  allScenes.forEach((scene, index) => {
-    const { duration } = getSceneTiming(timings, safeTotalFrames, allScenes.length, index);
-    const sceneDuration = Math.max(MIN_SCENE_FRAMES, duration);
-
-    if (!Number.isFinite(sceneDuration) || sceneDuration <= 0) return;
-
-    seriesElements.push(
-      <TransitionSeries.Sequence key={`scene-${index}`} durationInFrames={sceneDuration}>
-        <SceneRenderer scene={scene} index={index} />
-      </TransitionSeries.Sequence>,
-    );
-
-    if (index < allScenes.length - 1) {
-      seriesElements.push(
-        <TransitionSeries.Transition
-          key={`transition-${index}`}
-          presentation={getBetweenSceneTransition(index)}
-          timing={linearTiming({ durationInFrames: TRANSITION_FRAMES })}
-        />,
-      );
-    }
-  });
+  const CROSSFADE_OVERLAP = 8;
 
   return (
     <AbsoluteFill>
@@ -520,9 +264,30 @@ export const MotionVideo: React.FC<MotionVideoProps> = ({
         />
       )}
 
-      {seriesElements.length > 0 && (
-        <TransitionSeries>{seriesElements}</TransitionSeries>
-      )}
+      {allScenes.map((scene, index) => {
+        const ts = timings[index];
+        const fromTiming = getSceneTiming(timings, safeTotalFrames, allScenes.length, index);
+        const from = ts && typeof ts !== "number" && Number.isFinite(ts.startFrame)
+          ? ts.startFrame!
+          : fromTiming.from;
+        const duration = ts && typeof ts !== "number" && Number.isFinite(ts.durationFrames) && ts.durationFrames! > 0
+          ? ts.durationFrames!
+          : Math.max(MIN_SCENE_FRAMES, fromTiming.duration);
+
+        if (!Number.isFinite(from) || !Number.isFinite(duration) || duration <= 0) {
+          return null;
+        }
+
+        return (
+          <Sequence
+            key={index}
+            from={Math.max(0, from)}
+            durationInFrames={duration + CROSSFADE_OVERLAP}
+          >
+            <SceneRenderer scene={scene} index={index} />
+          </Sequence>
+        );
+      })}
 
       {showWatermark && (
         <AbsoluteFill style={{ pointerEvents: "none" }}>
