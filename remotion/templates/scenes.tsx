@@ -80,8 +80,9 @@ export type SceneData = {
     | "terminal" | "toggle" | "financialchart" | "instagramprofile" | "netflixreveal"
     | "timer" | "githubstars" | "squiggletext" | "mcpanimation" | "glowtext" | "ascii"
     | "pricetag" | "musicvisualizer" | "splitreveal" | "counterpunch"
-    | "cleantext" | "highlightword" | "phototext" | "icontext" | "stat"
-    | "cleanlist" | "cleanquote" | "cleancta" | "underline" | "splittext";
+    | "cleantext" | "highlightword" | "phototext" | "photocard" | "icontext" | "stat"
+    | "cleanlist" | "cleanquote" | "cleancta" | "underline" | "splittext"
+    | "accentfirstword" | "bignumber" | "puretext";
   text?: string;
   text2?: string;
   bg?: string;
@@ -8595,6 +8596,26 @@ const useReveal = (delay = 0) => {
 
 const useScaleReveal = (delay = 0) => useScaleIn(delay, 0.94);
 
+// Fond grille carreau — très discret (style Apple / Notion)
+const GridBg: React.FC<{ bg: string }> = ({ bg }) => {
+  const light = isLight(bg);
+  return (
+    <div style={{
+      position: "absolute", inset: 0,
+      backgroundImage: `
+        linear-gradient(${light ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)"} 1px, transparent 1px),
+        linear-gradient(90deg, ${light ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)"} 1px, transparent 1px)
+      `,
+      backgroundSize: "60px 60px",
+    }}>
+      <div style={{
+        position: "absolute", inset: 0,
+        background: `radial-gradient(ellipse at center, ${light ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.0)"} 0%, transparent 70%)`,
+      }} />
+    </div>
+  );
+};
+
 const GeoBg: React.FC<{ bg: string; accent: string }> = ({ bg, accent }) => {
   const isLightBg = isLight(bg);
   const shapeColor = isLightBg ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
@@ -8710,54 +8731,205 @@ export const HighlightWordScene: React.FC<{ scene: SceneData; sceneIndex?: numbe
   );
 };
 
-export const PhotoTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
-  const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
+export const PhotoCardScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
+  const bg = scene.bg || "#ffffff";
   const photoUrl = scene.photoUrl || "";
-  const kb = interpolate(frame, [0, durationInFrames], [1.0, 1.04], {
-    extrapolateRight: "clamp", easing: Easing.linear,
-  });
-  const { opacity: op, y, blur: bl } = useReveal(16);
-  const { opacity: op2, y: y2 } = useReveal(28);
+  const { opacity: op, y, blur: bl } = useReveal(0);
+  const { opacity: op2, y: y2 } = useReveal(12);
+  const imgScale = useScaleReveal(18);
   const fontSize = autoFontSize(scene.text || "", 100, 48);
 
   return (
-    <AbsoluteFill style={{ background: "#0a0a0a" }}>
-      {photoUrl ? (
-        <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
-          <img
-            src={scenePhotoSrc(photoUrl)}
-            style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${kb})`, transformOrigin: "center center" }}
-          />
-          <div style={{
-            position: "absolute", inset: 0,
-            background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.1) 100%)",
-          }} />
-        </div>
-      ) : (
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a1a, #0a0a0a)" }} />
-      )}
+    <AbsoluteFill style={{ background: bg }}>
+      <GridBg bg={bg} />
       <Grain />
       <AbsoluteFill style={{
-        justifyContent: "flex-end", alignItems: "flex-start",
-        padding: "0 60px 80px", flexDirection: "column", gap: 12,
+        justifyContent: "center", alignItems: "center",
+        flexDirection: "column", gap: 28, padding: "60px 80px",
+        textAlign: "center",
       }}>
+        <div style={{
+          opacity: op, transform: `translateY(${y}px)`, filter: `blur(${bl}px)`,
+        }}>
+          <div style={{
+            fontSize, fontWeight: 900, fontFamily,
+            letterSpacing: "-0.04em", lineHeight: 1.1,
+            color: textColor(bg),
+          }}>
+            {scene.text}
+          </div>
+          {scene.text2 && (
+            <div style={{
+              fontSize: Math.round(fontSize * 0.28), fontWeight: 400,
+              color: isLight(bg) ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)",
+              fontFamily, marginTop: 10, letterSpacing: "-0.01em",
+              opacity: op2, transform: `translateY(${y2}px)`,
+            }}>
+              {scene.text2}
+            </div>
+          )}
+        </div>
+        {photoUrl && (
+          <div style={{
+            width: "75%", maxWidth: 600,
+            aspectRatio: "16/9",
+            borderRadius: 20,
+            overflow: "hidden",
+            boxShadow: isLight(bg)
+              ? "0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06)"
+              : "0 20px 60px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3)",
+            transform: `scale(${imgScale})`,
+            border: `1px solid ${isLight(bg) ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)"}`,
+          }}>
+            <img
+              src={scenePhotoSrc(photoUrl)}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          </div>
+        )}
+      </AbsoluteFill>
+      <Vignette strength={isLight(bg) ? 0.06 : 0.3} />
+    </AbsoluteFill>
+  );
+};
+
+/** @deprecated Utiliser photocard — alias pour compatibilité */
+export const PhotoTextScene = PhotoCardScene;
+
+export const AccentFirstWordScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
+  const bg = scene.bg || "#ffffff";
+  const { opacity: op, y, blur: bl } = useReveal(0);
+  const { opacity: op2, y: y2 } = useReveal(20);
+  const words = (scene.text || "").split(" ");
+  const firstWord = words[0] || "";
+  const rest = words.slice(1).join(" ");
+  const fontSize = autoFontSize(scene.text || "", 110, 52);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <GridBg bg={bg} />
+      <Grain />
+      <AbsoluteFill style={{
+        justifyContent: "center", alignItems: "center",
+        flexDirection: "column", gap: 16, padding: "0 100px",
+        textAlign: "center",
+      }}>
+        <div style={{
+          opacity: op, transform: `translateY(${y}px)`, filter: `blur(${bl}px)`,
+        }}>
+          <span style={{
+            fontSize, fontWeight: 900, fontFamily,
+            letterSpacing: "-0.04em", lineHeight: 1.1,
+            color: safeAccent(scene.accentColor, bg),
+          }}>
+            {firstWord}{rest ? " " : ""}
+          </span>
+          {rest && (
+            <span style={{
+              fontSize, fontWeight: 900, fontFamily,
+              letterSpacing: "-0.04em", lineHeight: 1.1,
+              color: textColor(bg),
+            }}>
+              {rest}
+            </span>
+          )}
+        </div>
         {scene.text2 && (
           <div style={{
-            fontSize: 18, fontWeight: 500, color: safeAccent(scene.accentColor, "#0a0a0a"),
-            fontFamily, letterSpacing: "0.06em", textTransform: "uppercase",
+            fontSize: Math.round(fontSize * 0.26), fontWeight: 400,
+            color: isLight(bg) ? "rgba(0,0,0,0.38)" : "rgba(255,255,255,0.38)",
+            fontFamily, letterSpacing: "0.02em",
             opacity: op2, transform: `translateY(${y2}px)`,
           }}>
             {scene.text2}
           </div>
         )}
+      </AbsoluteFill>
+      <Vignette strength={isLight(bg) ? 0.06 : 0.3} />
+    </AbsoluteFill>
+  );
+};
+
+export const BigNumberScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const target = scene.counterTo || 100;
+  const progress = interpolate(frame, [6, durationInFrames * 0.7], [0, 1], {
+    extrapolateRight: "clamp", easing: Easing.out(Easing.exp),
+  });
+  const current = Math.round(target * progress);
+  const { opacity: op } = useReveal(0);
+  const { opacity: op2 } = useReveal(16);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <GridBg bg={bg} />
+      <Grain />
+      <AbsoluteFill style={{
+        justifyContent: "center", alignItems: "center",
+        flexDirection: "column", gap: 8, padding: "0 80px",
+        textAlign: "center",
+      }}>
         <div style={{
-          fontSize, fontWeight: 900, fontFamily, letterSpacing: "-0.04em", lineHeight: 1.1,
-          color: "#ffffff", opacity: op, transform: `translateY(${y}px)`, filter: `blur(${bl}px)`,
+          fontSize: 200, fontWeight: 900, fontFamily,
+          letterSpacing: "-0.07em", lineHeight: 1,
+          color: safeAccent(scene.accentColor, bg),
+          opacity: op,
+        }}>
+          {current.toLocaleString("fr-FR")}
+        </div>
+        {scene.text && (
+          <div style={{
+            fontSize: 24, fontWeight: 400,
+            color: isLight(bg) ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)",
+            fontFamily, letterSpacing: "0.08em", textTransform: "uppercase",
+            opacity: op2,
+          }}>
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+      <Vignette strength={isLight(bg) ? 0.06 : 0.3} />
+    </AbsoluteFill>
+  );
+};
+
+export const PureTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
+  const bg = scene.bg || "#0a0a0a";
+  const { opacity: op, y, blur: bl } = useReveal(0);
+  const { opacity: op2, y: y2 } = useReveal(18);
+  const fontSize = autoFontSize(scene.text || "", 130, 56);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <GridBg bg={bg} />
+      <Grain />
+      <AbsoluteFill style={{
+        justifyContent: "center", alignItems: "center",
+        flexDirection: "column", gap: 14, padding: "0 120px",
+        textAlign: "center",
+      }}>
+        <div style={{
+          fontSize, fontWeight: 900, fontFamily,
+          letterSpacing: "-0.04em", lineHeight: 1.08,
+          color: textColor(bg),
+          opacity: op, transform: `translateY(${y}px)`, filter: `blur(${bl}px)`,
         }}>
           {scene.text}
         </div>
+        {scene.text2 && (
+          <div style={{
+            fontSize: Math.round(fontSize * 0.26), fontWeight: 400,
+            color: isLight(bg) ? "rgba(0,0,0,0.38)" : "rgba(255,255,255,0.38)",
+            fontFamily, letterSpacing: "-0.01em", lineHeight: 1.5,
+            opacity: op2, transform: `translateY(${y2}px)`,
+          }}>
+            {scene.text2}
+          </div>
+        )}
       </AbsoluteFill>
+      <Vignette strength={isLight(bg) ? 0.06 : 0.35} />
     </AbsoluteFill>
   );
 };

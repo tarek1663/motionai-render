@@ -42,9 +42,10 @@ import {
   NetflixRevealScene, TimerScene, GithubStarsScene, SquiggleTextScene,
   MCPAnimationScene, GlowTextScene, ASCIIScene, PriceTagScene,
   MusicVisualizerScene, SplitRevealScene, CounterPunchScene,
-  CleanTextScene, HighlightWordScene, PhotoTextScene, IconTextScene,
+  CleanTextScene, HighlightWordScene, PhotoTextScene, PhotoCardScene, IconTextScene,
   StatScene, CleanListScene, CleanQuoteScene, CleanCTAScene,
   UnderlineScene, SplitTextScene,
+  AccentFirstWordScene, BigNumberScene, PureTextScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -189,7 +190,11 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({ scene, i
     case "counterpunch":      return <CounterPunchScene scene={s} sceneIndex={index} />;
     case "cleantext":         return <CleanTextScene scene={s} sceneIndex={index} />;
     case "highlightword":     return <HighlightWordScene scene={s} sceneIndex={index} />;
-    case "phototext":         return <PhotoTextScene scene={s} sceneIndex={index} />;
+    case "phototext":         return <PhotoCardScene scene={s} sceneIndex={index} />;
+    case "photocard":         return <PhotoCardScene scene={s} sceneIndex={index} />;
+    case "accentfirstword":   return <AccentFirstWordScene scene={s} sceneIndex={index} />;
+    case "bignumber":         return <BigNumberScene scene={s} sceneIndex={index} />;
+    case "puretext":          return <PureTextScene scene={s} sceneIndex={index} />;
     case "icontext":          return <IconTextScene scene={s} sceneIndex={index} />;
     case "stat":              return <StatScene scene={s} sceneIndex={index} />;
     case "cleanlist":         return <CleanListScene scene={s} sceneIndex={index} />;
