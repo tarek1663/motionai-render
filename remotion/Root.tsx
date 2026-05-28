@@ -46,10 +46,10 @@ const RemotionRoot = () => (
     calculateMetadata={async ({ props }) => {
       const p = props as MotionVideoProps;
       const sceneDurationsAdjusted = (p.sceneDurations || []).map((d) => {
-        if (typeof d === "number") return Math.max(90, d);
+        if (typeof d === "number") return Math.max(120, d);
         return {
           ...d,
-          durationFrames: Math.max(90, d.durationFrames || 90),
+          durationFrames: Math.max(120, d.durationFrames || 120),
         };
       });
 

@@ -57,7 +57,7 @@ export type MotionVideoProps = {
   showWatermark?: boolean;
 };
 
-const MIN_SCENE_FRAMES = 90;
+const MIN_SCENE_FRAMES = 120;
 
 // ─────────────────────────────────────────────────────────
 // SCENE RENDERER

@@ -14,9 +14,14 @@ const { fontFamily } = loadFont("normal", {
 /** Chiffres alignés style SF Pro */
 const tabularNums = { fontVariantNumeric: "tabular-nums" as const };
 
-const E_OUT  = Easing.bezier(0.16, 1, 0.3, 1);
+// Easing premium Apple — cubic-bezier(0.22, 1, 0.36, 1)
+const E_PREMIUM = Easing.bezier(0.22, 1, 0.36, 1);
+const E_OUT = E_PREMIUM;
 const E_IN   = Easing.bezier(0.7, 0, 0.84, 0);
 const E_IO   = Easing.bezier(0.76, 0, 0.24, 1);
+
+const APPLE_SPRING = { damping: 32, stiffness: 220, mass: 0.8 };
+const APPLE_CARD_SHADOW = "0 20px 60px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04)";
 
 const CLAMP_BOTH = { extrapolateLeft: "clamp" as const, extrapolateRight: "clamp" as const };
 
@@ -463,20 +468,19 @@ const AccentLine: React.FC<{ accent: string; delay?: number; width?: number }> =
   );
 };
 
-// FADE — entrée/sortie fluides (évite flash noir entre scènes)
-const useFade = (durationIn = 12, durationOut = 10) => {
+const useFade = () => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
 
-  const fadeIn = interpolate(frame, [0, durationIn], [0, 1], {
+  const fadeIn = interpolate(frame, [0, 20], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: Easing.out(Easing.cubic),
+    easing: E_PREMIUM,
   });
 
   const fadeOut = interpolate(
     frame,
-    [durationInFrames - durationOut, durationInFrames],
+    [durationInFrames - 14, durationInFrames],
     [1, 0],
     {
       extrapolateLeft: "clamp",
@@ -486,6 +490,77 @@ const useFade = (durationIn = 12, durationOut = 10) => {
   );
 
   return Math.min(fadeIn, fadeOut);
+};
+
+const useTextReveal = (delay = 0) => {
+  const frame = useCurrentFrame();
+  const localFrame = Math.max(0, frame - delay);
+
+  const opacity = interpolate(localFrame, [0, 18], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: E_PREMIUM,
+  });
+
+  const y = interpolate(localFrame, [0, 20], [20, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: E_PREMIUM,
+  });
+
+  const blur = interpolate(localFrame, [0, 16], [8, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: E_PREMIUM,
+  });
+
+  return { opacity, y, blur };
+};
+
+const useFloat = (amplitude = 5, speed = 0.025, offset = 0) => {
+  const frame = useCurrentFrame();
+  return Math.sin(frame * speed + offset) * amplitude;
+};
+
+const useScaleIn = (delay = 0, from = 0.96) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  return spring({
+    frame: Math.max(0, frame - delay),
+    fps,
+    config: APPLE_SPRING,
+    from,
+    to: 1,
+  });
+};
+
+const useMicroZoom = (from = 1.0, to = 1.03) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  return interpolate(frame, [0, durationInFrames], [from, to], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.linear,
+  });
+};
+
+/** Fond avec micro-zoom Apple (1.00 → 1.025) */
+const SceneBg: React.FC<{
+  color: string;
+  accent?: string;
+  sceneIndex?: number;
+}> = (props) => {
+  const bgZoom = useMicroZoom(1.0, 1.025);
+  return (
+    <div style={{
+      position: "absolute", inset: 0,
+      transform: `scale(${bgZoom})`,
+      transformOrigin: "center center",
+      overflow: "hidden",
+    }}>
+      <Bg {...props} />
+    </div>
+  );
 };
 
 // FONT SIZE — titres Apple plus gros et bold
@@ -547,7 +622,7 @@ export const WordScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
@@ -556,21 +631,12 @@ export const WordScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({
       }}>
         {words.map((word, i) => {
           const delay = i * 8;
-          const s = spring({
-            frame: Math.max(0, frame - delay),
-            fps,
-            config: { damping: 28, stiffness: 300, mass: 0.6 },
-            from: 0,
-            to: 1,
-          });
-          const y = interpolate(Math.max(0, frame - delay), [0, 20], [40, 0], {
-            extrapolateRight: "clamp",
-            easing: Easing.out(Easing.cubic),
-          });
-          const op = interpolate(Math.max(0, frame - delay), [0, 14], [0, 1], {
-            extrapolateRight: "clamp",
-            extrapolateLeft: "clamp",
-          });
+          const localFrame = Math.max(0, frame - delay);
+          const opacity = interpolate(localFrame, [0, 18], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_PREMIUM });
+          const y = interpolate(localFrame, [0, 20], [20, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_PREMIUM });
+          const blur = interpolate(localFrame, [0, 16], [8, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_PREMIUM });
+          const scale = spring({ frame: localFrame, fps, config: APPLE_SPRING, from: 0.96, to: 1 });
+          const floatY = Math.sin(frame * 0.025 + i * 0.5) * 5;
 
           return (
             <span key={i} style={{
@@ -579,8 +645,9 @@ export const WordScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({
               fontFamily,
               letterSpacing: autoTracking(fontSize),
               color: i % 2 === 0 ? textColor(bg) : safeAccent(scene.accentColor, bg),
-              transform: `translateY(${y}px) scale(${s})`,
-              opacity: op,
+              transform: `translateY(${y + floatY}px) scale(${scale})`,
+              filter: `blur(${blur}px)`,
+              opacity,
               display: "inline-block",
               lineHeight: autoLineHeight(fontSize),
             }}>
@@ -598,29 +665,19 @@ export const WordScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({
 // 2. REVEAL SCENE — texte qui sort de derrière un masque
 // ---------------------------------------------------------
 export const RevealScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
   const fade = useFade();
   const bg = scene.bg || "#0a0a0a";
   const light = isLight(bg);
-  const mainColor = getMainColor(bg);
   const subColor = subTextColor(bg);
   const fontSize = autoFontSize(scene.text || "", 185);
-
-  // Mask reveal de bas en haut — signature Apple
-  const revealProgress = spring({ frame, fps, config: { damping: 32, stiffness: 180 }, from: 0, to: 1 });
-  const clipY = interpolate(revealProgress, [0, 1], [100, 0], { easing: E_OUT });
-
-  // Scale subtil
-  const s = interpolate(frame, [0, 40], [0.95, 1], { extrapolateRight: "clamp", easing: E_OUT });
-
-  // Ligne 2 qui arrive après
-  const l2op = interpolate(Math.max(0, frame - 18), [0, 20], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
-  const l2y  = interpolate(Math.max(0, frame - 18), [0, 20], [20, 0], { extrapolateRight: "clamp", easing: E_OUT });
+  const { opacity, y, blur } = useTextReveal(0);
+  const scale = useScaleIn(0, 0.96);
+  const floatY = useFloat(5, 0.025, sceneIndex * 0.5);
+  const text2Reveal = useTextReveal(18);
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <DepthRings accent={scene.accentColor} />
       <Grain />
       <AbsoluteFill style={{
@@ -628,25 +685,28 @@ export const RevealScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
         flexDirection: "column", gap: 16,
         opacity: fade, padding: "60px 120px", textAlign: "center" as const,
       }}>
-        {/* Masque reveal */}
-        <div style={{ overflow: "hidden" }}>
-          <div style={{
-            fontSize, fontWeight: 900, color: mainColor,
-            overflow: "visible",
-            fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 0.95,
-            transform: `translateY(${clipY}%) scale(${s})`,
-          }}>
-            {scene.text}
-          </div>
+        <div style={{
+          fontSize, fontWeight: 900,
+          color: textColor(bg),
+          fontFamily, letterSpacing: autoTracking(fontSize),
+          lineHeight: autoLineHeight(fontSize),
+          opacity,
+          transform: `translateY(${y + floatY}px) scale(${scale})`,
+          filter: `blur(${blur}px)`,
+          textAlign: "center",
+          padding: "0 80px",
+        }}>
+          {scene.text}
         </div>
         <AccentLine accent={scene.accentColor} delay={20} />
         {scene.text2 && (
           <div style={{
             fontSize: Math.round(fontSize * 0.32), fontWeight: 200,
             color: subColor,
-            overflow: "visible",
             fontFamily, letterSpacing: autoTracking(Math.round(fontSize * 0.32)),
-            opacity: l2op, transform: `translateY(${l2y}px)`,
+            opacity: text2Reveal.opacity,
+            transform: `translateY(${text2Reveal.y}px)`,
+            filter: `blur(${text2Reveal.blur}px)`,
           }}>
             {scene.text2}
           </div>
@@ -679,7 +739,7 @@ export const SplitScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <DepthRings accent={scene.accentColor} />
       <Grain />
       <AbsoluteFill style={{
@@ -724,18 +784,17 @@ export const SplitScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
 // ---------------------------------------------------------
 export const SentenceScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
   const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
+  const { fps, durationInFrames } = useVideoConfig();
   const fade = useFade();
   const bg = scene.bg || "#0a0a0a";
   const light = isLight(bg);
-  const mainCol = getMainColor(bg);
   const words = (scene.text || "").split(" ");
   const fontSize = 64;
   const stagger = Math.max(3, Math.floor((durationInFrames * 0.35) / Math.max(words.length, 1)));
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
@@ -748,21 +807,25 @@ export const SentenceScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
           textAlign: "center",
         }}>
           {words.map((word, i) => {
-            const f   = Math.max(0, frame - i * stagger);
-            const op  = interpolate(f, [0, 16], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
-            const y   = interpolate(f, [0, 20], [36, 0], { extrapolateRight: "clamp", easing: E_OUT });
-            const bl  = interpolate(f, [0, 14], [12, 0], { extrapolateRight: "clamp" });
+            const delay = i * stagger;
+            const localFrame = Math.max(0, frame - delay);
+            const opacity = interpolate(localFrame, [0, 18], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_PREMIUM });
+            const y = interpolate(localFrame, [0, 20], [20, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_PREMIUM });
+            const blur = interpolate(localFrame, [0, 16], [8, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_PREMIUM });
+            const scale = spring({ frame: localFrame, fps, config: APPLE_SPRING, from: 0.96, to: 1 });
+            const floatY = Math.sin(frame * 0.025 + i * 0.5) * 5;
             const isAccent = i === 0;
-            const isBold   = i % 3 === 0;
+            const isBold = i % 3 === 0;
             return (
               <span key={i} style={{
                 fontSize, fontWeight: isBold ? 900 : 200,
                 letterSpacing: autoTracking(fontSize),
                 lineHeight: autoLineHeight(fontSize),
-                color: isAccent ? safeAccent(scene.accentColor, bg) : mainCol,
+                color: isAccent ? safeAccent(scene.accentColor, bg) : textColor(bg),
                 fontFamily, display: "inline-block",
-                opacity: op, transform: `translateY(${y}px)`,
-                filter: `blur(${bl}px)`,
+                opacity,
+                transform: `translateY(${y + floatY}px) scale(${scale})`,
+                filter: `blur(${blur}px)`,
                 ...(isAccent ? glowStyle(scene.accentColor, 0.4) : {}),
               }}>
                 {word}
@@ -814,7 +877,7 @@ export const CounterScene: React.FC<{ scene: SceneData; sceneIndex?: number }> =
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <DepthRings accent={scene.accentColor} />
       <Grain />
       <AbsoluteFill style={{
@@ -910,7 +973,7 @@ export const ChartScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
 
       {scene.chartLabel && (
@@ -1012,12 +1075,13 @@ export const CardScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({
   const fade = useFade();
   const bg = scene.bg || "#0a0a0a";
 
-  const s     = spring({ frame, fps, config: { damping: 26, stiffness: 200, mass: 1.1 }, from: 0, to: 1 });
-  const entY  = interpolate(frame, [0, 40], [60, 0], { extrapolateRight: "clamp", easing: E_OUT });
+  const delay = 0;
+  const scale = useScaleIn(delay, 0.95);
+  const floatY = useFloat(4, 0.02, sceneIndex * 0.8);
+  const entY  = interpolate(frame, [0, 40], [60, 0], { extrapolateRight: "clamp", easing: E_PREMIUM });
   const bl    = interpolate(frame, [0, 22], [14, 0], { extrapolateRight: "clamp" });
-  const idleY = s > 0.95 ? Math.sin(frame * 0.022) * 4 : 0;
-  const tiltX = Math.sin(frame * 0.014) * 1.5;
-  const tiltY = Math.cos(frame * 0.010) * 1;
+  const tiltX = -4;
+  const tiltY = 3;
 
   const lightX = interpolate(frame, [0, 100], [-30, 130], { extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic) });
 
@@ -1027,18 +1091,17 @@ export const CardScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <DepthRings accent={scene.accentColor} />
       <Grain />
-      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: s * fade }}>
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade }}>
         <div style={{
           width: 1560, position: "relative", overflow: "hidden",
           background: "linear-gradient(145deg, rgba(22,22,22,0.98), rgba(10,10,10,0.98))",
-          borderRadius: 28, padding: "48px 56px",
-          border: "1px solid rgba(255,255,255,0.07)",
-          borderTop: "1px solid rgba(255,255,255,0.14)",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.04), 0 30px 80px rgba(0,0,0,0.5), 0 80px 140px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)",
-          transform: `scale(${s}) translateY(${entY + idleY}px) perspective(1400px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`,
+          borderRadius: 24, padding: "48px 56px",
+          border: "1px solid rgba(0,0,0,0.05)",
+          boxShadow: APPLE_CARD_SHADOW,
+          transform: `scale(${scale}) translateY(${entY + floatY}px) perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) rotateZ(1deg)`,
           filter: `blur(${bl}px)`,
           textAlign: "center",
         }}>
@@ -1107,24 +1170,27 @@ export const CardScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({
 export const CTAScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const fade = useFade();
   const bg = scene.bg || scene.accentColor || "#7C3AED";
   const fontSize = autoFontSize(scene.text || "", 140, 60);
-
-  const s = spring({ frame, fps, config: { damping: 22, stiffness: 250 }, from: 0.8, to: 1 });
-  const op = interpolate(frame, [0, 16], [0, 1], { extrapolateRight: "clamp", extrapolateLeft: "clamp", easing: E_OUT });
-  const btnS = spring({ frame: Math.max(0, frame - 20), fps, config: { damping: 20, stiffness: 300 }, from: 0, to: 1 });
+  const { opacity, y, blur } = useTextReveal(0);
+  const scale = useScaleIn(0, 0.96);
+  const floatY = useFloat(5, 0.025, 0);
+  const btnS = spring({ frame: Math.max(0, frame - 20), fps, config: { damping: 28, stiffness: 250, mass: 0.8 }, from: 0, to: 1 });
 
   return (
     <AbsoluteFill style={{ background: bg }}>
       <Grain />
-      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", flexDirection: "column", gap: 24, opacity: op }}>
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", flexDirection: "column", gap: 24, opacity: fade }}>
         <div style={{
           fontSize,
           fontWeight: 900,
           fontFamily,
           letterSpacing: autoTracking(fontSize),
           color: isLight(bg) ? "#0a0a0a" : "#ffffff",
-          transform: `scale(${s})`,
+          opacity,
+          transform: `translateY(${y + floatY}px) scale(${scale})`,
+          filter: `blur(${blur}px)`,
           textAlign: "center",
           padding: "0 80px",
           lineHeight: autoLineHeight(fontSize),
@@ -1151,6 +1217,7 @@ export const CTAScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ 
           transform: `scale(${btnS})`,
           opacity: btnS,
           border: `1px solid ${isLight(bg) ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.2)"}`,
+          boxShadow: APPLE_CARD_SHADOW,
         }}>
           <span style={{
             fontSize: 22, fontWeight: 700, fontFamily,
@@ -1178,7 +1245,7 @@ export const KineticScene: React.FC<{ scene: SceneData; sceneIndex?: number }> =
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
@@ -1187,17 +1254,12 @@ export const KineticScene: React.FC<{ scene: SceneData; sceneIndex?: number }> =
       }}>
         {words.map((word, i) => {
           const delay = i * 6;
-          const s = spring({
-            frame: Math.max(0, frame - delay),
-            fps,
-            config: { damping: 24, stiffness: 400, mass: 0.5 },
-            from: 0.5,
-            to: 1,
-          });
-          const op = interpolate(Math.max(0, frame - delay), [0, 12], [0, 1], {
-            extrapolateRight: "clamp",
-            extrapolateLeft: "clamp",
-          });
+          const localFrame = Math.max(0, frame - delay);
+          const opacity = interpolate(localFrame, [0, 18], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_PREMIUM });
+          const y = interpolate(localFrame, [0, 20], [20, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_PREMIUM });
+          const blur = interpolate(localFrame, [0, 16], [8, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_PREMIUM });
+          const scale = spring({ frame: localFrame, fps, config: APPLE_SPRING, from: 0.96, to: 1 });
+          const floatY = Math.sin(frame * 0.025 + i * 0.5) * 5;
           const isHighlight = i === Math.floor(words.length / 2);
 
           return (
@@ -1206,11 +1268,10 @@ export const KineticScene: React.FC<{ scene: SceneData; sceneIndex?: number }> =
               fontWeight: 900,
               fontFamily,
               letterSpacing: autoTracking(fontSize),
-              color: isHighlight
-                ? safeAccent(scene.accentColor, bg)
-                : textColor(bg),
-              transform: `scale(${s})`,
-              opacity: op,
+              color: isHighlight ? safeAccent(scene.accentColor, bg) : textColor(bg),
+              transform: `translateY(${y + floatY}px) scale(${scale})`,
+              filter: `blur(${blur}px)`,
+              opacity,
               display: "inline-block",
               lineHeight: autoLineHeight(fontSize),
               textShadow: isHighlight ? `0 0 30px ${scene.accentColor}44` : "none",
@@ -1253,7 +1314,7 @@ export const GlitchScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <DepthRings accent={scene.accentColor} />
       <Grain />
 
@@ -1342,7 +1403,7 @@ export const FloatingStatsScene: React.FC<{ scene: SceneData; sceneIndex?: numbe
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <DepthRings accent={scene.accentColor} intensity={0.6} />
       <Grain />
 
@@ -1456,7 +1517,7 @@ export const ZoomPunchScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <div style={{
         position: "absolute", inset: "-10%",
         background: bg,
@@ -1551,7 +1612,7 @@ export const ParticlesScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         {particles.map((p, i) => (
@@ -1618,7 +1679,7 @@ export const TimelineScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       {scene.text2 && (
         <div style={{
@@ -1712,25 +1773,27 @@ export const HighlightScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
   const words = (scene.text || "").split(" ");
   const highlightWord = (scene.text2 || "").toLowerCase();
 
-  const phraseOp = interpolate(frame, [0, 24], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
-  const phraseY = interpolate(frame, [0, 28], [30, 0], { extrapolateRight: "clamp", easing: E_OUT });
+  const phraseReveal = useTextReveal(0);
+  const phraseFloat = useFloat(5, 0.025, sceneIndex * 0.5);
 
   const fontSize = 68;
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
-        opacity: phraseOp * fade,
+        opacity: fade,
         padding: "60px 120px",
       }}>
         <div style={{
           display: "flex", flexWrap: "wrap",
           justifyContent: "center", alignItems: "baseline",
           gap: `${fontSize * 0.2}px`,
-          transform: `translateY(${phraseY}px)`,
+          transform: `translateY(${phraseReveal.y + phraseFloat}px)`,
+          filter: `blur(${phraseReveal.blur}px)`,
+          opacity: phraseReveal.opacity,
           textAlign: "center",
         }}>
           {words.map((word, i) => {
@@ -1806,7 +1869,7 @@ export const NumbersScene: React.FC<{ scene: SceneData; sceneIndex?: number }> =
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
@@ -1888,7 +1951,7 @@ export const IconScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
@@ -1987,7 +2050,7 @@ export const WorldMapScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
 
       {/* Label haut */}
@@ -2130,7 +2193,7 @@ export const WaveformScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
@@ -2209,7 +2272,7 @@ export const ProgressBarsScene: React.FC<{ scene: SceneData; sceneIndex?: number
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
 
       {scene.text2 && (
@@ -2298,9 +2361,10 @@ export const QuoteScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
   const bg = scene.bg || "#0a0a0a";
   const light = isLight(bg);
 
-  const s   = spring({ frame, fps, config: { damping: 24, stiffness: 180, mass: 1.1 }, from: 0, to: 1 });
-  const op  = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
-  const entY = interpolate(frame, [0, 36], [50, 0], { extrapolateRight: "clamp", easing: E_OUT });
+  const scale = useScaleIn(0, 0.95);
+  const floatY = useFloat(4, 0.02, sceneIndex * 0.8);
+  const op  = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: "clamp", easing: E_PREMIUM });
+  const entY = interpolate(frame, [0, 36], [50, 0], { extrapolateRight: "clamp", easing: E_PREMIUM });
 
   const wordsOp = interpolate(frame, [10, 30], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
   const authorOp = interpolate(Math.max(0, frame - 28), [0, 20], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
@@ -2311,7 +2375,7 @@ export const QuoteScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
@@ -2326,10 +2390,8 @@ export const QuoteScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
           borderLeft: `4px solid ${scene.accentColor}`,
           borderRadius: 20,
           padding: "44px 52px",
-          transform: `scale(${s}) translateY(${entY}px)`,
-          boxShadow: light
-            ? "0 8px 40px rgba(0,0,0,0.06)"
-            : `0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)`,
+          transform: `scale(${scale}) translateY(${entY + floatY}px) perspective(1000px) rotateX(-2deg) rotateY(1deg)`,
+          boxShadow: APPLE_CARD_SHADOW,
           position: "relative",
         }}>
           {/* Guillemet ouvrant */}
@@ -2432,7 +2494,7 @@ export const CountdownScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
@@ -2496,7 +2558,7 @@ export const MirrorScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
@@ -2579,7 +2641,7 @@ export const DataScrollScene: React.FC<{ scene: SceneData; sceneIndex?: number }
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
 
       {/* Colonnes de données en arrière-plan */}
       {columns.map((col, ci) => {
@@ -2671,7 +2733,7 @@ export const BurstScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
 
       {/* Lignes burst */}
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
@@ -2782,7 +2844,7 @@ export const MorphShapesScene: React.FC<{ scene: SceneData; sceneIndex?: number 
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
 
       {/* Forme qui morphe */}
@@ -2855,7 +2917,7 @@ export const Text3DScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
@@ -3004,7 +3066,7 @@ export const PhotoScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
 
       <AbsoluteFill style={{
@@ -3159,7 +3221,7 @@ export const MockupScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <DepthRings accent={scene.accentColor} />
       <Grain />
 
@@ -3663,7 +3725,7 @@ export const ReconstructedUIScene: React.FC<{ scene: SceneData; sceneIndex?: num
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={accent} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={accent} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
@@ -3877,7 +3939,7 @@ export const GeneratedUIScene: React.FC<{ scene: SceneData; sceneIndex?: number 
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <Bg color={bg} accent={accent} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={accent} sceneIndex={sceneIndex} />
       <DepthRings accent={accent} />
       <Grain />
 
@@ -4085,7 +4147,7 @@ export const TypewriterScene: React.FC<{ scene: SceneData; sceneIndex?: number }
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, padding: "0 80px" }}>
         <div style={{
@@ -4119,7 +4181,7 @@ export const ScrambleTextScene: React.FC<{ scene: SceneData; sceneIndex?: number
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, padding: "0 80px", textAlign: "center" }}>
         <div style={{
@@ -4150,7 +4212,7 @@ export const NeonGlowScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade * flicker, padding: "0 80px", textAlign: "center", flexDirection: "column", gap: 16 }}>
         <div style={{
@@ -4193,7 +4255,7 @@ export const StampScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade }}>
         <div style={{
@@ -4232,7 +4294,7 @@ export const WaveTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, padding: "0 80px", flexWrap: "wrap", gap: 16 }}>
         {words.map((word, i) => {
@@ -4266,7 +4328,7 @@ export const OutlineFillScene: React.FC<{ scene: SceneData; sceneIndex?: number 
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, padding: "0 80px", textAlign: "center", position: "relative" }}>
         {/* Outline */}
@@ -4311,7 +4373,7 @@ export const OdometerScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -4353,7 +4415,7 @@ export const ProgressRingScene: React.FC<{ scene: SceneData; sceneIndex?: number
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 24 }}>
         <div style={{ position: "relative", width: 380, height: 380 }}>
@@ -4410,7 +4472,7 @@ export const GaugeScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 24 }}>
         <div style={{ position: "relative", width: 400, height: 260 }}>
@@ -4472,7 +4534,7 @@ export const BubbleChartScene: React.FC<{ scene: SceneData; sceneIndex?: number 
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ opacity: fade }}>
         <svg width="1080" height="1920" viewBox="0 0 1080 1920">
@@ -4525,24 +4587,26 @@ export const NotificationScene: React.FC<{ scene: SceneData; sceneIndex?: number
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 16, padding: "0 80px" }}>
         {notifications.map((notif, i) => {
-          const s = spring({ frame: Math.max(0, frame - notif.delay), fps, config: { damping: 20, stiffness: 200 }, from: 0, to: 1 });
-          const x = interpolate(Math.max(0, frame - notif.delay), [0, 24], [200, 0], { extrapolateRight: "clamp", easing: E_OUT });
-          const op = interpolate(Math.max(0, frame - notif.delay), [0, 16], [0, 1], { extrapolateRight: "clamp" });
+          const localFrame = Math.max(0, frame - notif.delay);
+          const cardScale = spring({ frame: localFrame, fps, config: APPLE_SPRING, from: 0.95, to: 1 });
+          const floatY = Math.sin(frame * 0.02 + i * 0.8) * 4;
+          const x = interpolate(localFrame, [0, 24], [200, 0], { extrapolateRight: "clamp", easing: E_PREMIUM });
+          const op = interpolate(localFrame, [0, 16], [0, 1], { extrapolateRight: "clamp", easing: E_PREMIUM });
           return (
             <div key={i} style={{
               width: "100%", padding: "16px 20px",
               background: isLight(bg) ? "rgba(255,255,255,0.9)" : "rgba(30,30,30,0.9)",
               backdropFilter: "blur(20px)",
-              borderRadius: 16,
-              border: `1px solid ${isLight(bg) ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"}`,
+              borderRadius: 24,
+              border: "1px solid rgba(0,0,0,0.05)",
               display: "flex", alignItems: "center", gap: 14,
               opacity: op,
-              transform: `translateX(${x}px) scale(${s})`,
-              boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+              transform: `translateX(${x}px) scale(${cardScale}) translateY(${floatY}px) perspective(1000px) rotateX(-2deg) rotateY(1deg)`,
+              boxShadow: APPLE_CARD_SHADOW,
             }}>
               <div style={{ fontSize: 32, flexShrink: 0 }}>{notif.icon}</div>
               <div style={{ flex: 1 }}>
@@ -4582,7 +4646,7 @@ export const SuccessCheckScene: React.FC<{ scene: SceneData; sceneIndex?: number
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 32 }}>
         <div style={{ transform: `scale(${s})` }}>
@@ -4636,7 +4700,7 @@ export const FeatureHighlightScene: React.FC<{ scene: SceneData; sceneIndex?: nu
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ opacity: fade, justifyContent: "center", alignItems: "center" }}>
         {/* Mockup avec highlights */}
@@ -4707,7 +4771,7 @@ export const LikeExplosionScene: React.FC<{ scene: SceneData; sceneIndex?: numbe
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ opacity: fade, justifyContent: "center", alignItems: "center", flexDirection: "column", gap: 24 }}>
         {/* Coeurs flottants */}
@@ -4752,7 +4816,7 @@ export const FollowerCounterScene: React.FC<{ scene: SceneData; sceneIndex?: num
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 20 }}>
         <div style={{ fontSize: 28, fontWeight: 300, color: isLight(bg) ? "#888" : "#555", fontFamily, letterSpacing: "0.1em", textTransform: "uppercase" }}>
@@ -4944,7 +5008,7 @@ export const CountdownRingScene: React.FC<{ scene: SceneData; sceneIndex?: numbe
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 24 }}>
         <div style={{ position: "relative", width: 420, height: 420 }}>
@@ -4999,7 +5063,7 @@ export const XPBarScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 32, padding: "0 80px" }}>
         {/* Level badge */}
@@ -5151,7 +5215,7 @@ export const StockChartScene: React.FC<{ scene: SceneData; sceneIndex?: number }
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 16, padding: "0 60px" }}>
         {/* Header */}
@@ -5274,7 +5338,7 @@ export const MoneyRainScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       {/* Billets */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
         {bills.map((bill, i) => (
@@ -5327,7 +5391,7 @@ export const TitleCardScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "flex-start", opacity: fade, padding: "0 120px", flexDirection: "column", gap: 20 }}>
         {/* Ligne accent */}
@@ -5372,7 +5436,7 @@ export const MagneticTextScene: React.FC<{ scene: SceneData; sceneIndex?: number
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, padding: "0 80px", flexWrap: "wrap", gap: 20 }}>
         {words.map((word, i) => {
@@ -5410,7 +5474,7 @@ export const GradientSlideScene: React.FC<{ scene: SceneData; sceneIndex?: numbe
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, padding: "0 80px", textAlign: "center", flexDirection: "column", gap: 16 }}>
         <div style={{ position: "relative", display: "inline-block" }}>
@@ -5446,7 +5510,7 @@ export const CascadeScene: React.FC<{ scene: SceneData; sceneIndex?: number }> =
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, padding: "0 60px" }}>
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 4 }}>
@@ -5486,7 +5550,7 @@ export const BlurFocusScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, padding: "0 80px", textAlign: "center", flexDirection: "column", gap: 16 }}>
         <div style={{
@@ -5617,7 +5681,7 @@ export const SnowFallScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <svg width="1080" height="1920" style={{ position: "absolute", inset: 0 }}>
         {flakes.map((flake, i) => (
           <text key={i} x={flake.x} y={flake.y} fontSize={flake.size * 3}
@@ -5700,7 +5764,7 @@ export const FunnelScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 8, padding: "0 80px" }}>
         {scene.text && (
@@ -5742,7 +5806,7 @@ export const ComparisonBarsScene: React.FC<{ scene: SceneData; sceneIndex?: numb
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 32, padding: "0 120px" }}>
         {scene.text && (
@@ -5787,7 +5851,7 @@ export const ROIScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ 
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 16 }}>
         <div style={{ fontSize: 32, fontWeight: 300, color: isLight(bg) ? "#888" : "#555", fontFamily, letterSpacing: "0.1em", textTransform: "uppercase" }}>
@@ -5818,24 +5882,24 @@ export const ROIScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ 
 
 export const AchievementScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene, sceneIndex = 0 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
   const fade = useFade();
   const bg = scene.bg || "#0a0a0a";
-  const s = spring({ frame, fps, config: { damping: 14, stiffness: 250, mass: 0.8 }, from: 0, to: 1 });
-  const slideY = interpolate(frame, [0, 28], [-200, 0], { extrapolateRight: "clamp", easing: E_OUT });
+  const scale = useScaleIn(0, 0.95);
+  const floatY = useFloat(4, 0.02, sceneIndex * 0.8);
+  const slideY = interpolate(frame, [0, 28], [-200, 0], { extrapolateRight: "clamp", easing: E_PREMIUM });
   const glow = 0.5 + Math.sin(frame * 0.1) * 0.3;
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade }}>
         <div style={{
-          transform: `scale(${s}) translateY(${slideY}px)`,
+          transform: `scale(${scale}) translateY(${slideY + floatY}px) perspective(1000px) rotateX(-4deg) rotateY(3deg) rotateZ(1deg)`,
           background: "linear-gradient(145deg, rgba(30,30,30,0.98), rgba(15,15,15,0.98))",
           borderRadius: 24, padding: "32px 48px",
-          border: `2px solid ${scene.accentColor}`,
-          boxShadow: `0 0 40px ${scene.accentColor}${Math.round(glow * 60).toString(16).padStart(2, "0")}, 0 30px 80px rgba(0,0,0,0.5)`,
+          border: `1px solid rgba(0,0,0,0.05)`,
+          boxShadow: `${APPLE_CARD_SHADOW}, 0 0 40px ${scene.accentColor}${Math.round(glow * 60).toString(16).padStart(2, "0")}`,
           display: "flex", alignItems: "center", gap: 28, maxWidth: 800,
         }}>
           <div style={{
@@ -5998,7 +6062,7 @@ export const PollResultsScene: React.FC<{ scene: SceneData; sceneIndex?: number 
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 28, padding: "0 100px" }}>
         {scene.text && (
@@ -6045,7 +6109,7 @@ export const CommentThreadScene: React.FC<{ scene: SceneData; sceneIndex?: numbe
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 14, padding: "0 80px" }}>
         {scene.text && (
@@ -6109,7 +6173,7 @@ export const EndCreditsScene: React.FC<{ scene: SceneData; sceneIndex?: number }
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ overflow: "hidden", opacity: fade }}>
         <div style={{
@@ -6163,7 +6227,7 @@ export const WipeTransitionScene: React.FC<{ scene: SceneData; sceneIndex?: numb
         background: bg,
         overflow: "hidden",
       }}>
-        <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+        <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
         <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", flexDirection: "column", gap: 16, padding: "0 80px", textAlign: "center", opacity: fade }}>
           {scene.text && (
             <div style={{ fontSize, fontWeight: 900, fontFamily, letterSpacing: autoTracking(fontSize), color: textColor(bg) }}>
@@ -6192,7 +6256,7 @@ export const DollyZoomScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
       {/* Background qui rétrécit */}
       <div style={{ position: "absolute", inset: 0, transform: `scale(${bgScale})` }}>
-        <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+        <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       </div>
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade }}>
@@ -6232,7 +6296,7 @@ export const StepsScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "flex-start", opacity: fade, flexDirection: "column", gap: 20, padding: "0 100px" }}>
         {scene.text2 && (
@@ -6351,7 +6415,7 @@ export const QuoteRevealScene: React.FC<{ scene: SceneData; sceneIndex?: number 
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "flex-start", opacity: fade, padding: "0 120px", flexDirection: "column", gap: 24 }}>
         {/* Quote mark */}
@@ -6392,7 +6456,7 @@ export const BenefitsScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "flex-start", opacity: fade, flexDirection: "column", gap: 18, padding: "80px 100px" }}>
         {scene.text2 && (
@@ -6564,7 +6628,7 @@ export const PriceRevealScene: React.FC<{ scene: SceneData; sceneIndex?: number 
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 20 }}>
         {scene.text && (
@@ -6620,7 +6684,7 @@ export const LogoRevealScene: React.FC<{ scene: SceneData; sceneIndex?: number }
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 32 }}>
         {/* Logo circle */}
@@ -6830,7 +6894,7 @@ export const ScoreboardScene: React.FC<{ scene: SceneData; sceneIndex?: number }
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 24 }}>
         {/* Match title */}
@@ -6884,7 +6948,7 @@ export const PlayerStatScene: React.FC<{ scene: SceneData; sceneIndex?: number }
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "flex-start", opacity: fade, flexDirection: "column", gap: 28, padding: "0 100px" }}>
         {scene.text && (
@@ -6995,7 +7059,7 @@ export const HeartbeatScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ opacity: fade }}>
         {/* ECG */}
@@ -7242,7 +7306,7 @@ export const SwipeScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 60 }}>
         {scene.text && (
@@ -7393,7 +7457,7 @@ export const AudioWaveformScene: React.FC<{ scene: SceneData; sceneIndex?: numbe
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 40 }}>
         {/* Waveform */}
@@ -7437,7 +7501,7 @@ export const VinylScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 40 }}>
         {/* Vinyl record */}
@@ -7557,7 +7621,7 @@ export const InfographicScene: React.FC<{ scene: SceneData; sceneIndex?: number 
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 20, padding: "80px 80px" }}>
         {scene.text2 && (
@@ -7736,7 +7800,7 @@ export const FinancialChartScene: React.FC<{ scene: SceneData; sceneIndex?: numb
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 20, padding: "0 60px" }}>
         <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
@@ -7936,7 +8000,7 @@ export const TimerScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 16 }}>
         <svg width="500" height="500" viewBox="0 0 500 500" style={{ transform: "rotate(-90deg)" }}>
@@ -8092,7 +8156,7 @@ export const MCPAnimationScene: React.FC<{ scene: SceneData; sceneIndex?: number
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ opacity: fade }}>
         <svg width="1080" height="1920" style={{ position: "absolute", inset: 0 }}>
@@ -8273,7 +8337,7 @@ export const PriceTagScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <svg width="1080" height="1920" style={{ position: "absolute", inset: 0 }}>
         {confetti.map((c, i) => (
@@ -8334,7 +8398,7 @@ export const MusicVisualizerScene: React.FC<{ scene: SceneData; sceneIndex?: num
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ opacity: fade, justifyContent: "center", alignItems: "center", flexDirection: "column", gap: 32 }}>
         <div style={{
@@ -8471,7 +8535,7 @@ export const CounterPunchScene: React.FC<{ scene: SceneData; sceneIndex?: number
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <Bg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
+      <SceneBg color={bg} accent={scene.accentColor} sceneIndex={sceneIndex} />
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 16 }}>
         {scene.text && (
