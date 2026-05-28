@@ -50,6 +50,10 @@ import {
   SwipeScene, ClickScene, LoadingScene,
   AudioWaveformScene, VinylScene,
   MagazineCoverScene, PullQuoteScene, InfographicScene,
+  TerminalScene, ToggleScene, FinancialChartScene, InstagramProfileScene,
+  NetflixRevealScene, TimerScene, GithubStarsScene, SquiggleTextScene,
+  MCPAnimationScene, GlowTextScene, ASCIIScene, PriceTagScene,
+  MusicVisualizerScene, SplitRevealScene, CounterPunchScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -399,6 +403,21 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({ scene, i
     case "magazinecover":   return <MagazineCoverScene scene={s} sceneIndex={index} />;
     case "pullquote":       return <PullQuoteScene scene={s} sceneIndex={index} />;
     case "infographic":     return <InfographicScene scene={s} sceneIndex={index} />;
+    case "terminal":          return <TerminalScene scene={s} sceneIndex={index} />;
+    case "toggle":            return <ToggleScene scene={s} sceneIndex={index} />;
+    case "financialchart":    return <FinancialChartScene scene={s} sceneIndex={index} />;
+    case "instagramprofile":  return <InstagramProfileScene scene={s} sceneIndex={index} />;
+    case "netflixreveal":     return <NetflixRevealScene scene={s} sceneIndex={index} />;
+    case "timer":             return <TimerScene scene={s} sceneIndex={index} />;
+    case "githubstars":       return <GithubStarsScene scene={s} sceneIndex={index} />;
+    case "squiggletext":      return <SquiggleTextScene scene={s} sceneIndex={index} />;
+    case "mcpanimation":      return <MCPAnimationScene scene={s} sceneIndex={index} />;
+    case "glowtext":          return <GlowTextScene scene={s} sceneIndex={index} />;
+    case "ascii":             return <ASCIIScene scene={s} sceneIndex={index} />;
+    case "pricetag":          return <PriceTagScene scene={s} sceneIndex={index} />;
+    case "musicvisualizer":   return <MusicVisualizerScene scene={s} sceneIndex={index} />;
+    case "splitreveal":       return <SplitRevealScene scene={s} sceneIndex={index} />;
+    case "counterpunch":      return <CounterPunchScene scene={s} sceneIndex={index} />;
     default:              return <WordScene                scene={s} sceneIndex={index} />;
   }
 };
