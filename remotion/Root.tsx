@@ -45,6 +45,14 @@ const RemotionRoot = () => (
     } as MotionVideoProps}
     calculateMetadata={async ({ props }) => {
       const p = props as MotionVideoProps;
+      const sceneDurationsAdjusted = (p.sceneDurations || []).map((d) => {
+        if (typeof d === "number") return Math.max(90, d);
+        return {
+          ...d,
+          durationFrames: Math.max(90, d.durationFrames || 90),
+        };
+      });
+
       const total = Number.isFinite(p.totalFrames) && p.totalFrames > 0
         ? p.totalFrames
         : 1800;
@@ -60,6 +68,10 @@ const RemotionRoot = () => (
         fps: 60,
         width: w,
         height: h,
+        props: {
+          ...p,
+          sceneDurations: sceneDurationsAdjusted.length ? sceneDurationsAdjusted : p.sceneDurations,
+        },
       };
     }}
   />

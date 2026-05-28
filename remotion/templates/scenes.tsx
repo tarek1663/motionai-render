@@ -509,27 +509,40 @@ const AccentLine: React.FC<{ accent: string; delay?: number; width?: number }> =
   );
 };
 
-// FADE — plus rapide
-const useFade = (inDur = 14, outDur = 14) => {
+// FADE — entrée/sortie fluides (évite flash noir entre scènes)
+const useFade = (durationIn = 8, durationOut = 8) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
-  const fadeIn  = interpolate(frame, [0, inDur], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
-  const fadeOut = interpolate(frame, [durationInFrames - outDur, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
+
+  const fadeIn = interpolate(frame, [0, durationIn], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
   });
+
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - durationOut, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.in(Easing.cubic),
+    },
+  );
+
   return Math.min(fadeIn, fadeOut);
 };
 
-// FONT SIZE — conservative (évite texte coupé)
-const autoFontSize = (text: string, base = 180, min = 60): number => {
+// FONT SIZE — titres Apple plus gros et bold
+const autoFontSize = (text: string, max = 160, min = 60): number => {
   const len = (text || "").replace(/\s+/g, " ").trim().length;
-  if (len <= 3)  return base;
-  if (len <= 6)  return Math.round(base * 0.85);
-  if (len <= 10) return Math.round(base * 0.70);
-  if (len <= 16) return Math.round(base * 0.55);
-  if (len <= 24) return Math.round(base * 0.44);
-  if (len <= 35) return Math.round(base * 0.36);
-  return Math.max(min, Math.round(base * 0.30));
+  if (len <= 4) return max;
+  if (len <= 8) return Math.round(max * 0.85);
+  if (len <= 12) return Math.round(max * 0.7);
+  if (len <= 20) return Math.round(max * 0.55);
+  if (len <= 30) return Math.round(max * 0.45);
+  return Math.max(min, Math.round(max * 0.35));
 };
 
 const MAIN_TEXT_BOX: React.CSSProperties = {
@@ -672,7 +685,7 @@ export const RevealScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
         {/* Masque reveal */}
         <div style={{ overflow: "hidden" }}>
           <div style={{
-            fontSize, fontWeight: 800, color: mainColor,
+            fontSize, fontWeight: 900, color: mainColor,
             overflow: "visible",
             fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 0.95,
             transform: `translateY(${clipY}%) scale(${s})`,
@@ -1119,7 +1132,7 @@ export const CardScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({
           }} />
           {scene.cardTitle && (
             <div style={{
-              fontSize: 42, fontWeight: 700, color: "#f5f5f0",
+              fontSize: 42, fontWeight: 900, color: "#f5f5f0",
               fontFamily, letterSpacing: "-0.03em",
               opacity: titleOp, marginBottom: 10,
             }}>
@@ -1297,7 +1310,7 @@ export const KineticScene: React.FC<{ scene: SceneData; sceneIndex?: number }> =
             opacity: opacity * fade,
           }}>
             <div style={{
-              fontSize, fontWeight: 800,
+              fontSize, fontWeight: 900,
               ...(isAccent ? {
                 background: `linear-gradient(135deg, ${safeAccent(scene.accentColor, bg)}, #ffffff)`,
                 WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
@@ -1357,7 +1370,7 @@ export const GlitchScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
         {isGlitching && (
           <div style={{
             position: "absolute",
-            fontSize, fontWeight: 800, color: "#ff0000",
+            fontSize, fontWeight: 900, color: "#ff0000",
             fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 0.95,
             opacity: glitchIntensity * 0.7,
             transform: `translateX(${rShift}px) translateY(${scanOffset}px) scale(${s})`,
@@ -1370,7 +1383,7 @@ export const GlitchScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
         {isGlitching && (
           <div style={{
             position: "absolute",
-            fontSize, fontWeight: 800, color: "#0000ff",
+            fontSize, fontWeight: 900, color: "#0000ff",
             fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 0.95,
             opacity: glitchIntensity * 0.7,
             transform: `translateX(${bShift}px) scale(${s})`,
@@ -1382,7 +1395,7 @@ export const GlitchScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
 
         <div style={{
           ...MAIN_TEXT_BOX,
-          fontSize, fontWeight: 800,
+          fontSize, fontWeight: 900,
           color: mainColor,
           fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 0.95,
           transform: `scale(${s}) translateY(${idle}px)`,
@@ -1488,7 +1501,7 @@ export const FloatingStatsScene: React.FC<{ scene: SceneData; sceneIndex?: numbe
                 )}
 
                 <div style={{
-                  fontSize: i === 1 ? 72 : 58, fontWeight: 800,
+                  fontSize: i === 1 ? 72 : 58, fontWeight: 900,
                   color: i === 1 ? safeAccent(scene.accentColor, cardBg) : textColor(cardBg),
                   fontFamily, letterSpacing: autoTracking(i === 1 ? 72 : 58), lineHeight: 1,
                   ...tabularNums,
@@ -1570,7 +1583,7 @@ export const ZoomPunchScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
       }}>
         <div style={{
           ...MAIN_TEXT_BOX,
-          fontSize, fontWeight: 800,
+          fontSize, fontWeight: 900,
           overflow: "visible",
           ...(useGradient ? {
             background: `linear-gradient(135deg, #ffffff 0%, ${safeAccent(scene.accentColor, bg)} 100%)`,
@@ -1665,7 +1678,7 @@ export const ParticlesScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
       }}>
         <div style={{
           ...MAIN_TEXT_BOX,
-          fontSize, fontWeight: 800, color: mainCol,
+          fontSize, fontWeight: 900, color: mainCol,
           fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 0.95,
           transform: `scale(${s})`, filter: `blur(${blur}px)`,
         }}>
@@ -1765,7 +1778,7 @@ export const TimelineScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
                     transform: `scale(${s}) translateY(-6px)`,
                   }} />
                   <div style={{
-                    fontSize: 36, fontWeight: 800, color: safeAccent(scene.accentColor, bg),
+                    fontSize: 36, fontWeight: 900, color: safeAccent(scene.accentColor, bg),
                     fontFamily, letterSpacing: "-0.04em",
                     ...tabularNums,
                     marginTop: 20,
@@ -1934,7 +1947,7 @@ export const NumbersScene: React.FC<{ scene: SceneData; sceneIndex?: number }> =
               }}>
                 <div style={{
                   fontSize: isMain ? 72 : 54,
-                  fontWeight: 800, color: safeAccent(scene.accentColor, bg),
+                  fontWeight: 900, color: safeAccent(scene.accentColor, bg),
                   fontFamily, letterSpacing: "-0.05em", lineHeight: 1,
                   ...tabularNums,
                   textShadow: `0 0 40px ${scene.accentColor}44`,
@@ -2012,7 +2025,7 @@ export const IconScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({
           opacity: interpolate(Math.max(0, frame - 12), [0, 22], [0, 1], { extrapolateRight: "clamp", easing: E_OUT }),
         }}>
           <div style={{
-            fontSize, fontWeight: 800, color: mainCol,
+            fontSize, fontWeight: 900, color: mainCol,
             fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 0.95,
           }}>
             {scene.text}
@@ -2181,7 +2194,7 @@ export const WorldMapScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
           position: "absolute", bottom: "10%", left: "50%",
           transform: "translateX(-50%)",
           fontSize: autoFontSize(scene.text, 90, 50),
-          fontWeight: 800, color: getMainColor(bg),
+          fontWeight: 900, color: getMainColor(bg),
           fontFamily, letterSpacing: autoTracking(80),
           opacity: interpolate(Math.max(0, frame - 24), [0, 22], [0, 1], { extrapolateRight: "clamp", easing: E_OUT }) * fade,
           textAlign: "center", whiteSpace: "nowrap",
@@ -2232,7 +2245,7 @@ export const WaveformScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
         {/* Texte principal */}
         <div style={{
           ...MAIN_TEXT_BOX,
-          fontSize, fontWeight: 800, color: getMainColor(bg),
+          fontSize, fontWeight: 900, color: getMainColor(bg),
           fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 0.95,
           transform: `scale(${s})`, filter: `blur(${bl}px)`,
           textAlign: "center",
@@ -2351,7 +2364,7 @@ export const ProgressBarsScene: React.FC<{ scene: SceneData; sceneIndex?: number
                   {item.label}
                 </div>
                 <div style={{
-                  fontSize: 36, fontWeight: 800,
+                  fontSize: 36, fontWeight: 900,
                   color: safeAccent(scene.accentColor, bg), fontFamily, letterSpacing: "-0.03em",
                   ...tabularNums,
                 }}>
@@ -2548,7 +2561,7 @@ export const CountdownScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
         <div style={{
           ...MAIN_TEXT_BOX,
           fontSize: isZero ? 120 : 240,
-          fontWeight: 800,
+          fontWeight: 900,
           color: isZero ? safeAccent(scene.accentColor, bg) : getMainColor(bg),
           fontFamily, letterSpacing: "-0.06em", lineHeight: 1,
           ...tabularNums,
@@ -2598,7 +2611,7 @@ export const MirrorScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
         {/* Texte principal */}
         <div style={{
           ...MAIN_TEXT_BOX,
-          fontSize, fontWeight: 800, color: getMainColor(bg),
+          fontSize, fontWeight: 900, color: getMainColor(bg),
           fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 1,
           transform: `scale(${s}) translateY(${idle}px)`,
           filter: `blur(${blur}px)`,
@@ -2617,7 +2630,7 @@ export const MirrorScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
         {/* Reflet miroir */}
         <div style={{
           ...MAIN_TEXT_BOX,
-          fontSize, fontWeight: 800, color: getMainColor(bg),
+          fontSize, fontWeight: 900, color: getMainColor(bg),
           fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 1,
           transform: `scale(${s}) translateY(${-idle}px) scaleY(-1)`,
           filter: `blur(${blur + 2}px)`,
@@ -2707,7 +2720,7 @@ export const DataScrollScene: React.FC<{ scene: SceneData; sceneIndex?: number }
       }}>
         <div style={{
           ...MAIN_TEXT_BOX,
-          fontSize, fontWeight: 800, color: getMainColor(bg),
+          fontSize, fontWeight: 900, color: getMainColor(bg),
           fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 0.95,
           transform: `scale(${s})`, filter: `blur(${bl}px)`,
         }}>
@@ -2792,7 +2805,7 @@ export const BurstScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
       }}>
         <div style={{
           ...MAIN_TEXT_BOX,
-          fontSize, fontWeight: 800, color: getMainColor(bg),
+          fontSize, fontWeight: 900, color: getMainColor(bg),
           fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 0.95,
           transform: `scale(${s})`, filter: `blur(${bl}px)`,
         }}>
@@ -2894,7 +2907,7 @@ export const MorphShapesScene: React.FC<{ scene: SceneData; sceneIndex?: number 
       }}>
         <div style={{
           ...MAIN_TEXT_BOX,
-          fontSize, fontWeight: 800, color: getMainColor(bg),
+          fontSize, fontWeight: 900, color: getMainColor(bg),
           fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 0.95,
           transform: `scale(${s})`, filter: `blur(${bl}px)`,
         }}>
@@ -2964,7 +2977,7 @@ export const Text3DScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
           {Array.from({ length: shadowLayers }, (_, i) => (
             <div key={i} style={{
               position: "absolute", inset: 0,
-              fontSize, fontWeight: 800,
+              fontSize, fontWeight: 900,
               color: `${safeAccent(scene.accentColor, bg)}${Math.round((0.08 - i * 0.01) * 255).toString(16).padStart(2, "0")}`,
               fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 0.95,
               transform: `translate(${(i + 1) * 2}px, ${(i + 1) * 3}px)`,
@@ -2975,7 +2988,7 @@ export const Text3DScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
           ))}
           {/* Texte principal */}
           <div style={{
-            fontSize, fontWeight: 800, color: getMainColor(bg),
+            fontSize, fontWeight: 900, color: getMainColor(bg),
             fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 0.95,
             position: "relative",
           }}>
@@ -3054,7 +3067,7 @@ export const SplitScreenScene: React.FC<{ scene: SceneData; sceneIndex?: number 
                 backgroundSize: "32px 32px",
               }} />
               <div style={{
-                fontSize, fontWeight: 800, color: panelText,
+                fontSize, fontWeight: 900, color: panelText,
                 fontFamily, letterSpacing: autoTracking(fontSize),
                 opacity: s, position: "relative",
                 textAlign: "center",
@@ -3111,7 +3124,7 @@ export const PhotoScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
             textAlign: "center", width: "100%",
           }}>
             <div style={{
-              fontSize, fontWeight: 800, color: textColor(bg),
+              fontSize, fontWeight: 900, color: textColor(bg),
               fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 0.95,
             }}>
               {scene.text}
@@ -3174,7 +3187,7 @@ export const PhotoScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
               <AccentLine accent={safeAccent(scene.accentColor, bg)} delay={20} />
             </div>
             <div style={{
-              fontSize, fontWeight: 800, color: textColor(bg),
+              fontSize, fontWeight: 900, color: textColor(bg),
               fontFamily, letterSpacing: autoTracking(fontSize), lineHeight: 0.95,
             }}>
               {scene.text}
@@ -3291,7 +3304,7 @@ export const MockupScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
                 {["‹", "›"].map((a, i) => (
                   <div key={i} style={{
                     fontSize: 14, color: "rgba(255,255,255,0.25)",
-                    fontWeight: 700, lineHeight: 1,
+                    fontWeight: 900, lineHeight: 1,
                   }}>{a}</div>
                 ))}
               </div>
@@ -3431,7 +3444,7 @@ export const MockupScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
           }}>
             <div style={{
               fontSize: autoFontSize(scene.text, 64, 36),
-              fontWeight: 800, color: textColor(bg),
+              fontWeight: 900, color: textColor(bg),
               fontFamily, letterSpacing: autoTracking(56),
               lineHeight: 1, marginBottom: 10,
             }}>
@@ -3490,7 +3503,7 @@ export const ReconstructedUIScene: React.FC<{ scene: SceneData; sceneIndex?: num
           boxShadow: "0 1px 8px rgba(0,0,0,0.08)",
         }}>
           <div style={{
-            fontSize: 14, fontWeight: 800, color: accent,
+            fontSize: 14, fontWeight: 900, color: accent,
             letterSpacing: "-0.03em",
           }}>
             {layout.logo || uiData.productName || "App"}
@@ -3510,7 +3523,7 @@ export const ReconstructedUIScene: React.FC<{ scene: SceneData; sceneIndex?: num
           <div style={{ marginLeft: "auto" }}>
             <div style={{
               padding: "5px 14px", background: accent,
-              borderRadius: 6, fontSize: 11, fontWeight: 700, color: "#fff",
+              borderRadius: 6, fontSize: 11, fontWeight: 900, color: "#fff",
             }}>
               Get started
             </div>
@@ -3569,7 +3582,7 @@ export const ReconstructedUIScene: React.FC<{ scene: SceneData; sceneIndex?: num
               }}>
                 {section.title && (
                   <div style={{
-                    fontSize: 13, fontWeight: 700, color: uiText,
+                    fontSize: 13, fontWeight: 900, color: uiText,
                     marginBottom: 10, letterSpacing: "-0.02em",
                   }}>
                     {section.title}
@@ -3596,7 +3609,7 @@ export const ReconstructedUIScene: React.FC<{ scene: SceneData; sceneIndex?: num
                             {item.label}
                           </div>
                           <div style={{
-                            fontSize: 20, fontWeight: 800,
+                            fontSize: 20, fontWeight: 900,
                             color: isHighlighted ? accent : uiText,
                             fontFamily,
                             letterSpacing: "-0.04em",
@@ -3666,7 +3679,7 @@ export const ReconstructedUIScene: React.FC<{ scene: SceneData; sceneIndex?: num
                 {section.type === "hero" && (
                   <div style={{ padding: "20px 0" }}>
                     <div style={{
-                      fontSize: 22, fontWeight: 800, color: uiText,
+                      fontSize: 22, fontWeight: 900, color: uiText,
                       letterSpacing: "-0.04em", lineHeight: 1.2, marginBottom: 8,
                     }}>
                       {section.title}
@@ -3682,7 +3695,7 @@ export const ReconstructedUIScene: React.FC<{ scene: SceneData; sceneIndex?: num
                           padding: "8px 16px", borderRadius: 7,
                           background: bi === 0 ? accent : "transparent",
                           border: bi === 0 ? "none" : `1px solid ${uiText}22`,
-                          fontSize: 11, fontWeight: 700,
+                          fontSize: 11, fontWeight: 900,
                           color: bi === 0 ? "#fff" : uiText,
                           boxShadow: bi === 0 ? `0 4px 16px ${accent}44` : "none",
                         }}>
@@ -3728,7 +3741,7 @@ export const ReconstructedUIScene: React.FC<{ scene: SceneData; sceneIndex?: num
                           </div>
                           {item.trend && (
                             <div style={{
-                              fontSize: 10, fontWeight: 700,
+                              fontSize: 10, fontWeight: 900,
                               color: item.trend.startsWith("+") ? "#30d158" : "#ff3b30",
                               fontFamily,
                               padding: "2px 6px", borderRadius: 4,
@@ -4143,7 +4156,7 @@ export const GeneratedUIScene: React.FC<{ scene: SceneData; sceneIndex?: number 
           }}>
             <div style={{
               fontSize: autoFontSize(label, 60, 32),
-              fontWeight: 800, color: textColor(bg),
+              fontWeight: 900, color: textColor(bg),
               fontFamily, letterSpacing: autoTracking(52),
             }}>
               {label}
@@ -4179,7 +4192,7 @@ export const TypewriterScene: React.FC<{ scene: SceneData; sceneIndex?: number }
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, padding: "0 80px" }}>
         <div style={{
-          fontSize, fontWeight: 700, color: textColor(bg),
+          fontSize, fontWeight: 900, color: textColor(bg),
           fontFamily, letterSpacing: "-0.03em", lineHeight: 1.2,
         }}>
           {displayed}
@@ -4330,7 +4343,7 @@ export const WaveTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
           const op = interpolate(Math.max(0, frame - i * 4), [0, 16], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
           return (
             <div key={i} style={{
-              fontSize, fontWeight: 800, fontFamily,
+              fontSize, fontWeight: 900, fontFamily,
               letterSpacing: autoTracking(fontSize),
               color: i % 2 === 0 ? textColor(bg) : safeAccent(scene.accentColor, bg),
               transform: `translateY(${waveY}px)`,
@@ -4636,7 +4649,7 @@ export const NotificationScene: React.FC<{ scene: SceneData; sceneIndex?: number
             }}>
               <div style={{ fontSize: 32, flexShrink: 0 }}>{notif.icon}</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: isLight(bg) ? "#0a0a0a" : "#ffffff", fontFamily }}>
+                <div style={{ fontSize: 18, fontWeight: 900, color: isLight(bg) ? "#0a0a0a" : "#ffffff", fontFamily }}>
                   {notif.title}
                 </div>
                 <div style={{ fontSize: 14, color: isLight(bg) ? "#888" : "#555", fontFamily }}>
@@ -4650,7 +4663,7 @@ export const NotificationScene: React.FC<{ scene: SceneData; sceneIndex?: number
           );
         })}
         {scene.text && (
-          <div style={{ fontSize: 36, fontWeight: 700, color: textColor(bg), fontFamily, marginTop: 16 }}>
+          <div style={{ fontSize: 36, fontWeight: 900, color: textColor(bg), fontFamily, marginTop: 16 }}>
             {scene.text}
           </div>
         )}
@@ -4695,7 +4708,7 @@ export const SuccessCheckScene: React.FC<{ scene: SceneData; sceneIndex?: number
           </svg>
         </div>
         {scene.text && (
-          <div style={{ fontSize: 56, fontWeight: 800, color: textColor(bg), fontFamily, letterSpacing: "-0.03em", textAlign: "center" }}>
+          <div style={{ fontSize: 56, fontWeight: 900, color: textColor(bg), fontFamily, letterSpacing: "-0.03em", textAlign: "center" }}>
             {scene.text}
           </div>
         )}
@@ -4763,7 +4776,7 @@ export const FeatureHighlightScene: React.FC<{ scene: SceneData; sceneIndex?: nu
         {scene.text && (
           <div style={{
             position: "absolute", bottom: 100, left: 0, right: 0,
-            textAlign: "center", fontSize: 48, fontWeight: 800,
+            textAlign: "center", fontSize: 48, fontWeight: 900,
             color: textColor(bg), fontFamily, letterSpacing: "-0.03em",
           }}>
             {scene.text}
@@ -4855,7 +4868,7 @@ export const FollowerCounterScene: React.FC<{ scene: SceneData; sceneIndex?: num
           {current >= 1000 ? `${(current / 1000).toFixed(1)}K` : current.toLocaleString()}
         </div>
         <AccentLine accent={safeAccent(scene.accentColor, bg)} delay={10} width={80} />
-        <div style={{ opacity: milestoneOp, fontSize: 32, fontWeight: 700, color: safeAccent(scene.accentColor, bg), fontFamily }}>
+        <div style={{ opacity: milestoneOp, fontSize: 32, fontWeight: 900, color: safeAccent(scene.accentColor, bg), fontFamily }}>
           🎉 {target >= 1000 ? `${target / 1000}K` : target} atteints !
         </div>
       </AbsoluteFill>
@@ -5102,7 +5115,7 @@ export const XPBarScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
         }}>
           42
         </div>
-        <div style={{ fontSize: 48, fontWeight: 800, color: textColor(bg), fontFamily, letterSpacing: "-0.03em" }}>
+        <div style={{ fontSize: 48, fontWeight: 900, color: textColor(bg), fontFamily, letterSpacing: "-0.03em" }}>
           {scene.text || "Level Up!"}
         </div>
         {/* XP Bar */}
@@ -5163,7 +5176,7 @@ export const FlightBoardScene: React.FC<{ scene: SceneData; sceneIndex?: number 
           borderBottom: "1px solid rgba(255,255,255,0.2)", paddingBottom: 12, marginBottom: 12,
         }}>
           {["DESTINATION", "FLIGHT", "TIME", "GATE", "STATUS"].map(h => (
-            <div key={h} style={{ fontSize: 18, fontWeight: 700, color: safeAccent(scene.accentColor, bg), fontFamily, letterSpacing: "0.08em" }}>
+            <div key={h} style={{ fontSize: 18, fontWeight: 900, color: safeAccent(scene.accentColor, bg), fontFamily, letterSpacing: "0.08em" }}>
               {h}
             </div>
           ))}
@@ -5177,7 +5190,7 @@ export const FlightBoardScene: React.FC<{ scene: SceneData; sceneIndex?: number 
               padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.06)",
               opacity: rowProgress,
             }}>
-              <div style={{ fontSize: 24, fontWeight: 700, color: "#ffffff", fontFamily, letterSpacing: "0.05em" }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#ffffff", fontFamily, letterSpacing: "0.05em" }}>
                 {scrambleText(f.dest, rowProgress, i * 5)}
               </div>
               <div style={{ fontSize: 22, fontWeight: 400, color: "rgba(255,255,255,0.7)", fontFamily }}>
@@ -5186,11 +5199,11 @@ export const FlightBoardScene: React.FC<{ scene: SceneData; sceneIndex?: number 
               <div style={{ fontSize: 22, fontWeight: 400, color: "rgba(255,255,255,0.7)", fontFamily }}>
                 {f.time}
               </div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: safeAccent(scene.accentColor, bg), fontFamily }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: safeAccent(scene.accentColor, bg), fontFamily }}>
                 {f.gate}
               </div>
               <div style={{
-                fontSize: 18, fontWeight: 700, fontFamily,
+                fontSize: 18, fontWeight: 900, fontFamily,
                 color: f.status === "ON TIME" ? "#30d158" : f.status === "BOARDING" ? scene.accentColor : "#ff3b30",
               }}>
                 {f.status}
@@ -5253,7 +5266,7 @@ export const StockChartScene: React.FC<{ scene: SceneData; sceneIndex?: number }
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 36, fontWeight: 700, color: chartColor, fontFamily }}>
+            <div style={{ fontSize: 36, fontWeight: 900, color: chartColor, fontFamily }}>
               {isUp ? "▲" : "▼"} {Math.abs(Number(changePercent))}%
             </div>
             <div style={{ fontSize: 20, color: isLight(bg) ? "#888" : "#555", fontFamily }}>Today</div>
@@ -5794,7 +5807,7 @@ export const FunnelScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 8, padding: "0 80px" }}>
         {scene.text && (
-          <div style={{ fontSize: 56, fontWeight: 800, color: textColor(bg), fontFamily, letterSpacing: "-0.03em", marginBottom: 32, textAlign: "center" }}>
+          <div style={{ fontSize: 56, fontWeight: 900, color: textColor(bg), fontFamily, letterSpacing: "-0.03em", marginBottom: 32, textAlign: "center" }}>
             {scene.text}
           </div>
         )}
@@ -5808,7 +5821,7 @@ export const FunnelScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = 
                 boxShadow: `0 4px 20px ${scene.accentColor}44`,
                 transition: "width 0.1s",
               }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: "#ffffff", fontFamily }}>{stage.value}</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: "#ffffff", fontFamily }}>{stage.value}</div>
               </div>
               <div style={{ fontSize: 18, color: isLight(bg) ? "#888" : "#555", fontFamily, whiteSpace: "nowrap" }}>{stage.label}</div>
             </div>
@@ -5836,7 +5849,7 @@ export const ComparisonBarsScene: React.FC<{ scene: SceneData; sceneIndex?: numb
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 32, padding: "0 120px" }}>
         {scene.text && (
-          <div style={{ fontSize: 64, fontWeight: 800, color: textColor(bg), fontFamily, letterSpacing: "-0.04em", textAlign: "center" }}>
+          <div style={{ fontSize: 64, fontWeight: 900, color: textColor(bg), fontFamily, letterSpacing: "-0.04em", textAlign: "center" }}>
             {scene.text}
           </div>
         )}
@@ -5938,7 +5951,7 @@ export const AchievementScene: React.FC<{ scene: SceneData; sceneIndex?: number 
             🏆
           </div>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: scene.accentColor, fontFamily, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
+            <div style={{ fontSize: 20, fontWeight: 900, color: scene.accentColor, fontFamily, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
               Achievement Unlocked
             </div>
             <div style={{ fontSize: 36, fontWeight: 900, color: "#ffffff", fontFamily, letterSpacing: "-0.02em" }}>
@@ -6092,7 +6105,7 @@ export const PollResultsScene: React.FC<{ scene: SceneData; sceneIndex?: number 
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 28, padding: "0 100px" }}>
         {scene.text && (
-          <div style={{ fontSize: 52, fontWeight: 800, color: textColor(bg), fontFamily, letterSpacing: "-0.03em", textAlign: "center", marginBottom: 16 }}>
+          <div style={{ fontSize: 52, fontWeight: 900, color: textColor(bg), fontFamily, letterSpacing: "-0.03em", textAlign: "center", marginBottom: 16 }}>
             {scene.text}
           </div>
         )}
@@ -6139,7 +6152,7 @@ export const CommentThreadScene: React.FC<{ scene: SceneData; sceneIndex?: numbe
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 14, padding: "0 80px" }}>
         {scene.text && (
-          <div style={{ fontSize: 52, fontWeight: 800, color: textColor(bg), fontFamily, letterSpacing: "-0.03em", marginBottom: 20, textAlign: "center" }}>
+          <div style={{ fontSize: 52, fontWeight: 900, color: textColor(bg), fontFamily, letterSpacing: "-0.03em", marginBottom: 20, textAlign: "center" }}>
             {scene.text}
           </div>
         )}
@@ -6163,7 +6176,7 @@ export const CommentThreadScene: React.FC<{ scene: SceneData; sceneIndex?: numbe
                 fontSize: 20, flexShrink: 0,
               }}>{comment.avatar}</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: isLight(bg) ? "#0a0a0a" : "#ffffff", fontFamily }}>{comment.name}</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: isLight(bg) ? "#0a0a0a" : "#ffffff", fontFamily }}>{comment.name}</div>
                 <div style={{ fontSize: 14, color: isLight(bg) ? "#555" : "#aaa", fontFamily, marginTop: 2 }}>{comment.text}</div>
               </div>
               <div style={{ fontSize: 14, color: scene.accentColor, fontFamily, fontWeight: 600, flexShrink: 0 }}>
@@ -6222,7 +6235,7 @@ export const EndCreditsScene: React.FC<{ scene: SceneData; sceneIndex?: number }
               <div style={{ fontSize: 22, fontWeight: 300, color: isLight(bg) ? "#888" : "#555", fontFamily, letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 {credit.role}
               </div>
-              <div style={{ fontSize: 40, fontWeight: 700, color: textColor(bg), fontFamily, letterSpacing: "-0.02em", marginTop: 4 }}>
+              <div style={{ fontSize: 40, fontWeight: 900, color: textColor(bg), fontFamily, letterSpacing: "-0.02em", marginTop: 4 }}>
                 {credit.name}
               </div>
             </div>
@@ -6387,7 +6400,7 @@ export const CompareScene: React.FC<{ scene: SceneData; sceneIndex?: number }> =
           padding: "120px 60px 80px 80px",
           display: "flex", flexDirection: "column", gap: 24,
         }}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: "#ff3b30", fontFamily, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          <div style={{ fontSize: 28, fontWeight: 900, color: "#ff3b30", fontFamily, letterSpacing: "0.06em", textTransform: "uppercase" }}>
             ✕ Sans
           </div>
           {leftItems.map((item, i) => {
@@ -6406,7 +6419,7 @@ export const CompareScene: React.FC<{ scene: SceneData; sceneIndex?: number }> =
           padding: "120px 80px 80px 60px",
           display: "flex", flexDirection: "column", gap: 24,
         }}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: "#30d158", fontFamily, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          <div style={{ fontSize: 28, fontWeight: 900, color: "#30d158", fontFamily, letterSpacing: "0.06em", textTransform: "uppercase" }}>
             ✓ Avec
           </div>
           {rightItems.map((item, i) => {
@@ -6486,7 +6499,7 @@ export const BenefitsScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "flex-start", opacity: fade, flexDirection: "column", gap: 18, padding: "80px 100px" }}>
         {scene.text2 && (
-          <div style={{ fontSize: 52, fontWeight: 800, color: textColor(bg), fontFamily, letterSpacing: "-0.03em", marginBottom: 16 }}>
+          <div style={{ fontSize: 52, fontWeight: 900, color: textColor(bg), fontFamily, letterSpacing: "-0.03em", marginBottom: 16 }}>
             {scene.text2}
           </div>
         )}
@@ -6895,7 +6908,7 @@ export const PropertyScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
                 opacity: op,
               }}>
                 <div style={{ fontSize: 20 }}>{stat.icon}</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: "#ffffff", fontFamily }}>{stat.value}</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: "#ffffff", fontFamily }}>{stat.value}</div>
                 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", fontFamily }}>{stat.label}</div>
               </div>
             );
@@ -6932,7 +6945,7 @@ export const ScoreboardScene: React.FC<{ scene: SceneData; sceneIndex?: number }
         {/* Scoreboard */}
         <div style={{ display: "flex", alignItems: "center", gap: 40 }}>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 36, fontWeight: 700, color: textColor(bg), fontFamily }}>Équipe A</div>
+            <div style={{ fontSize: 36, fontWeight: 900, color: textColor(bg), fontFamily }}>Équipe A</div>
             <div style={{ fontSize: 160, fontWeight: 900, fontFamily, letterSpacing: "-0.06em",
               color: safeAccent(scene.accentColor, bg),
               textShadow: `0 0 40px ${scene.accentColor}66` }}>
@@ -6941,7 +6954,7 @@ export const ScoreboardScene: React.FC<{ scene: SceneData; sceneIndex?: number }
           </div>
           <div style={{ fontSize: 60, fontWeight: 200, color: isLight(bg) ? "#ccc" : "#333", fontFamily }}>—</div>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 36, fontWeight: 700, color: textColor(bg), fontFamily }}>Équipe B</div>
+            <div style={{ fontSize: 36, fontWeight: 900, color: textColor(bg), fontFamily }}>Équipe B</div>
             <div style={{ fontSize: 160, fontWeight: 900, fontFamily, letterSpacing: "-0.06em",
               color: textColor(bg) }}>
               {Math.round(score2)}
@@ -7394,7 +7407,7 @@ export const ClickScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 60 }}>
         {scene.text && (
-          <div style={{ fontSize: 60, fontWeight: 800, color: isLight(bg) ? "#0a0a0a" : "#ffffff", fontFamily, letterSpacing: "-0.03em", textAlign: "center" }}>
+          <div style={{ fontSize: 60, fontWeight: 900, color: isLight(bg) ? "#0a0a0a" : "#ffffff", fontFamily, letterSpacing: "-0.03em", textAlign: "center" }}>
             {scene.text}
           </div>
         )}
@@ -7413,7 +7426,7 @@ export const ClickScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
             transform: `scale(${btnScale})`,
             boxShadow: hasClicked ? `0 8px 40px ${scene.accentColor}66` : `0 4px 20px ${scene.accentColor}44`,
           }}>
-            <div style={{ fontSize: 32, fontWeight: 700, color: "#ffffff", fontFamily }}>
+            <div style={{ fontSize: 32, fontWeight: 900, color: "#ffffff", fontFamily }}>
               {hasClicked ? (scene.text2 || "✓ Cliqué !") : (scene.text2 || "Cliquer ici")}
             </div>
           </div>
@@ -7445,7 +7458,7 @@ export const LoadingScene: React.FC<{ scene: SceneData; sceneIndex?: number }> =
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 40, padding: "0 80px" }}>
         {scene.text && (
-          <div style={{ fontSize, fontWeight: 700, color: isLight(bg) ? "#0a0a0a" : "#ffffff", fontFamily, letterSpacing: "-0.02em", textAlign: "center" }}>
+          <div style={{ fontSize, fontWeight: 900, color: isLight(bg) ? "#0a0a0a" : "#ffffff", fontFamily, letterSpacing: "-0.02em", textAlign: "center" }}>
             {scene.text}
           </div>
         )}
@@ -7502,7 +7515,7 @@ export const AudioWaveformScene: React.FC<{ scene: SceneData; sceneIndex?: numbe
           })}
         </div>
         {scene.text && (
-          <div style={{ fontSize, fontWeight: 700, color: textColor(bg), fontFamily, letterSpacing: "-0.02em", textAlign: "center" }}>
+          <div style={{ fontSize, fontWeight: 900, color: textColor(bg), fontFamily, letterSpacing: "-0.02em", textAlign: "center" }}>
             {scene.text}
           </div>
         )}
@@ -7548,7 +7561,7 @@ export const VinylScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = (
           </svg>
         </div>
         {scene.text && (
-          <div style={{ fontSize: 56, fontWeight: 800, color: textColor(bg), fontFamily, letterSpacing: "-0.03em", textAlign: "center" }}>
+          <div style={{ fontSize: 56, fontWeight: 900, color: textColor(bg), fontFamily, letterSpacing: "-0.03em", textAlign: "center" }}>
             {scene.text}
           </div>
         )}
@@ -7627,7 +7640,7 @@ export const PullQuoteScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
             {scene.text}
           </div>
           {scene.text2 && (
-            <div style={{ fontSize: 22, fontWeight: 700, color: scene.accentColor, fontFamily, marginTop: 24, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            <div style={{ fontSize: 22, fontWeight: 900, color: scene.accentColor, fontFamily, marginTop: 24, letterSpacing: "0.06em", textTransform: "uppercase" }}>
               {scene.text2}
             </div>
           )}
@@ -7651,7 +7664,7 @@ export const InfographicScene: React.FC<{ scene: SceneData; sceneIndex?: number 
       <Grain />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fade, flexDirection: "column", gap: 20, padding: "80px 80px" }}>
         {scene.text2 && (
-          <div style={{ fontSize: 52, fontWeight: 800, color: textColor(bg), fontFamily, letterSpacing: "-0.03em", textAlign: "center", marginBottom: 20 }}>
+          <div style={{ fontSize: 52, fontWeight: 900, color: textColor(bg), fontFamily, letterSpacing: "-0.03em", textAlign: "center", marginBottom: 20 }}>
             {scene.text2}
           </div>
         )}

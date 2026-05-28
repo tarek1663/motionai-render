@@ -1,6 +1,6 @@
 import {
   AbsoluteFill,
-  Audio, interpolate, Easing, useVideoConfig, useCurrentFrame, Sequence,
+  Audio, interpolate, Easing, useVideoConfig, useCurrentFrame,
 } from "remotion";
 import {
   linearTiming,
@@ -12,6 +12,8 @@ import {
 type TransitionProps = Record<string, unknown>;
 type TransitionComponentProps = TransitionPresentationComponentProps<TransitionProps>;
 import { fade } from "@remotion/transitions/fade";
+import { slide } from "@remotion/transitions/slide";
+import { wipe } from "@remotion/transitions/wipe";
 import React from "react";
 
 const E_OUT = Easing.bezier(0.16, 1, 0.3, 1);
@@ -61,6 +63,19 @@ export type MotionVideoProps = {
   musicVolume?: number;
   format?: string;
   showWatermark?: boolean;
+};
+
+const TRANSITION_FRAMES = 8;
+const MIN_SCENE_FRAMES = 90;
+
+const getBetweenSceneTransition = (index: number): TransitionPresentation<TransitionProps> => {
+  const transitions = [
+    fade(),
+    slide({ direction: "from-right" }),
+    wipe({ direction: "from-left" }),
+    fade(),
+  ];
+  return transitions[index % transitions.length];
 };
 
 // ─────────────────────────────────────────────────────────
@@ -444,6 +459,30 @@ export const MotionVideo: React.FC<MotionVideoProps> = ({
   const allScenes = scenes || [];
   const timings = sceneDurations || [];
 
+  const seriesElements: React.ReactNode[] = [];
+  allScenes.forEach((scene, index) => {
+    const { duration } = getSceneTiming(timings, safeTotalFrames, allScenes.length, index);
+    const sceneDuration = Math.max(MIN_SCENE_FRAMES, duration);
+
+    if (!Number.isFinite(sceneDuration) || sceneDuration <= 0) return;
+
+    seriesElements.push(
+      <TransitionSeries.Sequence key={`scene-${index}`} durationInFrames={sceneDuration}>
+        <SceneRenderer scene={scene} index={index} />
+      </TransitionSeries.Sequence>,
+    );
+
+    if (index < allScenes.length - 1) {
+      seriesElements.push(
+        <TransitionSeries.Transition
+          key={`transition-${index}`}
+          presentation={getBetweenSceneTransition(index)}
+          timing={linearTiming({ durationInFrames: TRANSITION_FRAMES })}
+        />,
+      );
+    }
+  });
+
   return (
     <AbsoluteFill>
       {audioSrc && (
@@ -462,23 +501,9 @@ export const MotionVideo: React.FC<MotionVideoProps> = ({
         />
       )}
 
-      {allScenes.map((scene, index) => {
-        const { from, duration } = getSceneTiming(timings, safeTotalFrames, allScenes.length, index);
-
-        if (!Number.isFinite(from) || !Number.isFinite(duration) || duration <= 0) {
-          return null;
-        }
-
-        return (
-          <Sequence
-            key={index}
-            from={from}
-            durationInFrames={duration}
-          >
-            <SceneRenderer scene={scene} index={index} />
-          </Sequence>
-        );
-      })}
+      {seriesElements.length > 0 && (
+        <TransitionSeries>{seriesElements}</TransitionSeries>
+      )}
 
       {showWatermark && (
         <AbsoluteFill style={{ pointerEvents: "none" }}>
