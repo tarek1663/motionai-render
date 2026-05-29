@@ -28,13 +28,24 @@ export type SceneData = {
     | "slideup"
     | "cliptop"
     | "staggerwords"
-    | "morphweight"
     | "fadepure"
     | "tracking"
-    | "rotatein";
+    | "rotatein"
+    | "geobgtest";
   text?: string;
   bg?: string;
   accentColor?: string;
+  geo?:
+    | "dots"
+    | "grid"
+    | "diagonal"
+    | "circles"
+    | "perspective"
+    | "triangles"
+    | "hex"
+    | "cross"
+    | "lines"
+    | "radial";
   _duration?: number;
   _index?: number;
 };
@@ -67,6 +78,209 @@ const autoFontSize = (text: string, max = 160, min = 60): number => {
   if (len <= 20) return Math.round(max * 0.55);
   if (len <= 30) return Math.round(max * 0.45);
   return Math.max(min, Math.round(max * 0.35));
+};
+
+// ═══════════════════════════════════════════════════════
+// FONDS GÉOMÉTRIQUES SOBRES — À SÉLECTIONNER
+// ═══════════════════════════════════════════════════════
+
+const GeoDots: React.FC<{ bg: string }> = ({ bg }) => {
+  const light = isLight(bg);
+  const dot = light ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)";
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: bg,
+        backgroundImage: `radial-gradient(circle, ${dot} 1px, transparent 1px)`,
+        backgroundSize: "40px 40px",
+      }}
+    />
+  );
+};
+
+const GeoGrid: React.FC<{ bg: string }> = ({ bg }) => {
+  const light = isLight(bg);
+  const line = light ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)";
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: bg,
+        backgroundImage: `linear-gradient(${line} 1px, transparent 1px), linear-gradient(90deg, ${line} 1px, transparent 1px)`,
+        backgroundSize: "56px 56px",
+      }}
+    />
+  );
+};
+
+const GeoDiagonal: React.FC<{ bg: string }> = ({ bg }) => {
+  const light = isLight(bg);
+  const line = light ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)";
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: bg,
+        backgroundImage: `repeating-linear-gradient(45deg, ${line} 0px, ${line} 1px, transparent 1px, transparent 40px)`,
+      }}
+    />
+  );
+};
+
+const GeoCircles: React.FC<{ bg: string }> = ({ bg }) => {
+  const light = isLight(bg);
+  const c = light ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)";
+  return (
+    <div style={{ position: "absolute", inset: 0, background: bg }}>
+      {[200, 350, 500, 650, 800, 950].map((r, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            width: r * 2,
+            height: r * 2,
+            borderRadius: "50%",
+            border: `1px solid ${c}`,
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+const GeoPerspective: React.FC<{ bg: string }> = ({ bg }) => {
+  const light = isLight(bg);
+  const line = light ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)";
+  return (
+    <div style={{ position: "absolute", inset: 0, background: bg, overflow: "hidden" }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: -200,
+          backgroundImage: `linear-gradient(${line} 1px, transparent 1px), linear-gradient(90deg, ${line} 1px, transparent 1px)`,
+          backgroundSize: "60px 60px",
+          transform: "perspective(600px) rotateX(55deg) translateY(30%)",
+          transformOrigin: "center bottom",
+        }}
+      />
+    </div>
+  );
+};
+
+const GeoTriangles: React.FC<{ bg: string }> = ({ bg }) => {
+  const light = isLight(bg);
+  const c = light ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)";
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: bg,
+        backgroundImage: `
+        linear-gradient(60deg, ${c} 25%, transparent 25%),
+        linear-gradient(-60deg, ${c} 25%, transparent 25%),
+        linear-gradient(60deg, transparent 75%, ${c} 75%),
+        linear-gradient(-60deg, transparent 75%, ${c} 75%)
+      `,
+        backgroundSize: "80px 46px",
+      }}
+    />
+  );
+};
+
+const GeoHex: React.FC<{ bg: string }> = ({ bg }) => {
+  const light = isLight(bg);
+  const c = light ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)";
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: bg,
+        backgroundImage: `
+        radial-gradient(circle farthest-side at 0% 50%, ${bg} 23.5%, transparent 0) 21px 30px,
+        radial-gradient(circle farthest-side at 0% 50%, ${c} 24%, transparent 0) 19px 30px,
+        linear-gradient(${bg} 14%, transparent 0, transparent 85%, ${bg} 0) 0 0,
+        linear-gradient(150deg, ${bg} 24%, ${c} 0, ${c} 26%, transparent 0, transparent 74%, ${c} 0, ${c} 76%, ${bg} 0) 0 0,
+        linear-gradient(30deg, ${bg} 24%, ${c} 0, ${c} 26%, transparent 0, transparent 74%, ${c} 0, ${c} 76%, ${bg} 0) 0 0,
+        linear-gradient(90deg, ${c} 2%, ${bg} 0, ${bg} 98%, ${c} 0) 0 0
+      `,
+        backgroundSize: "40px 70px",
+      }}
+    />
+  );
+};
+
+const GeoCross: React.FC<{ bg: string }> = ({ bg }) => {
+  const light = isLight(bg);
+  const c = light ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)";
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: bg,
+        backgroundImage: `
+        linear-gradient(${c} 2px, transparent 2px),
+        linear-gradient(90deg, ${c} 2px, transparent 2px),
+        linear-gradient(${c} 1px, transparent 1px),
+        linear-gradient(90deg, ${c} 1px, transparent 1px)
+      `,
+        backgroundSize: "80px 80px, 80px 80px, 20px 20px, 20px 20px",
+        backgroundPosition: "-2px -2px, -2px -2px, -1px -1px, -1px -1px",
+      }}
+    />
+  );
+};
+
+const GeoLines: React.FC<{ bg: string }> = ({ bg }) => {
+  const light = isLight(bg);
+  const c = light ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)";
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: bg,
+        backgroundImage: `repeating-linear-gradient(0deg, ${c} 0px, ${c} 1px, transparent 1px, transparent 48px)`,
+      }}
+    />
+  );
+};
+
+const GeoRadial: React.FC<{ bg: string }> = ({ bg }) => {
+  const light = isLight(bg);
+  const glow = light ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.04)";
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: bg,
+        backgroundImage: `radial-gradient(ellipse 70% 60% at 50% 50%, ${glow} 0%, transparent 100%)`,
+      }}
+    />
+  );
+};
+
+const GEO_MAP: Record<string, React.FC<{ bg: string }>> = {
+  dots: GeoDots,
+  grid: GeoGrid,
+  diagonal: GeoDiagonal,
+  circles: GeoCircles,
+  perspective: GeoPerspective,
+  triangles: GeoTriangles,
+  hex: GeoHex,
+  cross: GeoCross,
+  lines: GeoLines,
+  radial: GeoRadial,
 };
 
 // Fond pur avec micro zoom
@@ -686,54 +900,6 @@ export const StaggerWordsScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
   );
 };
 
-// ─── 11. MORPH WEIGHT ─────────────────────────────────
-export const MorphWeightScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
-  const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
-  const bg = scene.bg || "#ffffff";
-
-  const progress = interpolate(frame, [0, 40], [0, 1], {
-    extrapolateRight: "clamp",
-    easing: E_OUT,
-  });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
-
-  const fontWeight = Math.round(interpolate(progress, [0, 1], [100, 700]));
-  const opacity = Math.min(interpolate(progress, [0, 0.15], [0, 1]), fadeOut);
-  const fontSize = autoFontSize(scene.text || "", 160, 72);
-
-  return (
-    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
-      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
-        <div
-          style={{
-            fontSize,
-            fontWeight,
-            fontFamily: FONT,
-            letterSpacing: "-0.03em",
-            lineHeight: 1,
-            color: textColor(bg),
-            opacity,
-            whiteSpace: "nowrap",
-          }}
-        >
-          {scene.text}
-        </div>
-      </AbsoluteFill>
-    </AbsoluteFill>
-  );
-};
-
 // ─── 12. FADE CROSS ───────────────────────────────────
 export const FadePureScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
@@ -880,6 +1046,77 @@ export const RotateInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
           }}
         >
           {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── GEO BG TEST ────────────────────────────────────────
+export const GeoBgTestScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const geoType = scene.geo || "dots";
+
+  const fadeIn = interpolate(frame, [0, 20], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 20, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+  const opacity = Math.min(fadeIn, fadeOut);
+
+  const GeoComponent = GEO_MAP[geoType] || GeoDots;
+  const fontSize = autoFontSize(scene.text || "", 160, 72);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <GeoComponent bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+          gap: 16,
+        }}
+      >
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            opacity,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {scene.text}
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            bottom: 40,
+            fontSize: 18,
+            fontWeight: 400,
+            fontFamily: FONT,
+            color: isLight(bg) ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.25)",
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            opacity,
+          }}
+        >
+          {geoType}
         </div>
       </AbsoluteFill>
     </AbsoluteFill>

@@ -5,22 +5,24 @@ const fps = 60;
 
 const defaultProps: MotionVideoProps = {
   scenes: [
-    { type: "fadeupl", text: "Élégant.", bg: "#ffffff" },
-    { type: "blurin", text: "Fluide.", bg: "#000000" },
-    { type: "scalein", text: "Précis.", bg: "#ffffff" },
-    { type: "slideup", text: "Rapide.", bg: "#000000" },
-    { type: "cliptop", text: "Simple.", bg: "#ffffff" },
-    { type: "staggerwords", text: "Fait pour toi.", bg: "#000000" },
-    { type: "morphweight", text: "Premium.", bg: "#ffffff" },
-    { type: "fadepure", text: "Sobre.", bg: "#000000" },
-    { type: "tracking", text: "Motionr.", bg: "#ffffff" },
-    { type: "rotatein", text: "Commence.", bg: "#000000" },
+    { type: "geobgtest", text: "Motionr.", bg: "#ffffff", geo: "dots" },
+    { type: "geobgtest", text: "Motionr.", bg: "#000000", geo: "dots" },
+    { type: "geobgtest", text: "Motionr.", bg: "#ffffff", geo: "grid" },
+    { type: "geobgtest", text: "Motionr.", bg: "#000000", geo: "grid" },
+    { type: "geobgtest", text: "Motionr.", bg: "#ffffff", geo: "diagonal" },
+    { type: "geobgtest", text: "Motionr.", bg: "#000000", geo: "circles" },
+    { type: "geobgtest", text: "Motionr.", bg: "#ffffff", geo: "perspective" },
+    { type: "geobgtest", text: "Motionr.", bg: "#000000", geo: "triangles" },
+    { type: "geobgtest", text: "Motionr.", bg: "#ffffff", geo: "cross" },
+    { type: "geobgtest", text: "Motionr.", bg: "#000000", geo: "lines" },
+    { type: "geobgtest", text: "Motionr.", bg: "#ffffff", geo: "radial" },
+    { type: "geobgtest", text: "Motionr.", bg: "#000000", geo: "radial" },
   ] as MotionVideoProps["scenes"],
-  sceneDurations: Array.from({ length: 10 }, (_, i) => ({
+  sceneDurations: Array.from({ length: 12 }, (_, i) => ({
     startFrame: i * 120,
     durationFrames: 120,
   })),
-  totalFrames: 1200,
+  totalFrames: 1440,
   audioSrc: null,
   musicSrc: null,
 };
@@ -45,7 +47,7 @@ const RemotionRoot = () => (
       });
 
       const total =
-        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 1200;
+        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 1440;
 
       const fmt = (p as MotionVideoProps & { format?: string }).format || "9:16";
       const w = fmt === "16:9" ? 1920 : 1080;

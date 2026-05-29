@@ -20,10 +20,10 @@ import {
   SlideUpScene,
   ClipTopScene,
   StaggerWordsScene,
-  MorphWeightScene,
   FadePureScene,
   TrackingScene,
   RotateInScene,
+  GeoBgTestScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -67,14 +67,14 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <ClipTopScene scene={sceneWithIndex} />;
     case "staggerwords":
       return <StaggerWordsScene scene={sceneWithIndex} />;
-    case "morphweight":
-      return <MorphWeightScene scene={sceneWithIndex} />;
     case "fadepure":
       return <FadePureScene scene={sceneWithIndex} />;
     case "tracking":
       return <TrackingScene scene={sceneWithIndex} />;
     case "rotatein":
       return <RotateInScene scene={sceneWithIndex} />;
+    case "geobgtest":
+      return <GeoBgTestScene scene={sceneWithIndex} />;
     default:
       return <SingleWordScene scene={sceneWithIndex} />;
   }
