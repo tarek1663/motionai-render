@@ -9239,7 +9239,6 @@ export const AppleNumberScene: React.FC<{ scene: SceneData; sceneIndex?: number 
   });
   const current = Math.round(target * countProgress);
   const front = useAppleReveal(0);
-  const mid = useAppleReveal(20);
   const exit = useAppleExit(20);
 
   return (
