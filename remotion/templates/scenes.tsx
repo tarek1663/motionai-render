@@ -329,6 +329,20 @@ const PureBg: React.FC<{ bg: string }> = ({ bg }) => {
   );
 };
 
+// ═══════════════════════════════════════════════════════
+// FOND GÉOMÉTRIQUE DYNAMIQUE
+// ═══════════════════════════════════════════════════════
+
+const GeoBackground: React.FC<{ bg: string; geo?: SceneData["geo"] }> = ({
+  bg,
+  geo,
+}) => {
+  if (!geo) return <PureBg bg={bg} />;
+
+  const Component = GEO_MAP[geo] || PureBg;
+  return <Component bg={bg} />;
+};
+
 // ─── SINGLEWORD ───────────────────────────────────────
 export const SingleWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
@@ -368,7 +382,7 @@ export const SingleWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
@@ -417,7 +431,7 @@ export const MaskRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -502,7 +516,7 @@ export const SlideWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -560,7 +574,7 @@ export const ZoomWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
@@ -605,7 +619,7 @@ export const FadeUpLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -676,7 +690,7 @@ export const BlurInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
@@ -729,7 +743,7 @@ export const ScaleInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
@@ -782,7 +796,7 @@ export const SlideUpScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
@@ -829,7 +843,7 @@ export const ClipTopScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -882,7 +896,7 @@ export const StaggerWordsScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -951,7 +965,7 @@ export const FadePureScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -1004,7 +1018,7 @@ export const TrackingScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
@@ -1056,7 +1070,7 @@ export const RotateInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
@@ -1173,7 +1187,7 @@ export const PhotoRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -1263,7 +1277,7 @@ export const PhotoCollageScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -1402,7 +1416,7 @@ export const CounterScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -1469,7 +1483,7 @@ export const ProgressBarScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -1557,7 +1571,7 @@ export const MultiStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -1658,7 +1672,7 @@ export const AccentWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -1737,7 +1751,7 @@ export const UnderlineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -1900,7 +1914,7 @@ export const LineDrawScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -1981,7 +1995,7 @@ export const ShapeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
@@ -2072,7 +2086,7 @@ export const ExpandingShapeScene: React.FC<{ scene: SceneData }> = ({ scene }) =
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
 
       {circles.map((c, i) => {
         const localExpand = Math.max(0, expand - c.delay);
@@ -2154,7 +2168,7 @@ export const WipeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
 
       <div
         style={{
@@ -2240,7 +2254,7 @@ export const FlashScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
 
       <div
         style={{
@@ -2312,7 +2326,7 @@ export const ColorFadeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
 
       <div
         style={{
@@ -2388,7 +2402,7 @@ export const SplitVerticalScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <div
         style={{
           position: "absolute",
@@ -2464,7 +2478,7 @@ export const ZoomTransitionScene: React.FC<{ scene: SceneData }> = ({ scene }) =
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -2532,7 +2546,7 @@ export const IrisScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
           clipPath: `circle(${irisSize}% at 50% 50%)`,
         }}
       >
-        <PureBg bg={bg} />
+        <GeoBackground bg={bg} geo={scene.geo} />
       </div>
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
@@ -2588,7 +2602,7 @@ export const CurtainScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <div
         style={{
           position: "absolute",
@@ -2665,7 +2679,7 @@ export const DiagonalWipeScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <div
         style={{
           position: "absolute",
@@ -2720,7 +2734,7 @@ export const GlitchSwitchScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
@@ -2798,7 +2812,7 @@ export const PixelDissolveScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <div
         style={{
           position: "absolute",
@@ -2875,7 +2889,7 @@ export const LightSweepScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <div
         style={{
           position: "absolute",
@@ -2951,7 +2965,7 @@ export const NotificationScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
 
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
@@ -3091,7 +3105,7 @@ export const PulseButtonScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -3197,7 +3211,7 @@ export const UIProgressScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{ justifyContent: "center", alignItems: "center", padding: "0 80px" }}
       >
@@ -3404,7 +3418,7 @@ export const QuoteScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -3482,7 +3496,7 @@ export const TimelineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -3576,7 +3590,7 @@ export const SocialStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -3629,7 +3643,7 @@ export const ChecklistScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -3707,7 +3721,7 @@ export const AudioVizScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <PureBg bg={bg} />
+      <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill
         style={{
           justifyContent: "center",
