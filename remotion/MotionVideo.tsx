@@ -58,6 +58,12 @@ import {
   GradientScene,
   HierarchyTextScene,
   SpotlightScene,
+  NoiseScene,
+  GradientTextScene,
+  EraseLettersScene,
+  SplitLinesScene,
+  BgNumberScene,
+  TwoLinesScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -177,6 +183,18 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <HierarchyTextScene scene={sceneWithIndex} />;
     case "spotlight":
       return <SpotlightScene scene={sceneWithIndex} />;
+    case "noise":
+      return <NoiseScene scene={sceneWithIndex} />;
+    case "gradienttext":
+      return <GradientTextScene scene={sceneWithIndex} />;
+    case "eraseletters":
+      return <EraseLettersScene scene={sceneWithIndex} />;
+    case "splitlines":
+      return <SplitLinesScene scene={sceneWithIndex} />;
+    case "bgnumber":
+      return <BgNumberScene scene={sceneWithIndex} />;
+    case "twolines":
+      return <TwoLinesScene scene={sceneWithIndex} />;
     default:
       return <SingleWordScene scene={sceneWithIndex} />;
   }

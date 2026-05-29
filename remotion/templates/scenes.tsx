@@ -65,10 +65,20 @@ export type SceneData = {
     | "colorletters"
     | "gradient"
     | "hierarchytext"
-    | "spotlight";
+    | "spotlight"
+    | "noise"
+    | "gradienttext"
+    | "eraseletters"
+    | "splitlines"
+    | "bgnumber"
+    | "twolines";
   text?: string;
   textAccent?: boolean;
   bg2?: string;
+  color2?: string;
+  bgNumber?: string;
+  line1?: string;
+  line2?: string;
   notifText?: string;
   notifTitle?: string;
   notifIcon?: string;
@@ -4235,6 +4245,456 @@ export const SpotlightScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
         >
           {scene.text}
         </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── NOISE TEXTURE ────────────────────────────────────
+export const NoiseScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+
+  const enter = spring({
+    frame,
+    fps,
+    config: { damping: 280, stiffness: 80, mass: 0.8 },
+    from: 0,
+    to: 1,
+  });
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: E_IN,
+  });
+
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+
+      <svg style={{ position: "absolute", width: 0, height: 0 }}>
+        <defs>
+          <filter id="noise">
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.65"
+              numOctaves="3"
+              stitchTiles="stitch"
+            />
+            <feColorMatrix type="saturate" values="0" />
+            <feBlend in="SourceGraphic" mode="overlay" />
+          </filter>
+        </defs>
+      </svg>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          filter: "url(#noise)",
+          opacity: isLight(bg) ? 0.06 : 0.12,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+          backgroundRepeat: "repeat",
+          backgroundSize: "200px 200px",
+        }}
+      />
+
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity: Math.min(interpolate(enter, [0, 1], [0, 1]), fadeOut),
+        }}
+      >
+        <div
+          style={{
+            fontSize,
+            fontWeight: 700,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: mainTextColor(scene, bg),
+            whiteSpace: "nowrap",
+            transform: `scale(${interpolate(enter, [0, 1], [0.92, 1])}) translateY(${interpolate(enter, [0, 1], [24, 0])}px)`,
+            filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
+            textShadow: mainTextShadow(bg),
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── DÉGRADÉ DE TEXTE ─────────────────────────────────
+export const GradientTextScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const accent = safeAccent(scene.accentColor, bg);
+  const color2 = scene.color2 || textColor(bg);
+
+  const enter = spring({
+    frame,
+    fps,
+    config: { damping: 280, stiffness: 80, mass: 0.8 },
+    from: 0,
+    to: 1,
+  });
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: E_IN,
+  });
+
+  const angle = interpolate(frame, [0, durationInFrames], [90, 120], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity: Math.min(interpolate(enter, [0, 1], [0, 1]), fadeOut),
+        }}
+      >
+        <div
+          style={{
+            fontSize,
+            fontWeight: 800,
+            fontFamily: FONT,
+            letterSpacing: "-0.04em",
+            lineHeight: 1,
+            whiteSpace: "nowrap",
+            transform: `scale(${interpolate(enter, [0, 1], [0.92, 1])}) translateY(${interpolate(enter, [0, 1], [24, 0])}px)`,
+            filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
+            background: `linear-gradient(${angle}deg, ${accent}, ${color2})`,
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── EFFACE LETTRE PAR LETTRE ─────────────────────────
+export const EraseLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const letters = (scene.text || "").split("");
+  const fontSize = autoFontSize(scene.text || "", 160, 72);
+
+  const globalEnter = spring({
+    frame,
+    fps,
+    config: { damping: 280, stiffness: 80 },
+    from: 0,
+    to: 1,
+  });
+
+  const eraseStart = durationInFrames - 40;
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity: interpolate(globalEnter, [0, 0.3], [0, 1], { extrapolateRight: "clamp" }),
+        }}
+      >
+        <div style={{ display: "flex", whiteSpace: "nowrap" }}>
+          {letters.map((letter, i) => {
+            const reverseIndex = letters.length - 1 - i;
+            const eraseDelay = eraseStart + reverseIndex * 3;
+            const eraseProgress = interpolate(
+              Math.max(0, frame - eraseDelay),
+              [0, 10],
+              [1, 0],
+              { extrapolateRight: "clamp", easing: E_IN },
+            );
+            const enterProgress = interpolate(globalEnter, [0, 1], [0, 1]);
+
+            return (
+              <span
+                key={i}
+                style={{
+                  fontSize,
+                  fontWeight: 700,
+                  fontFamily: FONT,
+                  letterSpacing: "-0.03em",
+                  lineHeight: 1,
+                  color: mainTextColor(scene, bg),
+                  display: "inline-block",
+                  opacity: Math.min(enterProgress, eraseProgress),
+                  transform: `translateY(${interpolate(eraseProgress, [0, 1], [10, 0])}px)`,
+                }}
+              >
+                {letter === " " ? "\u00A0" : letter}
+              </span>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── LIGNES SÉPARÉES ──────────────────────────────────
+export const SplitLinesScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const accent = safeAccent(scene.accentColor, bg);
+
+  const lines = (scene.text || "")
+    .split("|")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: E_IN,
+  });
+
+  const fontSize = autoFontSize(lines[0] || "", 120, 56);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+          gap: 12,
+          opacity: fadeOut,
+          padding: "0 80px",
+        }}
+      >
+        {lines.map((line, i) => {
+          const delay = i * 14;
+          const enter = spring({
+            frame: Math.max(0, frame - delay),
+            fps,
+            config: { damping: 280, stiffness: 80, mass: 0.8 },
+            from: 0,
+            to: 1,
+          });
+          const lineSize = i === 0 ? fontSize : Math.round(fontSize * 0.55);
+          const lineWeight = i === 0 ? 800 : 400;
+          const lineColor = i === 0 ? mainTextColor(scene, bg) : accent;
+
+          return (
+            <div
+              key={i}
+              style={{
+                fontSize: lineSize,
+                fontWeight: lineWeight,
+                fontFamily: FONT,
+                letterSpacing: "-0.03em",
+                lineHeight: 1,
+                color: lineColor,
+                whiteSpace: "nowrap",
+                textAlign: "center",
+                opacity: interpolate(enter, [0, 1], [0, 1]),
+                transform: `translateY(${interpolate(enter, [0, 1], [30, 0])}px)`,
+                filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
+                textShadow: mainTextShadow(bg),
+              }}
+            >
+              {line}
+            </div>
+          );
+        })}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── CHIFFRE GÉANT EN FOND ────────────────────────────
+export const BgNumberScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const number = scene.bgNumber || "1";
+
+  const bgNumEnter = spring({
+    frame,
+    fps,
+    config: { damping: 300, stiffness: 60, mass: 1.2 },
+    from: 0,
+    to: 1,
+  });
+  const textEnter = spring({
+    frame: Math.max(0, frame - 16),
+    fps,
+    config: { damping: 280, stiffness: 80 },
+    from: 0,
+    to: 1,
+  });
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: E_IN,
+  });
+
+  const fontSize = autoFontSize(scene.text || "", 100, 48);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity: Math.min(interpolate(bgNumEnter, [0, 1], [0, 0.08]), fadeOut * 0.08),
+        }}
+      >
+        <div
+          style={{
+            fontSize: 600,
+            fontWeight: 900,
+            fontFamily: FONT,
+            letterSpacing: "-0.1em",
+            lineHeight: 1,
+            color: textColor(bg),
+            userSelect: "none",
+            transform: `scale(${interpolate(bgNumEnter, [0, 1], [1.3, 1])})`,
+          }}
+        >
+          {number}
+        </div>
+      </AbsoluteFill>
+
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+          gap: 12,
+        }}
+      >
+        <div
+          style={{
+            fontSize,
+            fontWeight: 700,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: mainTextColor(scene, bg),
+            whiteSpace: "nowrap",
+            opacity: Math.min(interpolate(textEnter, [0, 1], [0, 1]), fadeOut),
+            transform: `scale(${interpolate(textEnter, [0, 1], [0.92, 1])}) translateY(${interpolate(textEnter, [0, 1], [24, 0])}px)`,
+            filter: `blur(${interpolate(textEnter, [0, 0.5, 1], [8, 1, 0])}px)`,
+            textShadow: mainTextShadow(bg),
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── DEUX LIGNES TAILLES DIFFÉRENTES ──────────────────
+export const TwoLinesScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const accent = safeAccent(scene.accentColor, bg);
+
+  const line1 = scene.line1 || scene.text || "";
+  const line2 = scene.line2 || "";
+
+  const enter1 = spring({
+    frame,
+    fps,
+    config: { damping: 280, stiffness: 80, mass: 0.8 },
+    from: 0,
+    to: 1,
+  });
+  const enter2 = spring({
+    frame: Math.max(0, frame - 16),
+    fps,
+    config: { damping: 280, stiffness: 70, mass: 0.9 },
+    from: 0,
+    to: 1,
+  });
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: E_IN,
+  });
+
+  const fontSize1 = autoFontSize(line1, 140, 64);
+  const fontSize2 = Math.round(fontSize1 * 0.38);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+          gap: 8,
+          opacity: fadeOut,
+          padding: "0 80px",
+        }}
+      >
+        <div
+          style={{
+            fontSize: fontSize1,
+            fontWeight: 800,
+            fontFamily: FONT,
+            letterSpacing: "-0.04em",
+            lineHeight: 1,
+            color: mainTextColor(scene, bg),
+            whiteSpace: "nowrap",
+            opacity: interpolate(enter1, [0, 1], [0, 1]),
+            transform: `translateY(${interpolate(enter1, [0, 1], [30, 0])}px) scale(${interpolate(enter1, [0, 1], [0.92, 1])})`,
+            filter: `blur(${interpolate(enter1, [0, 0.5, 1], [8, 1, 0])}px)`,
+            textShadow: mainTextShadow(bg),
+          }}
+        >
+          {line1}
+        </div>
+
+        {line2 && (
+          <div
+            style={{
+              fontSize: fontSize2,
+              fontWeight: 300,
+              fontFamily: FONT,
+              letterSpacing: "0.08em",
+              lineHeight: 1,
+              color: accent,
+              whiteSpace: "nowrap",
+              textTransform: "uppercase",
+              opacity: interpolate(enter2, [0, 1], [0, 1]),
+              transform: `translateY(${interpolate(enter2, [0, 1], [16, 0])}px)`,
+            }}
+          >
+            {line2}
+          </div>
+        )}
       </AbsoluteFill>
     </AbsoluteFill>
   );
