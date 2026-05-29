@@ -9070,13 +9070,80 @@ const appleText2Style = (bg: string, fontSize: number): React.CSSProperties => (
   lineHeight: 1.4,
 });
 
+/** Texte mot par mot — stagger Apple (scale 70%→100%, sortie 100%→108%) */
+const WordByWord: React.FC<{
+  text: string;
+  style: React.CSSProperties;
+  delayPerWord?: number;
+  initialDelay?: number;
+  exitStartAt?: number;
+}> = ({ text, style, delayPerWord = 6, initialDelay = 0, exitStartAt = 20 }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const words = text.split(/\s+/).filter(Boolean);
+
+  return (
+    <div style={{
+      display: "flex",
+      flexWrap: "wrap",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: "0.25em",
+      lineHeight: style.lineHeight || 1.1,
+    }}>
+      {words.map((word, i) => {
+        const wordDelay = initialDelay + i * delayPerWord;
+
+        const enterProgress = spring({
+          frame: Math.max(0, frame - wordDelay),
+          fps,
+          config: { damping: 200, stiffness: 120, mass: 0.6 },
+          from: 0,
+          to: 1,
+        });
+
+        const exitFrame = Math.max(0, frame - (durationInFrames - exitStartAt));
+        const exitProgress = interpolate(exitFrame, [0, exitStartAt], [0, 1], {
+          extrapolateRight: "clamp",
+          easing: E_APPLE_OUT,
+        });
+
+        const opacity = Math.min(
+          interpolate(enterProgress, [0, 1], [0, 1]),
+          interpolate(exitProgress, [0, 1], [1, 0]),
+        );
+        const scaleVal = enterProgress < 0.99
+          ? interpolate(enterProgress, [0, 1], [0.7, 1])
+          : interpolate(exitProgress, [0, 1], [1, 1.08]);
+        const blurVal = Math.max(
+          interpolate(enterProgress, [0, 0.5, 1], [8, 2, 0]),
+          interpolate(exitProgress, [0, 0.5, 1], [0, 2, 8]),
+        );
+        const yVal = interpolate(enterProgress, [0, 1], [20, 0])
+          + interpolate(exitProgress, [0, 1], [0, -16]);
+
+        return (
+          <span key={i} style={{
+            ...style,
+            display: "inline-block",
+            opacity,
+            transform: `translateY(${yVal}px) scale(${scaleVal})`,
+            filter: `blur(${blurVal}px)`,
+            willChange: "transform, opacity, filter",
+          }}>
+            {word}
+          </span>
+        );
+      })}
+    </div>
+  );
+};
+
 export const AppleTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
   const bg = scene.bg || "#ffffff";
   const accent = safeAccent(scene.accentColor, bg);
   const fontSize = autoFontSize(scene.text || "", 130, 56);
-  const front = useAppleReveal(0);
-  const mid = useAppleReveal(12);
-  const exit = useAppleExit(20);
+  const mainWordCount = (scene.text || "").split(/\s+/).filter(Boolean).length;
 
   return (
     <AbsoluteFill style={{ background: bg }}>
@@ -9086,21 +9153,25 @@ export const AppleTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
         flexDirection: "column", gap: 14,
         padding: "0 120px", textAlign: "center",
       }}>
-        <div style={appleLayerStyle(front, exit)}>
-          <div style={{
+        <WordByWord
+          text={scene.text || ""}
+          initialDelay={0}
+          delayPerWord={6}
+          exitStartAt={20}
+          style={{
             fontSize, fontWeight: 700, fontFamily,
             letterSpacing: "-0.03em", lineHeight: 0.95,
             color: textColor(bg),
-          }}>
-            {scene.text}
-          </div>
-        </div>
+          }}
+        />
         {scene.text2 && (
-          <div style={appleLayerStyle(mid, exit, 0.5)}>
-            <div style={appleText2Style(bg, fontSize)}>
-              {scene.text2}
-            </div>
-          </div>
+          <WordByWord
+            text={scene.text2}
+            initialDelay={mainWordCount * 6 + 4}
+            delayPerWord={5}
+            exitStartAt={18}
+            style={appleText2Style(bg, fontSize)}
+          />
         )}
       </AbsoluteFill>
       <Vignette strength={isLight(bg) ? 0.08 : 0.3} />
@@ -9110,13 +9181,8 @@ export const AppleTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
 
 export const AppleAccentScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
   const bg = scene.bg || "#ffffff";
-  const words = (scene.text || "").split(" ");
-  const firstWord = words[0] || "";
-  const rest = words.slice(1).join(" ");
+  const words = (scene.text || "").split(/\s+/).filter(Boolean);
   const fontSize = autoFontSize(scene.text || "", 110, 52);
-  const front = useAppleReveal(0);
-  const mid = useAppleReveal(14);
-  const exit = useAppleExit(20);
 
   return (
     <AbsoluteFill style={{ background: bg }}>
@@ -9126,30 +9192,36 @@ export const AppleAccentScene: React.FC<{ scene: SceneData; sceneIndex?: number 
         flexDirection: "column", gap: 14,
         padding: "0 100px", textAlign: "center",
       }}>
-        <div style={appleLayerStyle(front, exit)}>
-          <span style={{
-            fontSize, fontWeight: 700, fontFamily,
-            letterSpacing: "-0.03em", lineHeight: 0.95,
-            color: safeAccent(scene.accentColor, bg),
-          }}>
-            {firstWord}{rest ? " " : ""}
-          </span>
-          {rest && (
-            <span style={{
-              fontSize, fontWeight: 700, fontFamily,
-              letterSpacing: "-0.03em", lineHeight: 0.95,
-              color: textColor(bg),
-            }}>
-              {rest}
-            </span>
-          )}
+        <div style={{
+          display: "flex", flexWrap: "wrap",
+          justifyContent: "center", alignItems: "center",
+          gap: "0.25em",
+        }}>
+          {words.map((word, i) => (
+            <WordByWord
+              key={i}
+              text={word}
+              initialDelay={i * 6}
+              delayPerWord={6}
+              exitStartAt={20}
+              style={{
+                fontSize, fontWeight: 700, fontFamily,
+                letterSpacing: "-0.03em", lineHeight: 0.95,
+                color: i === 0
+                  ? safeAccent(scene.accentColor, bg)
+                  : textColor(bg),
+              }}
+            />
+          ))}
         </div>
         {scene.text2 && (
-          <div style={appleLayerStyle(mid, exit, 0.5)}>
-            <div style={appleText2Style(bg, fontSize)}>
-              {scene.text2}
-            </div>
-          </div>
+          <WordByWord
+            text={scene.text2}
+            initialDelay={words.length * 6 + 4}
+            delayPerWord={5}
+            exitStartAt={18}
+            style={appleText2Style(bg, fontSize)}
+          />
         )}
       </AbsoluteFill>
       <Vignette strength={isLight(bg) ? 0.08 : 0.3} />
@@ -9188,15 +9260,17 @@ export const AppleNumberScene: React.FC<{ scene: SceneData; sceneIndex?: number 
           </div>
         </div>
         {scene.text && (
-          <div style={appleLayerStyle(mid, exit, 0.6)}>
-            <div style={{
+          <WordByWord
+            text={scene.text}
+            initialDelay={12}
+            delayPerWord={5}
+            exitStartAt={20}
+            style={{
               fontSize: 24, fontWeight: 500, fontFamily,
               letterSpacing: "0.06em", textTransform: "uppercase",
               color: textColor(bg),
-            }}>
-              {scene.text}
-            </div>
-          </div>
+            }}
+          />
         )}
       </AbsoluteFill>
       <Vignette strength={isLight(bg) ? 0.08 : 0.3} />
@@ -9209,13 +9283,13 @@ export const ApplePhotoScene: React.FC<{ scene: SceneData; sceneIndex?: number }
   const { durationInFrames } = useVideoConfig();
   const bg = scene.bg || "#ffffff";
   const photoUrl = scene.photoUrl || "";
-  const textReveal = useAppleReveal(0);
   const imgReveal = useAppleReveal(16);
   const exit = useAppleExit(20);
   const imgScale = interpolate(frame, [0, durationInFrames], [1.0, 1.04], {
     extrapolateLeft: "clamp", extrapolateRight: "clamp",
   });
   const fontSize = autoFontSize(scene.text || "", 96, 48);
+  const mainWordCount = (scene.text || "").split(/\s+/).filter(Boolean).length;
 
   return (
     <AbsoluteFill style={{ background: bg }}>
@@ -9225,18 +9299,26 @@ export const ApplePhotoScene: React.FC<{ scene: SceneData; sceneIndex?: number }
         flexDirection: "column", gap: 32,
         padding: "60px 80px", textAlign: "center",
       }}>
-        <div style={appleLayerStyle(textReveal, exit)}>
-          <div style={{
-            fontSize, fontWeight: 700, fontFamily,
-            letterSpacing: "-0.03em", lineHeight: 0.95,
-            color: textColor(bg),
-          }}>
-            {scene.text}
-          </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
+          <WordByWord
+            text={scene.text || ""}
+            initialDelay={0}
+            delayPerWord={6}
+            exitStartAt={20}
+            style={{
+              fontSize, fontWeight: 700, fontFamily,
+              letterSpacing: "-0.03em", lineHeight: 0.95,
+              color: textColor(bg),
+            }}
+          />
           {scene.text2 && (
-            <div style={{ ...appleText2Style(bg, fontSize), marginTop: 10 }}>
-              {scene.text2}
-            </div>
+            <WordByWord
+              text={scene.text2}
+              initialDelay={mainWordCount * 6 + 4}
+              delayPerWord={5}
+              exitStartAt={18}
+              style={appleText2Style(bg, fontSize)}
+            />
           )}
         </div>
         {photoUrl && (
@@ -9273,12 +9355,12 @@ export const AppleIconScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
   const bg = scene.bg || "#ffffff";
   const accent = safeAccent(scene.accentColor, bg);
   const iconReveal = useAppleReveal(0);
-  const textReveal = useAppleReveal(14);
   const exit = useAppleExit(20);
   const floatY = Math.sin(frame * 0.025) * 4;
   const icons = ["⚡", "🎯", "💎", "🚀", "✨", "🔥", "💡", "🎬", "📱", "🌟"];
   const icon = icons[sceneIndex % icons.length];
   const fontSize = autoFontSize(scene.text || "", 96, 48);
+  const mainWordCount = (scene.text || "").split(/\s+/).filter(Boolean).length;
 
   return (
     <AbsoluteFill style={{ background: bg }}>
@@ -9306,18 +9388,26 @@ export const AppleIconScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
             {icon}
           </div>
         </div>
-        <div style={appleLayerStyle(textReveal, exit, 0.5)}>
-          <div style={{
-            fontSize, fontWeight: 700, fontFamily,
-            letterSpacing: "-0.03em", lineHeight: 0.95,
-            color: textColor(bg),
-          }}>
-            {scene.text}
-          </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
+          <WordByWord
+            text={scene.text || ""}
+            initialDelay={8}
+            delayPerWord={6}
+            exitStartAt={20}
+            style={{
+              fontSize, fontWeight: 700, fontFamily,
+              letterSpacing: "-0.03em", lineHeight: 0.95,
+              color: textColor(bg),
+            }}
+          />
           {scene.text2 && (
-            <div style={{ ...appleText2Style(bg, fontSize), marginTop: 10 }}>
-              {scene.text2}
-            </div>
+            <WordByWord
+              text={scene.text2}
+              initialDelay={8 + mainWordCount * 6 + 4}
+              delayPerWord={5}
+              exitStartAt={18}
+              style={appleText2Style(bg, fontSize)}
+            />
           )}
         </div>
       </AbsoluteFill>
@@ -9330,11 +9420,11 @@ export const AppleCTAScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
   const frame = useCurrentFrame();
   const bg = scene.bg || scene.accentColor || "#0a0a0a";
   const fontSize = autoFontSize(scene.text || "", 110, 52);
-  const front = useAppleReveal(0);
-  const mid = useAppleReveal(14);
   const btn = useAppleReveal(24);
   const exit = useAppleExit(20);
   const floatY = Math.sin(frame * 0.02) * 2;
+  const mainWordCount = (scene.text || "").split(/\s+/).filter(Boolean).length;
+  const ctaTextColor = isLight(bg) ? "#0a0a0a" : "#ffffff";
 
   return (
     <AbsoluteFill style={{ background: bg }}>
@@ -9344,21 +9434,28 @@ export const AppleCTAScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
         flexDirection: "column", gap: 20,
         padding: "0 80px", textAlign: "center",
       }}>
-        <div style={appleLayerStyle(front, exit)}>
-          <div style={{
+        <WordByWord
+          text={scene.text || ""}
+          initialDelay={0}
+          delayPerWord={6}
+          exitStartAt={20}
+          style={{
             fontSize, fontWeight: 700, fontFamily,
             letterSpacing: "-0.04em", lineHeight: 0.95,
-            color: isLight(bg) ? "#0a0a0a" : "#ffffff",
-          }}>
-            {scene.text}
-          </div>
-        </div>
+            color: ctaTextColor,
+          }}
+        />
         {scene.text2 && (
-          <div style={appleLayerStyle(mid, exit, 0.85)}>
-            <div style={appleText2Style(bg, fontSize)}>
-              {scene.text2}
-            </div>
-          </div>
+          <WordByWord
+            text={scene.text2}
+            initialDelay={mainWordCount * 6 + 4}
+            delayPerWord={5}
+            exitStartAt={18}
+            style={{
+              ...appleText2Style(bg, fontSize),
+              color: ctaTextColor,
+            }}
+          />
         )}
         <div style={{
           ...appleLayerStyle(btn, exit),
