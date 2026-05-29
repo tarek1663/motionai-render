@@ -176,18 +176,37 @@ const mainTextColor = (scene: SceneData, bg: string): string =>
 const mainTextShadow = (bg: string): string =>
   isLight(bg) ? "0 2px 12px rgba(0,0,0,0.08)" : "0 2px 20px rgba(0,0,0,0.4)";
 
+const safeFadeOut = (frame: number, durationInFrames: number, duration = 22) => {
+  const start = Math.max(0, durationInFrames - duration);
+  const end = Math.max(start + 1, durationInFrames);
+  return interpolate(frame, [start, end], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: E_IN,
+  });
+};
+
+const safeFadeIn = (frame: number, duration = 24) => {
+  return interpolate(frame, [0, Math.max(1, duration)], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+};
+
 const useAppleTiming = (enterDuration = 24, pauseRatio = 0.6) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
 
-  const fadeIn = interpolate(frame, [0, enterDuration], [0, 1], {
+  const safeDuration = Math.max(2, durationInFrames);
+  const fadeIn = interpolate(frame, [0, Math.max(1, enterDuration)], [0, 1], {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
 
-  const pauseEnd = durationInFrames * pauseRatio;
-  const exitStart = Math.max(pauseEnd, durationInFrames - 28);
-  const fadeOut = interpolate(frame, [exitStart, durationInFrames], [1, 0], {
+  const exitStart = Math.max(enterDuration + 1, Math.floor(safeDuration * pauseRatio));
+  const exitEnd = Math.max(exitStart + 1, safeDuration);
+
+  const fadeOut = interpolate(frame, [exitStart, exitEnd], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: E_IN,
@@ -204,7 +223,7 @@ const useAppleTiming = (enterDuration = 24, pauseRatio = 0.6) => {
 const useAppleMicroZoom = (intensity = 0.015) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
-  return interpolate(frame, [0, durationInFrames], [1.0, 1.0 + intensity], {
+  return interpolate(frame, [0, Math.max(1, durationInFrames)], [1.0, 1.0 + intensity], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -239,12 +258,28 @@ export const DynamicVignette: React.FC<{
   const { durationInFrames } = useVideoConfig();
 
   const dynamicStrength = dynamic
-    ? interpolate(
-        frame,
-        [0, 20, durationInFrames * 0.5, durationInFrames - 20, durationInFrames],
-        [0, strength * 0.8, strength * 0.4, strength * 0.8, 0],
-        { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-      )
+    ? (() => {
+        const d = Math.max(2, durationInFrames);
+        const range: number[] = [0];
+        const push = (v: number) => {
+          const next = Math.min(Math.max(v, range[range.length - 1] + 1), d);
+          if (next > range[range.length - 1]) range.push(next);
+        };
+        push(Math.min(20, Math.floor(d * 0.4)));
+        push(Math.floor(d * 0.5));
+        push(Math.max(range[range.length - 1] + 1, d - 20));
+        if (range[range.length - 1] < d) range.push(d);
+        const output = range.map((_, i) => {
+          if (i === 0) return 0;
+          if (i === range.length - 1) return 0;
+          if (i === Math.floor(range.length / 2)) return strength * 0.4;
+          return strength * 0.8;
+        });
+        return interpolate(frame, range, output, {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
+      })()
     : strength;
 
   return (
@@ -508,7 +543,7 @@ const GeoBackground: React.FC<{ bg: string; geo?: string }> = ({ bg, geo }) => {
   const patternColor =
     luminance > 0.5 ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.10)";
 
-  const rotation = interpolate(frame, [0, durationInFrames], [0, 2], {
+  const rotation = interpolate(frame, [0, Math.max(1, durationInFrames)], [0, 2], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -1172,20 +1207,8 @@ export const FadePureScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const { durationInFrames } = useVideoConfig();
   const bg = scene.bg || "#000000";
 
-  const fadeIn = interpolate(frame, [0, 30], [0, 1], {
-    extrapolateRight: "clamp",
-    easing: E_OUT,
-  });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 24, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const fadeIn = safeFadeIn(frame, 30);
+  const fadeOut = safeFadeOut(frame, durationInFrames, 24);
 
   const fontSize = autoFontSize(scene.text || "", 160, 72);
 
@@ -2269,8 +2292,8 @@ export const WipeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     easing: E_OUT,
   });
   const wipeOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 20)),
-    [0, 20],
+    Math.max(0, frame - Math.max(0, durationInFrames - 20)),
+    [0, Math.max(1, 20)],
     [0, 100],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2280,8 +2303,8 @@ export const WipeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     easing: E_OUT,
   });
   const textFadeOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 18)),
-    [0, 18],
+    Math.max(0, frame - Math.max(0, durationInFrames - 18)),
+    [0, Math.max(1, 18)],
     [1, 0],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2355,8 +2378,8 @@ export const FlashScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     easing: E_OUT,
   });
   const flashOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 8)),
-    [0, 8],
+    Math.max(0, frame - Math.max(0, durationInFrames - 8)),
+    [0, Math.max(1, 8)],
     [0, 1],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2367,8 +2390,8 @@ export const FlashScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     easing: E_OUT,
   });
   const textFadeOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 18)),
-    [0, 18],
+    Math.max(0, frame - Math.max(0, durationInFrames - 18)),
+    [0, Math.max(1, 18)],
     [1, 0],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2428,8 +2451,8 @@ export const ColorFadeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     easing: E_OUT,
   });
   const accentOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 16)),
-    [0, 16],
+    Math.max(0, frame - Math.max(0, durationInFrames - 16)),
+    [0, Math.max(1, 16)],
     [0, 1],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2440,8 +2463,8 @@ export const ColorFadeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     easing: E_OUT,
   });
   const textFadeOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 18)),
-    [0, 18],
+    Math.max(0, frame - Math.max(0, durationInFrames - 18)),
+    [0, Math.max(1, 18)],
     [1, 0],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2504,8 +2527,8 @@ export const SplitVerticalScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
     easing: E_OUT,
   });
   const splitOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 28)),
-    [0, 28],
+    Math.max(0, frame - Math.max(0, durationInFrames - 28)),
+    [0, Math.max(1, 28)],
     [0, 50],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2516,8 +2539,8 @@ export const SplitVerticalScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
     easing: E_OUT,
   });
   const textFadeOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 24)),
-    [0, 18],
+    Math.max(0, frame - Math.max(0, durationInFrames - 24)),
+    [0, Math.max(1, 18)],
     [1, 0],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2582,8 +2605,8 @@ export const ZoomTransitionScene: React.FC<{ scene: SceneData }> = ({ scene }) =
     easing: E_OUT,
   });
   const scaleOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 24)),
-    [0, 24],
+    Math.max(0, frame - Math.max(0, durationInFrames - 24)),
+    [0, Math.max(1, 24)],
     [1, 0.1],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2594,8 +2617,8 @@ export const ZoomTransitionScene: React.FC<{ scene: SceneData }> = ({ scene }) =
     easing: E_OUT,
   });
   const opacityOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 16)),
-    [0, 16],
+    Math.max(0, frame - Math.max(0, durationInFrames - 16)),
+    [0, Math.max(1, 16)],
     [1, 0],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2643,8 +2666,8 @@ export const IrisScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     easing: E_OUT,
   });
   const irisOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 28)),
-    [0, 28],
+    Math.max(0, frame - Math.max(0, durationInFrames - 28)),
+    [0, Math.max(1, 28)],
     [150, 0],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2655,8 +2678,8 @@ export const IrisScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     easing: E_OUT,
   });
   const textFadeOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 22)),
-    [0, 22],
+    Math.max(0, frame - Math.max(0, durationInFrames - 22)),
+    [0, Math.max(1, 22)],
     [1, 0],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2708,8 +2731,8 @@ export const CurtainScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     easing: E_OUT,
   });
   const closeOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 30)),
-    [0, 30],
+    Math.max(0, frame - Math.max(0, durationInFrames - 30)),
+    [0, Math.max(1, 30)],
     [0, 50],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2720,8 +2743,8 @@ export const CurtainScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     easing: E_OUT,
   });
   const textFadeOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 26)),
-    [0, 18],
+    Math.max(0, frame - Math.max(0, durationInFrames - 26)),
+    [0, Math.max(1, 18)],
     [1, 0],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2785,8 +2808,8 @@ export const DiagonalWipeScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
     easing: E_OUT,
   });
   const wipeOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 30)),
-    [0, 30],
+    Math.max(0, frame - Math.max(0, durationInFrames - 30)),
+    [0, Math.max(1, 30)],
     [150, 450],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2797,8 +2820,8 @@ export const DiagonalWipeScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
     easing: E_OUT,
   });
   const textFadeOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 22)),
-    [0, 18],
+    Math.max(0, frame - Math.max(0, durationInFrames - 22)),
+    [0, Math.max(1, 18)],
     [1, 0],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2854,10 +2877,7 @@ export const GlitchSwitchScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 
   const opacity = Math.min(
     interpolate(frame, [0, 10], [0, 1], { extrapolateRight: "clamp" }),
-    interpolate(frame, [durationInFrames - 10, durationInFrames], [1, 0], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    }),
+    safeFadeOut(frame, durationInFrames, 10),
   );
 
   const fontSize = autoFontSize(scene.text || "", 140, 64);
@@ -2917,8 +2937,8 @@ export const PixelDissolveScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
     easing: E_OUT,
   });
   const exitProgress = interpolate(
-    Math.max(0, frame - (durationInFrames - 28)),
-    [0, 28],
+    Math.max(0, frame - Math.max(0, durationInFrames - 28)),
+    [0, Math.max(1, 28)],
     [0, 1],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -2932,8 +2952,8 @@ export const PixelDissolveScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
     easing: E_OUT,
   });
   const textFadeOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 20)),
-    [0, 20],
+    Math.max(0, frame - Math.max(0, durationInFrames - 20)),
+    [0, Math.max(1, 20)],
     [1, 0],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -3010,8 +3030,8 @@ export const LightSweepScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     easing: E_OUT,
   });
   const textFadeOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 22)),
-    [0, 22],
+    Math.max(0, frame - Math.max(0, durationInFrames - 22)),
+    [0, Math.max(1, 22)],
     [1, 0],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -3070,7 +3090,7 @@ export const NotificationScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
     to: 1,
   });
   const slideOut = spring({
-    frame: Math.max(0, frame - (durationInFrames - 36)),
+    frame: Math.max(0, frame - Math.max(0, durationInFrames - 36)),
     fps,
     config: { damping: 280, stiffness: 100, mass: 0.8 },
     from: 0,
@@ -3089,8 +3109,8 @@ export const NotificationScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
     easing: E_OUT,
   });
   const textFadeOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 22)),
-    [0, 22],
+    Math.max(0, frame - Math.max(0, durationInFrames - 22)),
+    [0, Math.max(1, 22)],
     [1, 0],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -3225,8 +3245,8 @@ export const PulseButtonScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const glowPulse = 0.3 + Math.sin(frame * 0.12) * 0.15;
 
   const fadeOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 22)),
-    [0, 22],
+    Math.max(0, frame - Math.max(0, durationInFrames - 22)),
+    [0, Math.max(1, 22)],
     [1, 0],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -3331,8 +3351,8 @@ export const UIProgressScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     to: 1,
   });
   const fadeOut = interpolate(
-    Math.max(0, frame - (durationInFrames - 22)),
-    [0, 22],
+    Math.max(0, frame - Math.max(0, durationInFrames - 22)),
+    [0, Math.max(1, 22)],
     [1, 0],
     { extrapolateRight: "clamp", easing: E_IN },
   );
@@ -3472,13 +3492,14 @@ const sceneOpacity = (
   enterDuration = 24,
   pauseRatio = 0.6,
 ): number => {
-  const fadeIn = interpolate(frame, [0, enterDuration], [0, 1], {
+  const safeDuration = Math.max(2, durationInFrames);
+  const fadeIn = interpolate(frame, [0, Math.max(1, enterDuration)], [0, 1], {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
-  const pauseEnd = durationInFrames * pauseRatio;
-  const exitStart = Math.max(pauseEnd, durationInFrames - 28);
-  const fadeOut = interpolate(frame, [exitStart, durationInFrames], [1, 0], {
+  const exitStart = Math.max(enterDuration + 1, Math.floor(safeDuration * pauseRatio));
+  const exitEnd = Math.max(exitStart + 1, safeDuration);
+  const fadeOut = interpolate(frame, [exitStart, exitEnd], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: E_IN,
@@ -3998,7 +4019,7 @@ export const GradientScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const bg1 = scene.bg || "#000000";
   const bg2 = scene.bg2 || scene.accentColor || "#1a1a1a";
 
-  const angle = interpolate(frame, [0, durationInFrames], [135, 165], {
+  const angle = interpolate(frame, [0, Math.max(1, durationInFrames)], [135, 165], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -4337,7 +4358,7 @@ export const EraseLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
     to: 1,
   });
 
-  const eraseStart = durationInFrames - 40;
+  const eraseStart = Math.max(0, durationInFrames - 40);
   const eraseWordStarts = words.reduce<number[]>((starts, word, wi) => {
     starts.push(wi === 0 ? 0 : starts[wi - 1] + words[wi - 1].length);
     return starts;
@@ -5734,10 +5755,8 @@ export const DataFlowScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const bg = scene.bg || "#000000";
   const accent = safeAccent(scene.accentColor, bg);
 
-  const fadeIn = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
-  const fadeOut = interpolate(frame, [durationInFrames - 20, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
-  });
+  const fadeIn = safeFadeIn(frame, 20);
+  const fadeOut = safeFadeOut(frame, durationInFrames, 20);
 
   const cols = 14;
   const chars = "01アイウエオカキクケコABCDEF0123456789";
