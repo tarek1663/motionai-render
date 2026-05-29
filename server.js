@@ -133,6 +133,201 @@ const syncScenesWithVoice = (scenes, phraseTimestamps, fps = 60) => {
   return synced;
 };
 
+const generateMockupContent = (scene, prompt) => {
+  const p = (prompt || "").toLowerCase();
+
+  const isYoutube = p.includes("youtube");
+  const isSpotify =
+    p.includes("spotify") || p.includes("musique") || p.includes("music");
+  const isNike =
+    p.includes("nike") ||
+    p.includes("sport") ||
+    p.includes("fitness") ||
+    p.includes("running");
+  const isEcommerce =
+    p.includes("shop") ||
+    p.includes("achat") ||
+    p.includes("boutique") ||
+    p.includes("produit") ||
+    p.includes("store");
+  const isFood =
+    p.includes("food") ||
+    p.includes("restaurant") ||
+    p.includes("cuisine") ||
+    p.includes("recette");
+  const isFinance =
+    p.includes("finance") ||
+    p.includes("crypto") ||
+    p.includes("bourse") ||
+    p.includes("invest");
+  const isSocial =
+    p.includes("instagram") ||
+    p.includes("tiktok") ||
+    p.includes("social") ||
+    p.includes("reels");
+  const isDelivery =
+    p.includes("livraison") ||
+    p.includes("delivery") ||
+    p.includes("uber") ||
+    p.includes("commande");
+
+  if (scene.type === "iphone") {
+    if (isSpotify) {
+      return {
+        ...scene,
+        mockupContent: "player",
+        mockupData: {
+          type: "player",
+          title: scene.text || "Your Playlist",
+          artist: "Spotify",
+          progress: 65,
+          color: "#1DB954",
+        },
+      };
+    }
+    if (isNike) {
+      return {
+        ...scene,
+        mockupContent: "fitness",
+        mockupData: {
+          type: "fitness",
+          steps: "8,420",
+          calories: "342",
+          km: "6.2",
+          color: scene.accentColor || "#FF5722",
+        },
+      };
+    }
+    if (isYoutube) {
+      return {
+        ...scene,
+        mockupContent: "video",
+        mockupData: {
+          type: "video",
+          title: scene.text || "Watch Now",
+          views: "2.4M views",
+          color: "#FF0000",
+        },
+      };
+    }
+    if (isEcommerce) {
+      return {
+        ...scene,
+        mockupContent: "product",
+        mockupData: {
+          type: "product",
+          name: scene.text || "Product",
+          price: "€99",
+          rating: "4.8",
+          color: scene.accentColor || "#000000",
+        },
+      };
+    }
+    if (isFood) {
+      return {
+        ...scene,
+        mockupContent: "food",
+        mockupData: {
+          type: "food",
+          dish: scene.text || "Commander",
+          time: "25 min",
+          price: "€12.90",
+          color: scene.accentColor || "#FF8F00",
+        },
+      };
+    }
+    if (isDelivery) {
+      return {
+        ...scene,
+        mockupContent: "delivery",
+        mockupData: {
+          type: "delivery",
+          status: "En route",
+          eta: "12 min",
+          steps: ["Commandé", "Préparé", "En route", "Livré"],
+          activeStep: 2,
+          color: scene.accentColor || "#000000",
+        },
+      };
+    }
+    if (isFinance) {
+      return {
+        ...scene,
+        mockupContent: "finance",
+        mockupData: {
+          type: "finance",
+          amount: "+24.5%",
+          value: "€12,450",
+          change: "+€2,890",
+          color: "#2196F3",
+        },
+      };
+    }
+    if (isSocial) {
+      return {
+        ...scene,
+        mockupContent: "social",
+        mockupData: {
+          type: "social",
+          likes: "24.5K",
+          followers: "142K",
+          color: scene.accentColor || "#E1306C",
+        },
+      };
+    }
+    return {
+      ...scene,
+      mockupContent: "saas",
+      mockupData: {
+        type: "saas",
+        title: scene.text || "Dashboard",
+        metric: "94%",
+        label: "Performance",
+        color: scene.accentColor || "#10B981",
+      },
+    };
+  }
+
+  if (scene.type === "macbook" || scene.type === "browser") {
+    if (isEcommerce) {
+      return {
+        ...scene,
+        mockupContent: "ecommerce",
+        mockupData: {
+          type: "ecommerce",
+          productName: scene.text || "Product",
+          price: "€249",
+          color: scene.accentColor || "#000000",
+        },
+      };
+    }
+    if (isFinance) {
+      return {
+        ...scene,
+        mockupContent: "chart",
+        mockupData: {
+          type: "chart",
+          title: "Portfolio",
+          value: "+24.5%",
+          color: "#2196F3",
+        },
+      };
+    }
+    return {
+      ...scene,
+      mockupContent: "landing",
+      mockupData: {
+        type: "landing",
+        headline: scene.text || "Landing Page",
+        cta: "Commencer →",
+        color: scene.accentColor || "#000000",
+      },
+    };
+  }
+
+  return scene;
+};
+
 // Chrome persistant
 let browserInstance = null;
 
@@ -388,6 +583,9 @@ app.post("/render", async (req, res) => {
   } = req.body;
 
   const enrichedScenes = await enrichScenesWithPhotos(scenes || [], prompt || "");
+  const enrichedWithMockup = enrichedScenes.map((scene) =>
+    generateMockupContent(scene, prompt || ""),
+  );
 
   const outPath = path.join(RENDERS_DIR, `${jobId}.mp4`);
   const errPath = path.join(RENDERS_DIR, `${jobId}.error`);
@@ -417,7 +615,7 @@ app.post("/render", async (req, res) => {
     })
   );
 
-  const sceneList = enrichedScenes || [];
+  const sceneList = enrichedWithMockup || [];
   const sceneDurations = syncScenesWithVoice(sceneList, phraseTimestamps, 60);
   const computedTotalFrames = sceneDurations.reduce(
     (acc, s) => acc + s.durationFrames,
