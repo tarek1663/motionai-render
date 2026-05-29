@@ -5,25 +5,52 @@ const fps = 60;
 
 const defaultProps: MotionVideoProps = {
   scenes: [
-    { type: "splitvertical", text: "Motionr.", bg: "#ffffff" },
-    { type: "zoomtransition", text: "Simple.", bg: "#000000" },
-    { type: "iris", text: "Élégant.", bg: "#ffffff" },
-    { type: "curtain", text: "Rapide.", bg: "#000000" },
-    { type: "diagonalwipe", text: "Précis.", bg: "#ffffff" },
     {
-      type: "glitchswitch",
-      text: "Puissant.",
+      type: "notification",
+      text: "Vidéo prête.",
+      bg: "#000000",
+      accentColor: "#10B981",
+      notifText: "Ta vidéo est prête à télécharger ✓",
+    },
+    {
+      type: "notification",
+      text: "Simple.",
+      bg: "#ffffff",
+      accentColor: "#000000",
+      notifText: "Nouvelle vidéo générée",
+    },
+    {
+      type: "pulsebutton",
+      text: "Prêt à créer ?",
+      bg: "#000000",
+      accentColor: "#10B981",
+      buttonText: "Commencer →",
+    },
+    {
+      type: "pulsebutton",
+      text: "Rejoins-nous.",
+      bg: "#ffffff",
+      accentColor: "#000000",
+      buttonText: "Essayer gratuitement",
+    },
+    {
+      type: "uiprogress",
+      text: "Génération vidéo",
       bg: "#000000",
       accentColor: "#10B981",
     },
-    { type: "pixeldissolve", text: "Unique.", bg: "#ffffff" },
-    { type: "lightsweep", text: "Commence.", bg: "#000000" },
+    {
+      type: "uiprogress",
+      text: "En cours...",
+      bg: "#ffffff",
+      accentColor: "#000000",
+    },
   ] as MotionVideoProps["scenes"],
-  sceneDurations: Array.from({ length: 8 }, (_, i) => ({
+  sceneDurations: Array.from({ length: 6 }, (_, i) => ({
     startFrame: i * 150,
     durationFrames: 150,
   })),
-  totalFrames: 1200,
+  totalFrames: 900,
   audioSrc: null,
   musicSrc: null,
 };
@@ -48,7 +75,7 @@ const RemotionRoot = () => (
       });
 
       const total =
-        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 1200;
+        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 900;
 
       const fmt = (p as MotionVideoProps & { format?: string }).format || "9:16";
       const w = fmt === "16:9" ? 1920 : 1080;

@@ -53,8 +53,13 @@ export type SceneData = {
     | "diagonalwipe"
     | "glitchswitch"
     | "pixeldissolve"
-    | "lightsweep";
+    | "lightsweep"
+    | "notification"
+    | "pulsebutton"
+    | "uiprogress";
   text?: string;
+  notifText?: string;
+  buttonText?: string;
   shape?: "circle" | "square";
   bg?: string;
   accentColor?: string;
@@ -2883,6 +2888,410 @@ export const LightSweepScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
           }}
         >
           {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ═══════════════════════════════════════════════════════
+// SCÈNES ÉLÉMENTS UI
+// ═══════════════════════════════════════════════════════
+
+// ─── 1. NOTIFICATION ──────────────────────────────────
+export const NotificationScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const accent = scene.accentColor || "#10B981";
+
+  const slideIn = spring({
+    frame,
+    fps,
+    config: { damping: 280, stiffness: 100, mass: 0.8 },
+    from: 0,
+    to: 1,
+  });
+  const slideOut = spring({
+    frame: Math.max(0, frame - (durationInFrames - 36)),
+    fps,
+    config: { damping: 280, stiffness: 100, mass: 0.8 },
+    from: 0,
+    to: 1,
+  });
+
+  const y = interpolate(slideIn, [0, 1], [-200, 0]);
+  const yOut = interpolate(slideOut, [0, 1], [0, -200]);
+  const opacity = Math.min(
+    interpolate(slideIn, [0, 0.2], [0, 1]),
+    interpolate(slideOut, [0, 0.2], [1, 0]),
+  );
+
+  const textFade = interpolate(frame, [0, 24], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const textFadeOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 22)),
+    [0, 22],
+    [1, 0],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+  const fontSize = autoFontSize(scene.text || "", 80, 40);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            whiteSpace: "nowrap",
+            opacity: Math.min(textFade, textFadeOut),
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+
+      <AbsoluteFill
+        style={{
+          justifyContent: "flex-start",
+          alignItems: "center",
+          padding: "60px 40px 0",
+        }}
+      >
+        <div
+          style={{
+            background: isLight(bg)
+              ? "rgba(255,255,255,0.95)"
+              : "rgba(30,30,30,0.95)",
+            backdropFilter: "blur(20px)",
+            borderRadius: 20,
+            padding: "14px 18px",
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            width: "85%",
+            maxWidth: 460,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+            border: `1px solid ${isLight(bg) ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)"}`,
+            transform: `translateY(${y + yOut}px)`,
+            opacity,
+          }}
+        >
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 10,
+              background: accent,
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 20,
+            }}
+          >
+            🎬
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                fontFamily: FONT,
+                color: isLight(bg) ? "#000000" : "#ffffff",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Motionr
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 400,
+                fontFamily: FONT,
+                color: isLight(bg) ? "#000000" : "#ffffff",
+                letterSpacing: "-0.01em",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {scene.notifText || "Ta vidéo est prête ✓"}
+            </div>
+          </div>
+          <div
+            style={{
+              fontSize: 11,
+              color: isLight(bg) ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)",
+              fontFamily: FONT,
+              flexShrink: 0,
+            }}
+          >
+            maintenant
+          </div>
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 2. BOUTON PULSE ──────────────────────────────────
+export const PulseButtonScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
+
+  const enter = spring({
+    frame,
+    fps,
+    config: { damping: 280, stiffness: 80, mass: 0.8 },
+    from: 0,
+    to: 1,
+  });
+
+  const pulse = 1 + Math.sin(frame * 0.12) * 0.04;
+  const glowPulse = 0.3 + Math.sin(frame * 0.12) * 0.15;
+
+  const fadeOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 22)),
+    [0, 22],
+    [1, 0],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+
+  const scale = interpolate(enter, [0, 1], [0.7, 1]) * pulse;
+  const opacity = Math.min(interpolate(enter, [0, 0.3], [0, 1]), fadeOut);
+
+  const textFade = interpolate(Math.max(0, frame - 16), [0, 18], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+
+  const fontSize = autoFontSize(scene.text || "", 80, 40);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+          gap: 40,
+        }}
+      >
+        {scene.text && (
+          <div
+            style={{
+              fontSize,
+              fontWeight: 600,
+              fontFamily: FONT,
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+              color: textColor(bg),
+              whiteSpace: "nowrap",
+              opacity: Math.min(textFade, fadeOut),
+              transform: `translateY(${interpolate(enter, [0, 1], [20, 0])}px)`,
+            }}
+          >
+            {scene.text}
+          </div>
+        )}
+
+        <div
+          style={{
+            position: "relative",
+            transform: `scale(${scale})`,
+            opacity,
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: -20,
+              borderRadius: 100,
+              background: accent,
+              filter: "blur(20px)",
+              opacity: glowPulse * 0.3,
+            }}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: accent,
+              borderRadius: 100,
+              padding: "18px 48px",
+              boxShadow: `0 8px 32px ${accent}44`,
+            }}
+          >
+            <span
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                fontFamily: FONT,
+                letterSpacing: "-0.02em",
+                color: isLight(accent) ? "#000000" : "#ffffff",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {scene.buttonText || "Commencer →"}
+            </span>
+          </div>
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 3. UI PROGRESS ───────────────────────────────────
+export const UIProgressScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
+
+  const cardEnter = spring({
+    frame,
+    fps,
+    config: { damping: 280, stiffness: 70, mass: 0.9 },
+    from: 0,
+    to: 1,
+  });
+  const fadeOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 22)),
+    [0, 22],
+    [1, 0],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+
+  const barProgress = interpolate(
+    Math.max(0, frame - 20),
+    [0, Math.max(1, durationInFrames * 0.6)],
+    [0, 100],
+    { extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) },
+  );
+
+  const cardOpacity = Math.min(interpolate(cardEnter, [0, 1], [0, 1]), fadeOut);
+  const cardY = interpolate(cardEnter, [0, 1], [40, 0]);
+  const cardScale = interpolate(cardEnter, [0, 1], [0.94, 1]);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{ justifyContent: "center", alignItems: "center", padding: "0 80px" }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 480,
+            background: isLight(bg)
+              ? "rgba(255,255,255,0.95)"
+              : "rgba(20,20,20,0.95)",
+            borderRadius: 24,
+            padding: "32px",
+            border: `1px solid ${isLight(bg) ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)"}`,
+            boxShadow: isLight(bg)
+              ? "0 24px 60px rgba(0,0,0,0.08)"
+              : "0 24px 60px rgba(0,0,0,0.4)",
+            opacity: cardOpacity,
+            transform: `translateY(${cardY}px) scale(${cardScale})`,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 24,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                fontFamily: FONT,
+                letterSpacing: "-0.03em",
+                color: isLight(bg) ? "#000000" : "#ffffff",
+              }}
+            >
+              {scene.text || "Génération vidéo"}
+            </div>
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                fontFamily: FONT,
+                color: accent,
+              }}
+            >
+              {Math.round(barProgress)}%
+            </div>
+          </div>
+
+          <div
+            style={{
+              height: 4,
+              borderRadius: 100,
+              background: isLight(bg)
+                ? "rgba(0,0,0,0.08)"
+                : "rgba(255,255,255,0.08)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                width: `${barProgress}%`,
+                height: "100%",
+                background: accent,
+                borderRadius: 100,
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: 20,
+              gap: 8,
+            }}
+          >
+            {["Script", "Voix", "Rendu"].map((step, i) => {
+              const stepDone = barProgress > (i + 1) * 33;
+              return (
+                <div
+                  key={step}
+                  style={{
+                    flex: 1,
+                    textAlign: "center",
+                    fontSize: 12,
+                    fontWeight: stepDone ? 600 : 400,
+                    fontFamily: FONT,
+                    color: stepDone
+                      ? accent
+                      : isLight(bg)
+                        ? "rgba(0,0,0,0.3)"
+                        : "rgba(255,255,255,0.3)",
+                    letterSpacing: "0.02em",
+                  }}
+                >
+                  {stepDone ? "✓ " : ""}
+                  {step}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </AbsoluteFill>
     </AbsoluteFill>

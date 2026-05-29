@@ -46,6 +46,9 @@ import {
   GlitchSwitchScene,
   PixelDissolveScene,
   LightSweepScene,
+  NotificationScene,
+  PulseButtonScene,
+  UIProgressScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -141,6 +144,12 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <PixelDissolveScene scene={sceneWithIndex} />;
     case "lightsweep":
       return <LightSweepScene scene={sceneWithIndex} />;
+    case "notification":
+      return <NotificationScene scene={sceneWithIndex} />;
+    case "pulsebutton":
+      return <PulseButtonScene scene={sceneWithIndex} />;
+    case "uiprogress":
+      return <UIProgressScene scene={sceneWithIndex} />;
     default:
       return <SingleWordScene scene={sceneWithIndex} />;
   }
