@@ -9080,6 +9080,15 @@ const appleLayerStyle = (
   filter: `blur(${Math.max(reveal.blur * blurScale, exit.blur * blurScale)}px)`,
 });
 
+const appleText2Style = (bg: string, fontSize: number): React.CSSProperties => ({
+  fontSize: Math.round(fontSize * 0.48),
+  fontWeight: 500,
+  fontFamily,
+  letterSpacing: "-0.02em",
+  color: textColor(bg),
+  lineHeight: 1.4,
+});
+
 export const AppleTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
   const bg = scene.bg || "#ffffff";
   const accent = safeAccent(scene.accentColor, bg);
@@ -9107,13 +9116,7 @@ export const AppleTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
         </div>
         {scene.text2 && (
           <div style={appleLayerStyle(mid, exit, 0.5)}>
-            <div style={{
-              fontSize: Math.round(fontSize * 0.42),
-              fontWeight: 400, fontFamily,
-              letterSpacing: "-0.01em",
-              color: isLight(bg) ? "rgba(0,0,0,0.42)" : "rgba(255,255,255,0.42)",
-              lineHeight: 1.4,
-            }}>
+            <div style={appleText2Style(bg, fontSize)}>
               {scene.text2}
             </div>
           </div>
@@ -9162,12 +9165,7 @@ export const AppleAccentScene: React.FC<{ scene: SceneData; sceneIndex?: number 
         </div>
         {scene.text2 && (
           <div style={appleLayerStyle(mid, exit, 0.5)}>
-            <div style={{
-              fontSize: Math.round(fontSize * 0.42),
-              fontWeight: 400, fontFamily,
-              letterSpacing: "-0.01em",
-              color: isLight(bg) ? "rgba(0,0,0,0.42)" : "rgba(255,255,255,0.42)",
-            }}>
+            <div style={appleText2Style(bg, fontSize)}>
               {scene.text2}
             </div>
           </div>
@@ -9258,12 +9256,7 @@ export const ApplePhotoScene: React.FC<{ scene: SceneData; sceneIndex?: number }
             {scene.text}
           </div>
           {scene.text2 && (
-            <div style={{
-              fontSize: Math.round(fontSize * 0.42),
-              fontWeight: 400, fontFamily,
-              color: isLight(bg) ? "rgba(0,0,0,0.42)" : "rgba(255,255,255,0.42)",
-              marginTop: 10, letterSpacing: "-0.01em",
-            }}>
+            <div style={{ ...appleText2Style(bg, fontSize), marginTop: 10 }}>
               {scene.text2}
             </div>
           )}
@@ -9342,12 +9335,7 @@ export const AppleIconScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
             {scene.text}
           </div>
           {scene.text2 && (
-            <div style={{
-              fontSize: Math.round(fontSize * 0.42),
-              fontWeight: 400, fontFamily,
-              color: isLight(bg) ? "rgba(0,0,0,0.42)" : "rgba(255,255,255,0.42)",
-              marginTop: 10,
-            }}>
+            <div style={{ ...appleText2Style(bg, fontSize), marginTop: 10 }}>
               {scene.text2}
             </div>
           )}
@@ -9390,12 +9378,7 @@ export const AppleCTAScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
             opacity: Math.min(mid.opacity, exit.opacity),
             transform: `translateY(${mid.y + exit.y * 0.7}px)`,
           }}>
-            <div style={{
-              fontSize: Math.round(fontSize * 0.38),
-              fontWeight: 400, fontFamily,
-              color: isLight(bg) ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.5)",
-              letterSpacing: "-0.01em",
-            }}>
+            <div style={appleText2Style(bg, fontSize)}>
               {scene.text2}
             </div>
           </div>
