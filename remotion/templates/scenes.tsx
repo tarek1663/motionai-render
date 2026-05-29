@@ -2,14 +2,10 @@ import {
   AbsoluteFill, interpolate, spring, staticFile,
   useCurrentFrame, useVideoConfig, Easing,
 } from "remotion";
-import { loadFont } from "@remotion/google-fonts/Inter";
 import React from "react";
 import { IconComponent, detectIcon, type IconType } from "./icons";
 
-const { fontFamily } = loadFont("normal", {
-  weights: ["200", "300", "400", "500", "600", "700", "800", "900"],
-  subsets: ["latin"],
-});
+const fontFamily = "'SF Pro Display', 'SF Pro Text', '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', sans-serif";
 
 /** Chiffres alignés style SF Pro */
 const tabularNums = { fontVariantNumeric: "tabular-nums" as const };
@@ -9007,40 +9003,23 @@ const useAppleExit = (startAt: number) => {
   };
 };
 
-const AppleGridBg: React.FC<{ bg: string; accent: string }> = ({ bg, accent }) => {
-  const light = isLight(bg);
+/** Fond minimaliste — aucune grille, aucune texture */
+const CleanBg: React.FC<{ bg: string }> = ({ bg }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
 
-  const bgScale = interpolate(frame, [0, durationInFrames], [1.0, 1.02], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp",
+  const scale = interpolate(frame, [0, durationInFrames], [1.0, 1.015], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
   });
 
   return (
     <div style={{
       position: "absolute", inset: 0,
-      transform: `scale(${bgScale})`,
+      transform: `scale(${scale})`,
       transformOrigin: "center center",
-    }}>
-      <div style={{
-        position: "absolute", inset: 0,
-        backgroundImage: `
-          linear-gradient(${light ? "rgba(0,0,0,0.035)" : "rgba(255,255,255,0.035)"} 1px, transparent 1px),
-          linear-gradient(90deg, ${light ? "rgba(0,0,0,0.035)" : "rgba(255,255,255,0.035)"} 1px, transparent 1px)
-        `,
-        backgroundSize: "56px 56px",
-      }} />
-      <div style={{
-        position: "absolute", inset: 0,
-        background: light
-          ? "radial-gradient(ellipse 80% 60% at 50% 50%, rgba(255,255,255,0.95) 0%, transparent 100%)"
-          : "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(255,255,255,0.03) 0%, transparent 100%)",
-      }} />
-      <div style={{
-        position: "absolute", inset: 0,
-        background: `radial-gradient(ellipse 40% 30% at 50% 50%, ${accent}08 0%, transparent 70%)`,
-      }} />
-    </div>
+      background: bg,
+    }} />
   );
 };
 
@@ -9061,13 +9040,22 @@ const appleLayerStyle = (
   };
 };
 
-const appleText2Style = (bg: string, fontSize: number): React.CSSProperties => ({
-  fontSize: Math.round(fontSize * 0.48),
-  fontWeight: 500,
+const appleTitleStyle = (bg: string, fontSize: number): React.CSSProperties => ({
+  fontSize,
+  fontWeight: 600,
   fontFamily,
-  letterSpacing: "-0.02em",
+  letterSpacing: "-0.025em",
+  lineHeight: 1.05,
   color: textColor(bg),
+});
+
+const appleText2Style = (bg: string, fontSize: number): React.CSSProperties => ({
+  fontSize: Math.round(fontSize * 0.45),
+  fontWeight: 400,
+  fontFamily,
+  letterSpacing: "-0.015em",
   lineHeight: 1.4,
+  color: isLight(bg) ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)",
 });
 
 /** Texte mot par mot — stagger Apple (scale 70%→100%, sortie 100%→108%) */
@@ -9141,13 +9129,12 @@ const WordByWord: React.FC<{
 
 export const AppleTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
   const bg = scene.bg || "#ffffff";
-  const accent = safeAccent(scene.accentColor, bg);
   const fontSize = autoFontSize(scene.text || "", 130, 56);
   const mainWordCount = (scene.text || "").split(/\s+/).filter(Boolean).length;
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <AppleGridBg bg={bg} accent={accent} />
+      <CleanBg bg={bg} />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
         flexDirection: "column", gap: 14,
@@ -9158,11 +9145,7 @@ export const AppleTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
           initialDelay={0}
           delayPerWord={6}
           exitStartAt={20}
-          style={{
-            fontSize, fontWeight: 700, fontFamily,
-            letterSpacing: "-0.03em", lineHeight: 0.95,
-            color: textColor(bg),
-          }}
+          style={appleTitleStyle(bg, fontSize)}
         />
         {scene.text2 && (
           <WordByWord
@@ -9174,7 +9157,6 @@ export const AppleTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
           />
         )}
       </AbsoluteFill>
-      <Vignette strength={isLight(bg) ? 0.08 : 0.3} />
     </AbsoluteFill>
   );
 };
@@ -9186,7 +9168,7 @@ export const AppleAccentScene: React.FC<{ scene: SceneData; sceneIndex?: number 
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <AppleGridBg bg={bg} accent={safeAccent(scene.accentColor, bg)} />
+      <CleanBg bg={bg} />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
         flexDirection: "column", gap: 14,
@@ -9205,8 +9187,7 @@ export const AppleAccentScene: React.FC<{ scene: SceneData; sceneIndex?: number 
               delayPerWord={6}
               exitStartAt={20}
               style={{
-                fontSize, fontWeight: 700, fontFamily,
-                letterSpacing: "-0.03em", lineHeight: 0.95,
+                ...appleTitleStyle(bg, fontSize),
                 color: i === 0
                   ? safeAccent(scene.accentColor, bg)
                   : textColor(bg),
@@ -9224,7 +9205,6 @@ export const AppleAccentScene: React.FC<{ scene: SceneData; sceneIndex?: number 
           />
         )}
       </AbsoluteFill>
-      <Vignette strength={isLight(bg) ? 0.08 : 0.3} />
     </AbsoluteFill>
   );
 };
@@ -9243,7 +9223,7 @@ export const AppleNumberScene: React.FC<{ scene: SceneData; sceneIndex?: number 
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <AppleGridBg bg={bg} accent={safeAccent(scene.accentColor, bg)} />
+      <CleanBg bg={bg} />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
         flexDirection: "column", gap: 8,
@@ -9251,7 +9231,7 @@ export const AppleNumberScene: React.FC<{ scene: SceneData; sceneIndex?: number 
       }}>
         <div style={appleLayerStyle(front, exit)}>
           <div style={{
-            fontSize: 200, fontWeight: 700, fontFamily,
+            fontSize: 200, fontWeight: 600, fontFamily,
             letterSpacing: "-0.07em", lineHeight: 1,
             color: safeAccent(scene.accentColor, bg),
           }}>
@@ -9265,14 +9245,13 @@ export const AppleNumberScene: React.FC<{ scene: SceneData; sceneIndex?: number 
             delayPerWord={5}
             exitStartAt={20}
             style={{
-              fontSize: 24, fontWeight: 500, fontFamily,
-              letterSpacing: "0.06em", textTransform: "uppercase",
-              color: textColor(bg),
+              ...appleText2Style(bg, 52),
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
             }}
           />
         )}
       </AbsoluteFill>
-      <Vignette strength={isLight(bg) ? 0.08 : 0.3} />
     </AbsoluteFill>
   );
 };
@@ -9292,7 +9271,7 @@ export const ApplePhotoScene: React.FC<{ scene: SceneData; sceneIndex?: number }
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <AppleGridBg bg={bg} accent={safeAccent(scene.accentColor, bg)} />
+      <CleanBg bg={bg} />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
         flexDirection: "column", gap: 32,
@@ -9304,11 +9283,7 @@ export const ApplePhotoScene: React.FC<{ scene: SceneData; sceneIndex?: number }
             initialDelay={0}
             delayPerWord={6}
             exitStartAt={20}
-            style={{
-              fontSize, fontWeight: 700, fontFamily,
-              letterSpacing: "-0.03em", lineHeight: 0.95,
-              color: textColor(bg),
-            }}
+            style={appleTitleStyle(bg, fontSize)}
           />
           {scene.text2 && (
             <WordByWord
@@ -9344,7 +9319,6 @@ export const ApplePhotoScene: React.FC<{ scene: SceneData; sceneIndex?: number }
           </div>
         )}
       </AbsoluteFill>
-      <Vignette strength={isLight(bg) ? 0.08 : 0.3} />
     </AbsoluteFill>
   );
 };
@@ -9363,7 +9337,7 @@ export const AppleIconScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <AppleGridBg bg={bg} accent={accent} />
+      <CleanBg bg={bg} />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
         flexDirection: "column", gap: 24,
@@ -9393,11 +9367,7 @@ export const AppleIconScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
             initialDelay={8}
             delayPerWord={6}
             exitStartAt={20}
-            style={{
-              fontSize, fontWeight: 700, fontFamily,
-              letterSpacing: "-0.03em", lineHeight: 0.95,
-              color: textColor(bg),
-            }}
+            style={appleTitleStyle(bg, fontSize)}
           />
           {scene.text2 && (
             <WordByWord
@@ -9410,7 +9380,6 @@ export const AppleIconScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
           )}
         </div>
       </AbsoluteFill>
-      <Vignette strength={isLight(bg) ? 0.08 : 0.3} />
     </AbsoluteFill>
   );
 };
@@ -9423,11 +9392,10 @@ export const AppleCTAScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
   const exit = useAppleExit(20);
   const floatY = Math.sin(frame * 0.02) * 2;
   const mainWordCount = (scene.text || "").split(/\s+/).filter(Boolean).length;
-  const ctaTextColor = isLight(bg) ? "#0a0a0a" : "#ffffff";
 
   return (
     <AbsoluteFill style={{ background: bg }}>
-      <AppleGridBg bg={bg} accent={isLight(bg) ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"} />
+      <CleanBg bg={bg} />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
         flexDirection: "column", gap: 20,
@@ -9438,11 +9406,7 @@ export const AppleCTAScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
           initialDelay={0}
           delayPerWord={6}
           exitStartAt={20}
-          style={{
-            fontSize, fontWeight: 700, fontFamily,
-            letterSpacing: "-0.04em", lineHeight: 0.95,
-            color: ctaTextColor,
-          }}
+          style={appleTitleStyle(bg, fontSize)}
         />
         {scene.text2 && (
           <WordByWord
@@ -9450,10 +9414,7 @@ export const AppleCTAScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
             initialDelay={mainWordCount * 6 + 4}
             delayPerWord={5}
             exitStartAt={18}
-            style={{
-              ...appleText2Style(bg, fontSize),
-              color: ctaTextColor,
-            }}
+            style={appleText2Style(bg, fontSize)}
           />
         )}
         <div style={{
@@ -9479,7 +9440,6 @@ export const AppleCTAScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
           </div>
         </div>
       </AbsoluteFill>
-      <Vignette strength={0.12} />
     </AbsoluteFill>
   );
 };

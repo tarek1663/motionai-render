@@ -7,57 +7,57 @@ const defaultProps: MotionVideoProps = {
   scenes: [
     {
       type: "appletext",
-      text: "L'IA qui crée.",
-      text2: "Des vidéos en quelques minutes.",
+      text: "Simple.",
+      text2: "Comme ça devrait l'être.",
       bg: "#ffffff",
-      accentColor: "#7C3AED",
+      accentColor: "#000000",
     },
     {
       type: "appleaccent",
-      text: "Simple. Puissant.",
-      text2: "Décris ton idée. Motionr fait le reste.",
-      bg: "#ffffff",
-      accentColor: "#7C3AED",
+      text: "Rapide. Précis.",
+      text2: "Généré en quelques minutes.",
+      bg: "#000000",
+      accentColor: "#ffffff",
     },
     {
       type: "applenumber",
-      text: "vidéos générées",
+      text: "vidéos créées",
       text2: "",
       bg: "#ffffff",
-      accentColor: "#10B981",
-      counterTo: 10247,
+      accentColor: "#000000",
+      counterTo: 12400,
     },
     {
       type: "appleicon",
-      text: "72+ animations",
-      text2: "Toujours choisies intelligemment.",
-      bg: "#0a0a0a",
-      accentColor: "#7C3AED",
+      text: "72 animations.",
+      text2: "Choisies intelligemment.",
+      bg: "#000000",
+      accentColor: "#ffffff",
     },
     {
       type: "applephoto",
       text: "Crée sans limite.",
-      text2: "Script, voix, animations — tout automatique.",
+      text2: "Ton idée. Notre moteur.",
       bg: "#ffffff",
-      accentColor: "#10B981",
+      accentColor: "#000000",
     },
     {
       type: "applecta",
-      text: "Commence maintenant.",
-      text2: "3 vidéos gratuites. Sans carte.",
-      bg: "#0a0a0a",
-      accentColor: "#10B981",
+      text: "Commence.",
+      text2: "3 vidéos gratuites.",
+      bg: "#000000",
+      accentColor: "#ffffff",
     },
   ] as MotionVideoProps["scenes"],
   sceneDurations: [
-    { startFrame: 0, durationFrames: 150 },
-    { startFrame: 150, durationFrames: 150 },
-    { startFrame: 300, durationFrames: 150 },
-    { startFrame: 450, durationFrames: 150 },
-    { startFrame: 600, durationFrames: 150 },
-    { startFrame: 750, durationFrames: 150 },
+    { startFrame: 0, durationFrames: 180 },
+    { startFrame: 180, durationFrames: 180 },
+    { startFrame: 360, durationFrames: 180 },
+    { startFrame: 540, durationFrames: 180 },
+    { startFrame: 720, durationFrames: 180 },
+    { startFrame: 900, durationFrames: 180 },
   ],
-  totalFrames: 900,
+  totalFrames: 1080,
   audioSrc: null,
   musicSrc: null,
 };
@@ -83,7 +83,7 @@ const RemotionRoot = () => (
 
       const total = Number.isFinite(p.totalFrames) && p.totalFrames > 0
         ? p.totalFrames
-        : 900;
+        : 1080;
 
       const fmt = (p as MotionVideoProps & { format?: string }).format || "9:16";
       const w = fmt === "16:9" ? 1920 : 1080;
