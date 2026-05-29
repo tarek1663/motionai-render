@@ -1641,11 +1641,12 @@ export const ProgressBarScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
       <AbsoluteFill
         style={{
           justifyContent: "center",
-          alignItems: "flex-start",
+          alignItems: "center",
           padding: "0 120px",
           flexDirection: "column",
           gap: 24,
           opacity,
+          textAlign: "center",
         }}
       >
         {scene.text && (
@@ -3098,9 +3099,10 @@ export const NotificationScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 
       <AbsoluteFill
         style={{
-          justifyContent: "flex-start",
+          justifyContent: "center",
           alignItems: "center",
-          padding: "60px 40px 0",
+          padding: "60px 40px",
+          textAlign: "center",
         }}
       >
         <div
@@ -3624,12 +3626,13 @@ export const TimelineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
       <AbsoluteFill
         style={{
           justifyContent: "center",
-          alignItems: "flex-start",
+          alignItems: "center",
           padding: "0 120px",
           opacity,
+          textAlign: "center",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 28, width: "100%" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 28, width: "100%", alignItems: "center" }}>
           {steps.map((step, i) => {
             const enter = spring({
               frame: frame - i * 10,
@@ -3773,12 +3776,13 @@ export const ChecklistScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
       <AbsoluteFill
         style={{
           justifyContent: "center",
-          alignItems: "flex-start",
+          alignItems: "center",
           padding: "0 120px",
           opacity,
+          textAlign: "center",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 22, alignItems: "center", width: "100%" }}>
           {items.map((item, i) => {
             const enter = spring({
               frame: frame - i * 8,
@@ -4034,12 +4038,13 @@ export const HierarchyTextScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
       <AbsoluteFill
         style={{
           justifyContent: "center",
-          alignItems: "flex-end",
+          alignItems: "center",
           flexDirection: "row",
           flexWrap: "wrap",
           padding: "0 80px",
           gap: "0.15em",
           opacity: fadeOut,
+          textAlign: "center",
         }}
       >
         {words.map((word, i) => {
@@ -4555,6 +4560,7 @@ export const TwoLinesScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             lineHeight: 1,
             color: mainTextColor(scene, bg),
             whiteSpace: "nowrap",
+            textAlign: "center",
             opacity: interpolate(enter1, [0, 1], [0, 1]),
             transform: `translateY(${interpolate(enter1, [0, 1], [30, 0])}px) scale(${interpolate(enter1, [0, 1], [0.92, 1])})`,
             filter: `blur(${interpolate(enter1, [0, 0.5, 1], [8, 1, 0])}px)`,
@@ -4575,6 +4581,7 @@ export const TwoLinesScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
               color: accent,
               whiteSpace: "nowrap",
               textTransform: "uppercase",
+              textAlign: "center",
               opacity: interpolate(enter2, [0, 1], [0, 1]),
               transform: `translateY(${interpolate(enter2, [0, 1], [16, 0])}px)`,
             }}
@@ -4612,7 +4619,9 @@ export const WeightRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
             gap: "0.2em",
             flexWrap: "wrap",
             justifyContent: "center",
+            alignItems: "center",
             padding: "0 80px",
+            textAlign: "center",
           }}
         >
           {words.map((word, i) => {
@@ -4629,6 +4638,7 @@ export const WeightRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
                   color: mainTextColor(scene, bg),
                   whiteSpace: "nowrap",
                   textShadow: mainTextShadow(bg),
+                  textAlign: "center",
                 }}
               >
                 {word}
@@ -5337,7 +5347,7 @@ export const NetworkScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
         </svg>
 
         {scene.text && (
-          <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", padding: "0 0 80px" }}>
+          <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", padding: "0 80px", textAlign: "center" }}>
             <div style={{
               fontSize, fontWeight: 600, fontFamily: FONT,
               letterSpacing: "-0.03em", lineHeight: 1,
@@ -5514,7 +5524,7 @@ export const WorldMapScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
         </svg>
 
         {scene.text && (
-          <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", padding: "0 0 100px" }}>
+          <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", padding: "0 80px", textAlign: "center" }}>
             <div style={{
               fontSize, fontWeight: 600, fontFamily: FONT,
               letterSpacing: "-0.03em", lineHeight: 1,
