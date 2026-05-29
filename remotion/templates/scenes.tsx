@@ -66,7 +66,7 @@ export type SceneData = {
   notifText?: string;
   buttonText?: string;
   author?: string;
-  steps?: Array<{ number: string; label: string }>;
+  steps?: Array<{ number: string; label: string }> | string[];
   platform?: string;
   statLabel?: string;
   items?: string[];
@@ -118,6 +118,17 @@ const textColor = (bg: string): string => {
   if (isLight(bg)) return "#1d1d1f";
   const lum = getLuminance(bg);
   return lum > 0.4 ? "#1d1d1f" : "#f5f5f0";
+};
+
+const getUIProgressStepLabels = (scene: SceneData): string[] => {
+  const raw = scene.steps;
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return ["Étape 1", "Étape 2", "Étape 3"];
+  }
+  if (typeof raw[0] === "string") {
+    return raw;
+  }
+  return raw.map((s) => s.label);
 };
 
 const autoFontSize = (text: string, max = 160, min = 60): number => {
@@ -3210,6 +3221,7 @@ export const UIProgressScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const cardOpacity = Math.min(interpolate(cardEnter, [0, 1], [0, 1]), fadeOut);
   const cardY = interpolate(cardEnter, [0, 1], [40, 0]);
   const cardScale = interpolate(cardEnter, [0, 1], [0.94, 1]);
+  const steps = getUIProgressStepLabels(scene);
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
@@ -3293,8 +3305,8 @@ export const UIProgressScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
               gap: 8,
             }}
           >
-            {["Script", "Voix", "Rendu"].map((step, i) => {
-              const stepDone = barProgress > (i + 1) * 33;
+            {steps.map((step, i) => {
+              const stepDone = barProgress > (i + 1) * (100 / steps.length);
               return (
                 <div
                   key={step}
@@ -3488,13 +3500,23 @@ export const TimelineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const bg = scene.bg || "#000000";
   const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
   const opacity = sceneOpacity(frame, durationInFrames);
-  const steps = scene.steps?.length
-    ? scene.steps
-    : [
+  const steps = (() => {
+    const raw = scene.steps;
+    if (!Array.isArray(raw) || raw.length === 0) {
+      return [
         { number: "01", label: "Découverte" },
         { number: "02", label: "Création" },
         { number: "03", label: "Livraison" },
       ];
+    }
+    if (typeof raw[0] === "string") {
+      return raw.map((label, i) => ({
+        number: String(i + 1).padStart(2, "0"),
+        label,
+      }));
+    }
+    return raw;
+  })();
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
