@@ -93,9 +93,11 @@ export type SceneData = {
     | "hex"
     | "cross"
     | "lines"
-    | "radial";
+    | "radial"
+    | string;
   _duration?: number;
   _index?: number;
+  [key: string]: unknown;
 };
 
 // ---------------------------------------------------------
