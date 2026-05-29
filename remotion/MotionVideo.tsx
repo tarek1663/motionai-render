@@ -46,6 +46,8 @@ import {
   StatScene, CleanListScene, CleanQuoteScene, CleanCTAScene,
   UnderlineScene, SplitTextScene,
   AccentFirstWordScene, BigNumberScene, PureTextScene,
+  AppleTextScene, AppleAccentScene, AppleNumberScene,
+  ApplePhotoScene, AppleIconScene, AppleCTAScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -188,21 +190,27 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({ scene, i
     case "musicvisualizer":   return <MusicVisualizerScene scene={s} sceneIndex={index} />;
     case "splitreveal":       return <SplitRevealScene scene={s} sceneIndex={index} />;
     case "counterpunch":      return <CounterPunchScene scene={s} sceneIndex={index} />;
-    case "cleantext":         return <CleanTextScene scene={s} sceneIndex={index} />;
+    case "appletext":         return <AppleTextScene scene={s} sceneIndex={index} />;
+    case "appleaccent":       return <AppleAccentScene scene={s} sceneIndex={index} />;
+    case "applenumber":       return <AppleNumberScene scene={s} sceneIndex={index} />;
+    case "applephoto":        return <ApplePhotoScene scene={s} sceneIndex={index} />;
+    case "appleicon":         return <AppleIconScene scene={s} sceneIndex={index} />;
+    case "applecta":          return <AppleCTAScene scene={s} sceneIndex={index} />;
+    case "cleantext":         return <AppleTextScene scene={s} sceneIndex={index} />;
     case "highlightword":     return <HighlightWordScene scene={s} sceneIndex={index} />;
-    case "phototext":         return <PhotoCardScene scene={s} sceneIndex={index} />;
-    case "photocard":         return <PhotoCardScene scene={s} sceneIndex={index} />;
-    case "accentfirstword":   return <AccentFirstWordScene scene={s} sceneIndex={index} />;
-    case "bignumber":         return <BigNumberScene scene={s} sceneIndex={index} />;
-    case "puretext":          return <PureTextScene scene={s} sceneIndex={index} />;
-    case "icontext":          return <IconTextScene scene={s} sceneIndex={index} />;
-    case "stat":              return <StatScene scene={s} sceneIndex={index} />;
+    case "phototext":         return <ApplePhotoScene scene={s} sceneIndex={index} />;
+    case "photocard":         return <ApplePhotoScene scene={s} sceneIndex={index} />;
+    case "accentfirstword":   return <AppleAccentScene scene={s} sceneIndex={index} />;
+    case "bignumber":         return <AppleNumberScene scene={s} sceneIndex={index} />;
+    case "puretext":          return <AppleTextScene scene={s} sceneIndex={index} />;
+    case "icontext":          return <AppleIconScene scene={s} sceneIndex={index} />;
+    case "stat":              return <AppleNumberScene scene={s} sceneIndex={index} />;
     case "cleanlist":         return <CleanListScene scene={s} sceneIndex={index} />;
     case "cleanquote":        return <CleanQuoteScene scene={s} sceneIndex={index} />;
-    case "cleancta":          return <CleanCTAScene scene={s} sceneIndex={index} />;
+    case "cleancta":          return <AppleCTAScene scene={s} sceneIndex={index} />;
     case "underline":         return <UnderlineScene scene={s} sceneIndex={index} />;
     case "splittext":         return <SplitTextScene scene={s} sceneIndex={index} />;
-    default:              return <WordScene                scene={s} sceneIndex={index} />;
+    default:              return <AppleTextScene            scene={s} sceneIndex={index} />;
   }
 };
 
