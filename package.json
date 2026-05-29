@@ -5,14 +5,15 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "uuid": "^9.0.0",
-    "remotion": "4.0.305",
-    "@remotion/renderer": "4.0.305",
-    "@remotion/google-fonts": "4.0.305",
-    "@remotion/transitions": "4.0.305",
     "@remotion/bundler": "4.0.305",
-    "@remotion/cli": "4.0.305"
+    "@remotion/cli": "4.0.305",
+    "@remotion/google-fonts": "4.0.305",
+    "@remotion/renderer": "4.0.305",
+    "@remotion/transitions": "4.0.305",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "puppeteer-core": "^25.1.0",
+    "remotion": "4.0.305",
+    "uuid": "^9.0.0"
   }
 }

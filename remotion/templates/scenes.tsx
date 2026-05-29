@@ -118,6 +118,7 @@ export type SceneData = {
   photoUrl2?: string;
   photoUrl3?: string;
   photoQuery?: string;
+  websiteUrl?: string;
   mockupContent?: string;
   mockupData?: {
     type?: string;
@@ -4715,6 +4716,16 @@ export const IPhoneScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const fontSize = autoFontSize(scene.text || "", 72, 36);
 
   const renderScreen = () => {
+    if (photoUrl) {
+      return (
+        <img
+          src={photoUrl}
+          alt=""
+          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+        />
+      );
+    }
+
     const c = (mockupData.color as string) || accent;
 
     if (mockupType === "player") {
@@ -4971,11 +4982,7 @@ export const IPhoneScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             zIndex: 3,
           }} />
           <div style={{ width: "100%", height: "100%", opacity: screenOn }}>
-            {photoUrl ? (
-              <img src={photoUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
-            ) : (
-              renderScreen()
-            )}
+            {renderScreen()}
           </div>
         </div>
 
@@ -5052,13 +5059,13 @@ export const MacBookScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
                 color: "#555", marginLeft: 8, textAlign: "center",
                 fontFamily: FONT,
               }}>
-                {scene.url || "motionr.app"}
+                {scene.websiteUrl || scene.url || "motionr.app"}
               </div>
             </div>
             {/* Contenu écran */}
             <div style={{ height: 200, opacity: screenOpacity }}>
               {photoUrl ? (
-                <img src={photoUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <img src={photoUrl} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} alt="" />
               ) : (
                 <div style={{
                   height: "100%", background: "#0a0a0a",
@@ -5116,6 +5123,8 @@ export const DoubleDeviceScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
   const { fps, durationInFrames } = useVideoConfig();
   const bg = scene.bg || "#ffffff";
   const accent = safeAccent(scene.accentColor, bg);
+  const photoUrl = scene.photoUrl || "";
+  const mobilePhotoUrl = scene.photoUrl2 || photoUrl;
 
   const macEnter = spring({ frame, fps, config: { damping: 260, stiffness: 70, mass: 1 }, from: 0, to: 1 });
   const phoneEnter = spring({ frame: Math.max(0, frame - 12), fps, config: { damping: 260, stiffness: 80, mass: 0.8 }, from: 0, to: 1 });
@@ -5150,21 +5159,26 @@ export const DoubleDeviceScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
                   <div key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: c }} />
                 ))}
               </div>
-              <div style={{
-                height: 110, background: "#0a0a0a",
-                padding: 12, display: "flex", flexDirection: "column", gap: 6,
-              }}>
-                <div style={{ width: "50%", height: 6, borderRadius: 3, background: accent + "88" }} />
-                <div style={{ width: "70%", height: 4, borderRadius: 2, background: "#222" }} />
-                <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                  {[1, 2].map(i => (
-                    <div key={i} style={{
-                      flex: 1, height: 36, borderRadius: 6,
-                      background: i === 1 ? accent + "22" : "#1a1a1a",
-                      border: `1px solid ${i === 1 ? accent + "33" : "#222"}`,
-                    }} />
-                  ))}
-                </div>
+              <div style={{ height: 110, background: "#0a0a0a", overflow: "hidden" }}>
+                {photoUrl ? (
+                  <img src={photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
+                ) : (
+                  <div style={{
+                    height: "100%", padding: 12, display: "flex", flexDirection: "column", gap: 6,
+                  }}>
+                    <div style={{ width: "50%", height: 6, borderRadius: 3, background: accent + "88" }} />
+                    <div style={{ width: "70%", height: 4, borderRadius: 2, background: "#222" }} />
+                    <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                      {[1, 2].map(i => (
+                        <div key={i} style={{
+                          flex: 1, height: 36, borderRadius: 6,
+                          background: i === 1 ? accent + "22" : "#1a1a1a",
+                          border: `1px solid ${i === 1 ? accent + "33" : "#222"}`,
+                        }} />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <div style={{ background: "#2a2a2a", height: 7, borderRadius: "0 0 3px 3px", border: "2px solid #333", borderTop: "none" }} />
@@ -5190,13 +5204,17 @@ export const DoubleDeviceScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
               background: "#000", borderRadius: "0 0 8px 8px",
               zIndex: 2,
             }} />
-            <div style={{
-              width: "100%", height: "100%",
-              background: `linear-gradient(135deg, ${accent}22, ${accent}08)`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <div style={{ width: 24, height: 24, borderRadius: 6, background: accent, opacity: 0.8 }} />
-            </div>
+            {mobilePhotoUrl ? (
+              <img src={mobilePhotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
+            ) : (
+              <div style={{
+                width: "100%", height: "100%",
+                background: `linear-gradient(135deg, ${accent}22, ${accent}08)`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <div style={{ width: 24, height: 24, borderRadius: 6, background: accent, opacity: 0.8 }} />
+              </div>
+            )}
           </div>
         </div>
 
@@ -5284,7 +5302,7 @@ export const BrowserScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
                 fontSize: 10, color: isLight(bg) ? "#999" : "#555",
                 fontFamily: FONT, zIndex: 1,
               }}>
-                {scene.url || "motionr.app"}
+                {scene.websiteUrl || scene.url || "motionr.app"}
               </span>
             </div>
           </div>
@@ -5292,7 +5310,7 @@ export const BrowserScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
           {/* Contenu */}
           <div style={{ height: 220, opacity: contentFade }}>
             {photoUrl ? (
-              <img src={photoUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <img src={photoUrl} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} alt="" />
             ) : (
               <div style={{
                 height: "100%",
