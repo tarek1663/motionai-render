@@ -74,6 +74,8 @@ import {
   DataFlowScene,
   WorldMapScene,
   HorizontalTimelineScene,
+  WeightRevealScene,
+  DynamicVignette,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -90,6 +92,32 @@ export type MotionVideoProps = {
 };
 
 const MIN_SCENE_FRAMES = 120;
+const CROSSFADE_FRAMES = 8;
+
+const SceneCrossfade: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const frame = useCurrentFrame();
+  const fade = interpolate(frame, [0, CROSSFADE_FRAMES], [1, 0], {
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+
+  return (
+    <AbsoluteFill>
+      {children}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 99,
+          background: "#000000",
+          opacity: fade,
+          pointerEvents: "none",
+        }}
+      />
+      <DynamicVignette />
+    </AbsoluteFill>
+  );
+};
 
 const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
   scene,
@@ -225,6 +253,8 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <WorldMapScene scene={sceneWithIndex} />;
     case "horizontaltimeline":
       return <HorizontalTimelineScene scene={sceneWithIndex} />;
+    case "weightreveal":
+      return <WeightRevealScene scene={sceneWithIndex} />;
     default:
       return <SingleWordScene scene={sceneWithIndex} />;
   }
@@ -297,7 +327,6 @@ export const MotionVideo: React.FC<MotionVideoProps> = ({
     Number.isFinite(totalFrames) && totalFrames > 0 ? totalFrames : 1800;
   const allScenes = scenes || [];
   const timings = sceneDurations || [];
-  const CROSSFADE_OVERLAP = 8;
 
   return (
     <AbsoluteFill>
@@ -341,10 +370,12 @@ export const MotionVideo: React.FC<MotionVideoProps> = ({
         return (
           <Sequence
             key={index}
-            from={Math.max(0, from)}
-            durationInFrames={duration + CROSSFADE_OVERLAP}
+            from={Math.max(0, from - CROSSFADE_FRAMES)}
+            durationInFrames={duration + CROSSFADE_FRAMES}
           >
-            <SceneRenderer scene={scene} index={index} />
+            <SceneCrossfade>
+              <SceneRenderer scene={scene} index={index} />
+            </SceneCrossfade>
           </Sequence>
         );
       })}

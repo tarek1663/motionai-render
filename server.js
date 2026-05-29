@@ -70,6 +70,21 @@ const toAbsoluteAssetUrl = (url) => {
   return `${process.env.RENDER_SERVER_URL}${url}`;
 };
 
+const recalcSceneDurations = (scenes) => {
+  const ANTICIPATION = 3;
+  let currentFrame = 0;
+  return (scenes || []).map((scene, i) => {
+    const duration = scene.durationFrames || 120;
+    const start = Math.max(0, currentFrame - (i > 0 ? ANTICIPATION : 0));
+    const result = {
+      startFrame: start,
+      durationFrames: duration,
+    };
+    currentFrame += duration;
+    return result;
+  });
+};
+
 // Chrome persistant
 let browserInstance = null;
 
@@ -354,10 +369,16 @@ app.post("/render", async (req, res) => {
     })
   );
 
+  const computedSceneDurations = recalcSceneDurations(enrichedScenes);
+  const computedTotalFrames = computedSceneDurations.reduce(
+    (acc, s) => acc + s.durationFrames,
+    0,
+  );
+
   const inputProps = {
     scenes: enrichedScenes,
-    sceneDurations,
-    totalFrames,
+    sceneDurations: computedSceneDurations,
+    totalFrames: computedTotalFrames || totalFrames,
     format: format || "9:16",
     audioSrc: audioUrl || null,
     musicSrc: musicUrl || null,

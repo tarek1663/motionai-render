@@ -81,8 +81,10 @@ export type SceneData = {
     | "network"
     | "dataflow"
     | "worldmap"
-    | "horizontaltimeline";
+    | "horizontaltimeline"
+    | "weightreveal";
   text?: string;
+  durationFrames?: number;
   url?: string;
   dashTitle?: string;
   messages?: Array<{ text: string; isUser: boolean }>;
@@ -159,6 +161,118 @@ const mainTextColor = (scene: SceneData, bg: string): string =>
 
 const mainTextShadow = (bg: string): string =>
   isLight(bg) ? "0 2px 12px rgba(0,0,0,0.08)" : "0 2px 20px rgba(0,0,0,0.4)";
+
+const useAppleTiming = (enterDuration = 24, pauseRatio = 0.6) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+
+  const fadeIn = interpolate(frame, [0, enterDuration], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+
+  const pauseEnd = durationInFrames * pauseRatio;
+  const exitStart = Math.max(pauseEnd, durationInFrames - 28);
+  const fadeOut = interpolate(frame, [exitStart, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: E_IN,
+  });
+
+  return {
+    opacity: Math.min(fadeIn, fadeOut),
+    isEntering: frame < enterDuration,
+    isExiting: frame > exitStart,
+    progress: fadeIn,
+  };
+};
+
+const useAppleMicroZoom = (intensity = 0.015) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  return interpolate(frame, [0, durationInFrames], [1.0, 1.0 + intensity], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+};
+
+const MotionBlurWrapper: React.FC<{
+  children: React.ReactNode;
+  velocityX?: number;
+  velocityY?: number;
+  active?: boolean;
+}> = ({ children, velocityX = 0, velocityY = 0, active = true }) => {
+  if (!active) return <>{children}</>;
+
+  const blurAmount = Math.min(8, Math.abs(velocityX) * 0.3 + Math.abs(velocityY) * 0.3);
+
+  return (
+    <div
+      style={{
+        filter: blurAmount > 0.5 ? `blur(${blurAmount * 0.4}px)` : "none",
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
+export const DynamicVignette: React.FC<{
+  strength?: number;
+  dynamic?: boolean;
+}> = ({ strength = 0.3, dynamic = true }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+
+  const dynamicStrength = dynamic
+    ? interpolate(
+        frame,
+        [0, 20, durationInFrames * 0.5, durationInFrames - 20, durationInFrames],
+        [0, strength * 0.8, strength * 0.4, strength * 0.8, 0],
+        { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+      )
+    : strength;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        background: `radial-gradient(ellipse at center,
+        transparent 40%,
+        rgba(0,0,0,${dynamicStrength}) 100%)`,
+        zIndex: 10,
+      }}
+    />
+  );
+};
+
+const SceneGeoBackground: React.FC<{
+  bg: string;
+  geo?: string;
+  depthOfField?: boolean;
+}> = ({ bg, geo, depthOfField = false }) => {
+  const frame = useCurrentFrame();
+  const depthBlur = depthOfField
+    ? interpolate(frame, [0, 24], [6, 0], {
+        extrapolateRight: "clamp",
+        easing: E_OUT,
+      })
+    : 0;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        filter: depthBlur > 0 ? `blur(${depthBlur}px)` : undefined,
+      }}
+    >
+      <GeoBackground bg={bg} geo={geo} />
+    </div>
+  );
+};
 
 const getUIProgressStepLabels = (scene: SceneData): string[] => {
   const raw = scene.steps;
@@ -369,10 +483,8 @@ const GEO_MAP: Record<string, React.FC<{ bg: string }>> = {
 const GeoBackground: React.FC<{ bg: string; geo?: string }> = ({ bg, geo }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
-  const scale = interpolate(frame, [0, durationInFrames], [1.0, 1.012], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  const zoom = useAppleMicroZoom(0.015);
+  const scale = zoom;
 
   const r = parseInt(bg.replace("#", "").slice(0, 2), 16) || 0;
   const g = parseInt(bg.replace("#", "").slice(2, 4), 16) || 0;
@@ -389,9 +501,10 @@ const GeoBackground: React.FC<{ bg: string; geo?: string }> = ({ bg, geo }) => {
 
   const base: React.CSSProperties = {
     position: "absolute",
-    inset: 0,
+    inset: -10,
     background: bg,
     transform: `scale(${scale})`,
+    transformOrigin: "center center",
   };
 
   if (!geo || geo === "none") {
@@ -525,16 +638,7 @@ export const SingleWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const opacity = Math.min(fadeIn, fadeOut);
   const scale = interpolate(enter, [0, 1], [0.84, 1]);
@@ -581,16 +685,7 @@ export const MaskRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const fontSize = autoFontSize(scene.text || "", 160, 72);
 
@@ -665,20 +760,12 @@ export const SlideWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const x = interpolate(enter, [0, 1], [-180, 0]);
   const opacity = Math.min(fadeIn, fadeOut);
   const fontSize = autoFontSize(scene.text || "", 160, 72);
+  const velocity = interpolate(enter, [0, 0.3], [1, 0], { extrapolateRight: "clamp" });
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
@@ -690,23 +777,25 @@ export const SlideWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
           overflow: "hidden",
         }}
       >
-        <div
-          style={{
-            fontSize,
-            fontWeight: 600,
-            fontFamily: FONT,
-            letterSpacing: "-0.03em",
-            lineHeight: 1,
-            color: mainTextColor(scene, bg),
-            textShadow: mainTextShadow(bg),
-            opacity,
-            transform: `translateX(${x}px)`,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-          }}
-        >
-          {scene.text}
-        </div>
+        <MotionBlurWrapper velocityX={velocity * 40} active={frame < 20}>
+          <div
+            style={{
+              fontSize,
+              fontWeight: 600,
+              fontFamily: FONT,
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+              color: mainTextColor(scene, bg),
+              textShadow: mainTextShadow(bg),
+              opacity,
+              transform: `translateX(${x}px)`,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+            }}
+          >
+            {scene.text}
+          </div>
+        </MotionBlurWrapper>
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -722,16 +811,7 @@ export const ZoomWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const scale = interpolate(progress, [0, 1], [1.35, 1]);
   const blur = interpolate(progress, [0, 0.6, 1], [18, 4, 0]);
@@ -774,16 +854,7 @@ export const FadeUpLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
   const text = scene.text || "";
   const letters = text.split("");
   const fontSize = autoFontSize(text, 160, 72);
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
@@ -842,16 +913,7 @@ export const BlurInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const blur = interpolate(progress, [0, 1], [40, 0]);
   const opacity = Math.min(interpolate(progress, [0, 0.2], [0, 1]), fadeOut);
@@ -895,16 +957,7 @@ export const ScaleInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     from: 0,
     to: 1,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const scale = interpolate(enter, [0, 1], [0.3, 1]);
   const opacity = Math.min(interpolate(enter, [0, 0.3], [0, 1]), fadeOut);
@@ -950,41 +1003,35 @@ export const SlideUpScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     from: 0,
     to: 1,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const y = interpolate(enter, [0, 1], [120, 0]);
   const opacity = Math.min(interpolate(enter, [0, 0.2], [0, 1]), fadeOut);
   const fontSize = autoFontSize(scene.text || "", 160, 72);
+  const velocity = interpolate(enter, [0, 0.3], [1, 0], { extrapolateRight: "clamp" });
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
       <GeoBackground bg={bg} geo={scene.geo} />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
-        <div
-          style={{
-            fontSize,
-            fontWeight: 600,
-            fontFamily: FONT,
-            letterSpacing: "-0.03em",
-            lineHeight: 1,
-            color: mainTextColor(scene, bg),
-            textShadow: mainTextShadow(bg),
-            opacity,
-            transform: `translateY(${y}px)`,
-            whiteSpace: "nowrap",
-          }}
-        >
-          {scene.text}
-        </div>
+        <MotionBlurWrapper velocityY={velocity * 40} active={frame < 20}>
+          <div
+            style={{
+              fontSize,
+              fontWeight: 600,
+              fontFamily: FONT,
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+              color: mainTextColor(scene, bg),
+              textShadow: mainTextShadow(bg),
+              opacity,
+              transform: `translateY(${y}px)`,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {scene.text}
+          </div>
+        </MotionBlurWrapper>
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -1000,16 +1047,7 @@ export const ClipTopScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const fontSize = autoFontSize(scene.text || "", 160, 72);
 
@@ -1056,16 +1094,7 @@ export const StaggerWordsScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
   const bg = scene.bg || "#000000";
   const words = (scene.text || "").split(" ");
   const fontSize = autoFontSize(scene.text || "", 130, 60);
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
@@ -1169,26 +1198,17 @@ export const FadePureScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 // ─── 13. TRACKING EXPAND ──────────────────────────────
 export const TrackingScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
   const bg = scene.bg || "#ffffff";
 
-  const progress = interpolate(frame, [0, 40], [0, 1], {
+  const tracking = interpolate(frame, [0, 40], [0.12, -0.03], {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
-
-  const tracking = interpolate(progress, [0, 1], [-0.15, -0.025]);
-  const opacity = Math.min(interpolate(progress, [0, 0.2], [0, 1]), fadeOut);
+  const scaleCompensate = interpolate(frame, [0, 40], [0.88, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const { opacity: appleOpacity } = useAppleTiming();
   const fontSize = autoFontSize(scene.text || "", 160, 72);
 
   return (
@@ -1204,7 +1224,14 @@ export const TrackingScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             lineHeight: 1,
             color: mainTextColor(scene, bg),
             textShadow: mainTextShadow(bg),
-            opacity,
+            opacity: Math.min(
+              interpolate(frame, [0, 20], [0, 1], {
+                extrapolateRight: "clamp",
+                easing: E_OUT,
+              }),
+              appleOpacity,
+            ),
+            transform: `scale(${scaleCompensate})`,
             whiteSpace: "nowrap",
           }}
         >
@@ -1228,16 +1255,7 @@ export const RotateInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     from: 0,
     to: 1,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const rotate = interpolate(enter, [0, 1], [-6, 0]);
   const opacity = Math.min(interpolate(enter, [0, 0.2], [0, 1]), fadeOut);
@@ -1280,16 +1298,7 @@ export const GeoBgTestScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 20, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming(20);
   const opacity = Math.min(fadeIn, fadeOut);
 
   const GeoComponent = GEO_MAP[geoType] || GeoDots;
@@ -1341,16 +1350,7 @@ export const PhotoRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const textFadeIn = interpolate(Math.max(0, frame - 36), [0, 20], [0, 1], {
     extrapolateRight: "clamp",
@@ -1365,7 +1365,7 @@ export const PhotoRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <GeoBackground bg={bg} geo={scene.geo} />
+      <SceneGeoBackground bg={bg} geo={scene.geo} depthOfField />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -1433,16 +1433,7 @@ export const PhotoCollageScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 
   const count = photos.length || 2;
 
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const textEnter = spring({
     frame: Math.max(0, frame - count * 10 + 10),
@@ -1456,7 +1447,7 @@ export const PhotoCollageScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <GeoBackground bg={bg} geo={scene.geo} />
+      <SceneGeoBackground bg={bg} geo={scene.geo} depthOfField />
       <AbsoluteFill
         style={{
           justifyContent: "center",
@@ -1577,16 +1568,7 @@ export const CounterScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
   const opacity = Math.min(fadeIn, fadeOut);
 
   const displayValue =
@@ -1645,16 +1627,7 @@ export const ProgressBarScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
   const opacity = Math.min(fadeIn, fadeOut);
 
   const barWidth = interpolate(frame, [8, Math.max(9, durationInFrames * 0.75)], [0, target], {
@@ -1740,16 +1713,7 @@ export const MultiStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     { value: 98, label: "satisfaction", suffix: "%" },
   ];
 
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
@@ -1840,16 +1804,7 @@ export const AccentWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const words = (scene.text || "").split(" ");
   const accentIndex = scene.accentIndex ?? 0;
 
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const fontSize = autoFontSize(scene.text || "", 140, 64);
 
@@ -1919,16 +1874,7 @@ export const UnderlineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const fontSize = autoFontSize(scene.text || "", 140, 64);
 
@@ -2011,16 +1957,7 @@ export const ColorShiftScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const fontSize = autoFontSize(scene.text || "", 140, 64);
   const textProgress = progress > 0.5 ? 1 : 0;
@@ -2083,16 +2020,7 @@ export const LineDrawScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const fontSize = autoFontSize(scene.text || "", 130, 60);
 
@@ -2161,16 +2089,7 @@ export const ShapeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     from: 0,
     to: 1,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const shapeScale = interpolate(enter, [0, 1], [0.4, 1]);
   const shapeOpacity = Math.min(interpolate(enter, [0, 0.3], [0, 1]), fadeOut);
@@ -2251,16 +2170,7 @@ export const ExpandingShapeScene: React.FC<{ scene: SceneData }> = ({ scene }) =
     from: 0,
     to: 1,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const { opacity: fadeOut } = useAppleTiming();
 
   const fontSize = autoFontSize(scene.text || "", 130, 60);
 
@@ -3533,21 +3443,20 @@ export const UIProgressScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 const sceneOpacity = (
   frame: number,
   durationInFrames: number,
+  enterDuration = 24,
+  pauseRatio = 0.6,
 ): number => {
-  const fadeIn = interpolate(frame, [0, 20], [0, 1], {
+  const fadeIn = interpolate(frame, [0, enterDuration], [0, 1], {
     extrapolateRight: "clamp",
     easing: E_OUT,
   });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
+  const pauseEnd = durationInFrames * pauseRatio;
+  const exitStart = Math.max(pauseEnd, durationInFrames - 28);
+  const fadeOut = interpolate(frame, [exitStart, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: E_IN,
+  });
   return Math.min(fadeIn, fadeOut);
 };
 
@@ -3992,11 +3901,7 @@ export const ColorLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
   const letters = (scene.text || "").split("");
   const fontSize = autoFontSize(scene.text || "", 160, 72);
 
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
@@ -4068,11 +3973,7 @@ export const GradientScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     from: 0,
     to: 1,
   });
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   const fontSize = autoFontSize(scene.text || "", 140, 64);
 
@@ -4119,11 +4020,7 @@ export const HierarchyTextScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
   const bg = scene.bg || "#ffffff";
   const accent = safeAccent(scene.accentColor, bg);
   const words = (scene.text || "").split(" ");
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   const sizes = words.map((_, i) => {
     if (i === 0) return 160;
@@ -4192,11 +4089,7 @@ export const SpotlightScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     from: 0,
     to: 1,
   });
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   const spotSize = interpolate(enter, [0, 1], [0, 120]);
   const spotOpacity = interpolate(enter, [0, 0.3], [0, 1]);
@@ -4277,11 +4170,7 @@ export const NoiseScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     from: 0,
     to: 1,
   });
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   const fontSize = autoFontSize(scene.text || "", 140, 64);
 
@@ -4358,11 +4247,7 @@ export const GradientTextScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
     from: 0,
     to: 1,
   });
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   const angle = interpolate(frame, [0, durationInFrames], [90, 120], {
     extrapolateLeft: "clamp",
@@ -4480,11 +4365,7 @@ export const SplitLinesScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     .split("|")
     .map((l) => l.trim())
     .filter(Boolean);
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   const fontSize = autoFontSize(lines[0] || "", 120, 56);
 
@@ -4562,11 +4443,7 @@ export const BgNumberScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     from: 0,
     to: 1,
   });
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   const fontSize = autoFontSize(scene.text || "", 100, 48);
 
@@ -4651,11 +4528,7 @@ export const TwoLinesScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     from: 0,
     to: 1,
   });
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   const fontSize1 = autoFontSize(line1, 140, 64);
   const fontSize2 = Math.round(fontSize1 * 0.38);
@@ -4715,6 +4588,59 @@ export const TwoLinesScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 };
 
 
+// ─── WEIGHT REVEAL ────────────────────────────────────
+export const WeightRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const bg = scene.bg || "#000000";
+  const { opacity } = useAppleTiming();
+  const words = (scene.text || "").split(" ");
+  const fontSize = autoFontSize(scene.text || "", 130, 60);
+  const weights = [800, 200, 700, 200, 900, 300, 800];
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            gap: "0.2em",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            padding: "0 80px",
+          }}
+        >
+          {words.map((word, i) => {
+            const weight = weights[i % weights.length];
+            return (
+              <span
+                key={i}
+                style={{
+                  fontSize,
+                  fontWeight: weight,
+                  fontFamily: FONT,
+                  letterSpacing: weight > 600 ? "-0.04em" : "0.02em",
+                  lineHeight: 1,
+                  color: mainTextColor(scene, bg),
+                  whiteSpace: "nowrap",
+                  textShadow: mainTextShadow(bg),
+                }}
+              >
+                {word}
+              </span>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
 // ═══════════════════════════════════════════════════════
 // MOCKUPS & REPRÉSENTATIONS ANIMÉES
 // ═══════════════════════════════════════════════════════
@@ -4730,9 +4656,7 @@ export const IPhoneScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const enter = spring({ frame, fps, config: { damping: 260, stiffness: 70, mass: 1 }, from: 0, to: 1 });
   const floatY = Math.sin(frame * 0.04) * 8;
   const floatR = Math.sin(frame * 0.03) * 2;
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   const textEnter = spring({ frame: Math.max(0, frame - 24), fps, config: { damping: 280, stiffness: 80 }, from: 0, to: 1 });
   const fontSize = autoFontSize(scene.text || "", 72, 36);
@@ -4743,7 +4667,7 @@ export const IPhoneScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <GeoBackground bg={bg} geo={scene.geo} />
+      <SceneGeoBackground bg={bg} geo={scene.geo} depthOfField />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
         flexDirection: "column", gap: 28, opacity: fadeOut,
@@ -4828,16 +4752,14 @@ export const MacBookScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const screenOpacity = interpolate(Math.max(0, frame - 20), [0, 20], [0, 1], {
     extrapolateRight: "clamp", easing: E_OUT,
   });
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   const enter = spring({ frame, fps, config: { damping: 280, stiffness: 60, mass: 1 }, from: 0, to: 1 });
   const fontSize = autoFontSize(scene.text || "", 72, 36);
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <GeoBackground bg={bg} geo={scene.geo} />
+      <SceneGeoBackground bg={bg} geo={scene.geo} depthOfField />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
         flexDirection: "column", gap: 24, opacity: fadeOut,
@@ -4941,9 +4863,7 @@ export const DoubleDeviceScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
   const macEnter = spring({ frame, fps, config: { damping: 260, stiffness: 70, mass: 1 }, from: 0, to: 1 });
   const phoneEnter = spring({ frame: Math.max(0, frame - 12), fps, config: { damping: 260, stiffness: 80, mass: 0.8 }, from: 0, to: 1 });
   const textEnter = spring({ frame: Math.max(0, frame - 28), fps, config: { damping: 280, stiffness: 80 }, from: 0, to: 1 });
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
   const floatY = Math.sin(frame * 0.04) * 5;
   const fontSize = autoFontSize(scene.text || "", 60, 32);
 
@@ -5052,9 +4972,7 @@ export const BrowserScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const contentFade = interpolate(Math.max(0, frame - 20), [0, 24], [0, 1], {
     extrapolateRight: "clamp", easing: E_OUT,
   });
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   // Loading bar
   const loadW = interpolate(Math.max(0, frame - 4), [0, 28], [0, 100], {
@@ -5065,7 +4983,7 @@ export const BrowserScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <GeoBackground bg={bg} geo={scene.geo} />
+      <SceneGeoBackground bg={bg} geo={scene.geo} depthOfField />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
         flexDirection: "column", gap: 20, opacity: fadeOut,
@@ -5166,16 +5084,14 @@ export const DashboardScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const accent = safeAccent(scene.accentColor, bg);
 
   const enter = spring({ frame, fps, config: { damping: 260, stiffness: 70, mass: 1 }, from: 0, to: 1 });
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   const bars = [65, 82, 45, 90, 71, 55, 88];
   const fontSize = autoFontSize(scene.text || "", 60, 32);
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <GeoBackground bg={bg} geo={scene.geo} />
+      <SceneGeoBackground bg={bg} geo={scene.geo} depthOfField />
       <AbsoluteFill style={{
         justifyContent: "center", alignItems: "center",
         flexDirection: "column", gap: 20, opacity: fadeOut,
@@ -5295,9 +5211,7 @@ export const ChatScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     { text: "Vidéo générée en 2 min.", isUser: true },
   ];
 
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
@@ -5356,9 +5270,7 @@ export const NetworkScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const bg = scene.bg || "#000000";
   const accent = safeAccent(scene.accentColor, bg);
 
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   const nodes = [
     { x: 540, y: 500, size: 20, delay: 0, isCenter: true },
@@ -5525,9 +5437,7 @@ export const WorldMapScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const bg = scene.bg || "#000000";
   const accent = safeAccent(scene.accentColor, bg);
 
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   const cities = [
     { x: 480, y: 280, name: "Paris", delay: 0 },
@@ -5638,9 +5548,7 @@ export const HorizontalTimelineScene: React.FC<{ scene: SceneData }> = ({ scene 
   const lineW = interpolate(frame, [4, 40], [0, 100], {
     extrapolateRight: "clamp", easing: E_OUT,
   });
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
-  });
+  const { opacity: fadeOut } = useAppleTiming();
 
   const textEnter = spring({ frame: Math.max(0, frame - 36), fps, config: { damping: 280, stiffness: 80 }, from: 0, to: 1 });
   const fontSize = autoFontSize(scene.text || "", 60, 32);
