@@ -328,10 +328,6 @@ const GEO_MAP: Record<string, React.FC<{ bg: string }>> = {
 // ═══════════════════════════════════════════════════════
 
 const GeoBackground: React.FC<{ bg: string; geo?: string }> = ({ bg, geo }) => {
-  const light = isLight(bg);
-  const line = light ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)";
-  const dot = light ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.10)";
-
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const scale = interpolate(frame, [0, durationInFrames], [1.0, 1.012], {
@@ -339,7 +335,15 @@ const GeoBackground: React.FC<{ bg: string; geo?: string }> = ({ bg, geo }) => {
     extrapolateRight: "clamp",
   });
 
-  const baseStyle: React.CSSProperties = {
+  const r = parseInt(bg.replace("#", "").slice(0, 2), 16) || 0;
+  const g = parseInt(bg.replace("#", "").slice(2, 4), 16) || 0;
+  const b = parseInt(bg.replace("#", "").slice(4, 6), 16) || 0;
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  const patternColor =
+    luminance > 0.5 ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.10)";
+
+  const base: React.CSSProperties = {
     position: "absolute",
     inset: 0,
     background: bg,
@@ -347,88 +351,44 @@ const GeoBackground: React.FC<{ bg: string; geo?: string }> = ({ bg, geo }) => {
   };
 
   if (!geo || geo === "none") {
-    return <div style={baseStyle} />;
+    return <div style={base} />;
   }
-
-  const patterns: Record<string, React.CSSProperties> = {
-    dots: {
-      ...baseStyle,
-      backgroundImage: `radial-gradient(circle, ${dot} 1.5px, transparent 1.5px)`,
-      backgroundSize: "40px 40px",
-    },
-    grid: {
-      ...baseStyle,
-      backgroundImage: `linear-gradient(${line} 1px, transparent 1px), linear-gradient(90deg, ${line} 1px, transparent 1px)`,
-      backgroundSize: "56px 56px",
-    },
-    diagonal: {
-      ...baseStyle,
-      backgroundImage: `repeating-linear-gradient(45deg, ${line} 0px, ${line} 1px, transparent 1px, transparent 40px)`,
-    },
-    circles: {
-      ...baseStyle,
-    },
-    perspective: {
-      ...baseStyle,
-    },
-    hex: {
-      ...baseStyle,
-      backgroundImage: `radial-gradient(circle, ${dot} 1.5px, transparent 1.5px)`,
-      backgroundSize: "30px 52px",
-      backgroundPosition: "0 0, 15px 26px",
-    },
-    cross: {
-      ...baseStyle,
-      backgroundImage: `linear-gradient(${line} 2px, transparent 2px), linear-gradient(90deg, ${line} 2px, transparent 2px)`,
-      backgroundSize: "60px 60px",
-      backgroundPosition: "-1px -1px",
-    },
-    lines: {
-      ...baseStyle,
-      backgroundImage: `repeating-linear-gradient(0deg, ${line} 0px, ${line} 1px, transparent 1px, transparent 48px)`,
-    },
-    radial: {
-      ...baseStyle,
-      backgroundImage: `radial-gradient(ellipse 70% 60% at 50% 50%, ${light ? "rgba(255,255,255,0.0)" : "rgba(255,255,255,0.04)"} 0%, transparent 100%)`,
-    },
-  };
-
-  const style = patterns[geo] || baseStyle;
 
   if (geo === "circles") {
     return (
-      <div style={baseStyle}>
-        <div style={{ position: "absolute", inset: 0, transform: `scale(${scale})` }}>
-          {[150, 280, 420, 560, 700].map((r, i) => (
-            <div
-              key={i}
-              style={{
-                position: "absolute",
-                width: r * 2,
-                height: r * 2,
-                borderRadius: "50%",
-                border: `1px solid ${line}`,
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-              }}
-            />
-          ))}
-        </div>
+      <div style={base}>
+        {[120, 240, 360, 480, 620, 760].map((radius, i) => (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              width: radius * 2,
+              height: radius * 2,
+              borderRadius: "50%",
+              border: `1px solid ${patternColor}`,
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+            }}
+          />
+        ))}
       </div>
     );
   }
 
   if (geo === "perspective") {
     return (
-      <div style={{ ...baseStyle, overflow: "hidden" }}>
+      <div style={{ ...base, overflow: "hidden" }}>
         <div
           style={{
             position: "absolute",
-            inset: -200,
-            backgroundImage: `linear-gradient(${line} 1px, transparent 1px), linear-gradient(90deg, ${line} 1px, transparent 1px)`,
+            inset: -400,
+            backgroundImage: `
+            linear-gradient(${patternColor} 1px, transparent 1px),
+            linear-gradient(90deg, ${patternColor} 1px, transparent 1px)
+          `,
             backgroundSize: "60px 60px",
-            transform: `perspective(600px) rotateX(55deg) translateY(30%) scale(${scale})`,
+            transform: `perspective(600px) rotateX(55deg) translateY(40%)`,
             transformOrigin: "center bottom",
           }}
         />
@@ -436,7 +396,68 @@ const GeoBackground: React.FC<{ bg: string; geo?: string }> = ({ bg, geo }) => {
     );
   }
 
-  return <div style={style} />;
+  const patterns: Record<string, React.CSSProperties> = {
+    dots: {
+      ...base,
+      backgroundImage: `radial-gradient(circle, ${patternColor} 1.5px, transparent 1.5px)`,
+      backgroundSize: "40px 40px",
+    },
+    grid: {
+      ...base,
+      backgroundImage: `
+        linear-gradient(${patternColor} 1px, transparent 1px),
+        linear-gradient(90deg, ${patternColor} 1px, transparent 1px)
+      `,
+      backgroundSize: "56px 56px",
+    },
+    diagonal: {
+      ...base,
+      backgroundImage: `repeating-linear-gradient(
+        45deg,
+        ${patternColor} 0px, ${patternColor} 1px,
+        transparent 1px, transparent 40px
+      )`,
+    },
+    hex: {
+      ...base,
+      backgroundImage: `
+        radial-gradient(circle, ${patternColor} 1.5px, transparent 1.5px),
+        radial-gradient(circle, ${patternColor} 1.5px, transparent 1.5px)
+      `,
+      backgroundSize: "30px 52px",
+      backgroundPosition: "0 0, 15px 26px",
+    },
+    cross: {
+      ...base,
+      backgroundImage: `
+        linear-gradient(${patternColor} 2px, transparent 2px),
+        linear-gradient(90deg, ${patternColor} 2px, transparent 2px),
+        linear-gradient(${patternColor} 1px, transparent 1px),
+        linear-gradient(90deg, ${patternColor} 1px, transparent 1px)
+      `,
+      backgroundSize: "80px 80px, 80px 80px, 20px 20px, 20px 20px",
+      backgroundPosition: "-1px -1px, -1px -1px, -1px -1px, -1px -1px",
+    },
+    lines: {
+      ...base,
+      backgroundImage: `repeating-linear-gradient(
+        0deg,
+        ${patternColor} 0px, ${patternColor} 1px,
+        transparent 1px, transparent 48px
+      )`,
+    },
+    radial: {
+      ...base,
+      backgroundImage: `
+        radial-gradient(ellipse 70% 60% at 50% 50%,
+          ${luminance > 0.5 ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)"} 0%,
+          transparent 100%
+        )
+      `,
+    },
+  };
+
+  return <div style={patterns[geo] || base} />;
 };
 
 // ─── SINGLEWORD ───────────────────────────────────────
