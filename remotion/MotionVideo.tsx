@@ -38,6 +38,16 @@ import {
   WipeScene,
   FlashScene,
   ColorFadeScene,
+  SplitVerticalScene,
+  ZoomTransitionScene,
+  IrisScene,
+  CurtainScene,
+  DiagonalWipeScene,
+  GlitchSwitchScene,
+  VenetianScene,
+  ScaleWipeScene,
+  PixelDissolveScene,
+  LightSweepScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -117,6 +127,26 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <FlashScene scene={sceneWithIndex} />;
     case "colorfade":
       return <ColorFadeScene scene={sceneWithIndex} />;
+    case "splitvertical":
+      return <SplitVerticalScene scene={sceneWithIndex} />;
+    case "zoomtransition":
+      return <ZoomTransitionScene scene={sceneWithIndex} />;
+    case "iris":
+      return <IrisScene scene={sceneWithIndex} />;
+    case "curtain":
+      return <CurtainScene scene={sceneWithIndex} />;
+    case "diagonalwipe":
+      return <DiagonalWipeScene scene={sceneWithIndex} />;
+    case "glitchswitch":
+      return <GlitchSwitchScene scene={sceneWithIndex} />;
+    case "venetian":
+      return <VenetianScene scene={sceneWithIndex} />;
+    case "scalewipe":
+      return <ScaleWipeScene scene={sceneWithIndex} />;
+    case "pixeldissolve":
+      return <PixelDissolveScene scene={sceneWithIndex} />;
+    case "lightsweep":
+      return <LightSweepScene scene={sceneWithIndex} />;
     default:
       return <SingleWordScene scene={sceneWithIndex} />;
   }

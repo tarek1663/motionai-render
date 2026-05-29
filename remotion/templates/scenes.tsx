@@ -45,7 +45,17 @@ export type SceneData = {
     | "expandingshape"
     | "wipe"
     | "flash"
-    | "colorfade";
+    | "colorfade"
+    | "splitvertical"
+    | "zoomtransition"
+    | "iris"
+    | "curtain"
+    | "diagonalwipe"
+    | "glitchswitch"
+    | "venetian"
+    | "scalewipe"
+    | "pixeldissolve"
+    | "lightsweep";
   text?: string;
   shape?: "circle" | "square";
   bg?: string;
@@ -2318,6 +2328,701 @@ export const ColorFadeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             color: textColor(bg),
             opacity: Math.min(textFade, textFadeOut),
             whiteSpace: "nowrap",
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ═══════════════════════════════════════════════════════
+// 10 NOUVELLES TRANSITIONS
+// ═══════════════════════════════════════════════════════
+
+// ─── SPLIT VERTICAL ───────────────────────────────────
+export const SplitVerticalScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+
+  const splitIn = interpolate(frame, [0, 28], [50, 0], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const splitOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 28)),
+    [0, 28],
+    [0, 50],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+  const split = Math.max(splitIn > 0 ? 50 - splitIn : 0, splitOut);
+
+  const textFade = interpolate(Math.max(0, frame - 24), [0, 18], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const textFadeOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 24)),
+    [0, 18],
+    [1, 0],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+  const panelColor = isLight(bg) ? "#000000" : "#ffffff";
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: `${split}%`,
+          background: panelColor,
+          zIndex: 2,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: `${split}%`,
+          background: panelColor,
+          zIndex: 2,
+        }}
+      />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", zIndex: 1 }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            whiteSpace: "nowrap",
+            opacity: Math.min(textFade, textFadeOut),
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── ZOOM TRANSITION ──────────────────────────────────
+export const ZoomTransitionScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+
+  const scaleIn = interpolate(frame, [0, 30], [3, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const scaleOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 24)),
+    [0, 24],
+    [1, 0.1],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+  const scale = frame < durationInFrames - 24 ? scaleIn : scaleOut;
+
+  const opacityIn = interpolate(frame, [0, 12], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const opacityOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 16)),
+    [0, 16],
+    [1, 0],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity: Math.min(opacityIn, opacityOut),
+          transform: `scale(${scale})`,
+        }}
+      >
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            whiteSpace: "nowrap",
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── IRIS ─────────────────────────────────────────────
+export const IrisScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+
+  const irisIn = interpolate(frame, [0, 32], [0, 150], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const irisOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 28)),
+    [0, 28],
+    [150, 0],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+  const irisSize = Math.min(irisIn, irisOut) * 2;
+
+  const textFade = interpolate(Math.max(0, frame - 20), [0, 18], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const textFadeOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 22)),
+    [0, 22],
+    [1, 0],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: isLight(bg) ? "#000000" : "#ffffff",
+          clipPath: `circle(${irisSize}% at 50% 50%)`,
+        }}
+      >
+        <PureBg bg={bg} />
+      </div>
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            whiteSpace: "nowrap",
+            opacity: Math.min(textFade, textFadeOut),
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── CURTAIN ──────────────────────────────────────────
+export const CurtainScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const curtainColor = isLight(bg) ? "#000000" : "#ffffff";
+
+  const openIn = interpolate(frame, [0, 30], [50, 0], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const closeOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 30)),
+    [0, 30],
+    [0, 50],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+  const curtain = frame < durationInFrames - 30 ? openIn : closeOut;
+
+  const textFade = interpolate(Math.max(0, frame - 26), [0, 18], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const textFadeOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 26)),
+    [0, 18],
+    [1, 0],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          left: 0,
+          width: `${curtain}%`,
+          background: curtainColor,
+          zIndex: 2,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          right: 0,
+          width: `${curtain}%`,
+          background: curtainColor,
+          zIndex: 2,
+        }}
+      />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", zIndex: 1 }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            whiteSpace: "nowrap",
+            opacity: Math.min(textFade, textFadeOut),
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── DIAGONAL WIPE ────────────────────────────────────
+export const DiagonalWipeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+
+  const wipeIn = interpolate(frame, [0, 30], [-150, 150], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const wipeOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 30)),
+    [0, 30],
+    [150, 450],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+  const wipePos = frame < durationInFrames - 30 ? wipeIn : wipeOut;
+
+  const textFade = interpolate(Math.max(0, frame - 22), [0, 18], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const textFadeOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 22)),
+    [0, 18],
+    [1, 0],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+
+  const panelColor = isLight(bg) ? "#000000" : "#ffffff";
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <div
+        style={{
+          position: "absolute",
+          inset: -200,
+          background: panelColor,
+          transform: `translateX(${wipePos}%) rotate(-15deg)`,
+          zIndex: 2,
+        }}
+      />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", zIndex: 1 }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            whiteSpace: "nowrap",
+            opacity: Math.min(textFade, textFadeOut),
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── GLITCH SWITCH ────────────────────────────────────
+export const GlitchSwitchScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+
+  const glitchIn = frame < 12;
+  const glitchOut = frame > durationInFrames - 12;
+  const isGlitch = glitchIn || glitchOut;
+
+  const glitchX = isGlitch ? Math.sin(frame * 17) * 8 : 0;
+  const glitchY = isGlitch ? Math.cos(frame * 13) * 4 : 0;
+
+  const opacity = Math.min(
+    interpolate(frame, [0, 10], [0, 1], { extrapolateRight: "clamp" }),
+    interpolate(frame, [durationInFrames - 10, durationInFrames], [1, 0], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    }),
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            whiteSpace: "nowrap",
+            opacity,
+            transform: `translate(${glitchX}px, ${glitchY}px)`,
+          }}
+        >
+          {scene.text}
+        </div>
+        {isGlitch && (
+          <div
+            style={{
+              position: "absolute",
+              fontSize,
+              fontWeight: 600,
+              fontFamily: FONT,
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+              color: scene.accentColor || "#10B981",
+              whiteSpace: "nowrap",
+              opacity: 0.4,
+              transform: `translate(${-glitchX * 1.5}px, ${glitchY}px)`,
+              mixBlendMode: "screen",
+            }}
+          >
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── VENETIAN BLIND ───────────────────────────────────
+export const VenetianScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+
+  const progress = interpolate(frame, [0, 30], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const exitProgress = interpolate(
+    Math.max(0, frame - (durationInFrames - 30)),
+    [0, 30],
+    [0, 1],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+
+  const stripeCount = 8;
+  const stripeH = 100 / stripeCount;
+  const panelColor = isLight(bg) ? "#000000" : "#ffffff";
+
+  const textFade = interpolate(Math.max(0, frame - 26), [0, 18], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const textFadeOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 26)),
+    [0, 18],
+    [1, 0],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+  const p = frame < durationInFrames - 30 ? 1 - progress : exitProgress;
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      {Array.from({ length: stripeCount }, (_, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: `${i * stripeH}%`,
+            height: `${stripeH * p}%`,
+            background: panelColor,
+            zIndex: 2,
+          }}
+        />
+      ))}
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", zIndex: 1 }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            whiteSpace: "nowrap",
+            opacity: Math.min(textFade, textFadeOut),
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── SCALE WIPE ───────────────────────────────────────
+export const ScaleWipeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+
+  const scaleIn = interpolate(frame, [0, 28], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const scaleOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 24)),
+    [0, 24],
+    [1, 0],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+  const scale = frame < durationInFrames - 24 ? scaleIn : scaleOut;
+
+  const textFade = interpolate(Math.max(0, frame - 20), [0, 18], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const textFadeOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 20)),
+    [0, 18],
+    [1, 0],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  return (
+    <AbsoluteFill
+      style={{
+        background: isLight(bg) ? "#000000" : "#ffffff",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: bg,
+          transform: `scale(${scale})`,
+          transformOrigin: "center center",
+        }}
+      >
+        <PureBg bg={bg} />
+      </div>
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            whiteSpace: "nowrap",
+            opacity: Math.min(textFade, textFadeOut),
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── PIXEL DISSOLVE ───────────────────────────────────
+export const PixelDissolveScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+
+  const progress = interpolate(frame, [0, 35], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const exitProgress = interpolate(
+    Math.max(0, frame - (durationInFrames - 28)),
+    [0, 28],
+    [0, 1],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+
+  const cols = 12;
+  const rows = 20;
+  const panelColor = isLight(bg) ? "rgba(0,0,0,0.9)" : "rgba(255,255,255,0.9)";
+
+  const textFade = interpolate(Math.max(0, frame - 28), [0, 16], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const textFadeOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 20)),
+    [0, 20],
+    [1, 0],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+
+  const p = frame < durationInFrames - 28 ? 1 - progress : exitProgress;
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "grid",
+          gridTemplateColumns: `repeat(${cols}, 1fr)`,
+          gridTemplateRows: `repeat(${rows}, 1fr)`,
+          zIndex: 2,
+        }}
+      >
+        {Array.from({ length: cols * rows }, (_, i) => {
+          const seed = (i * 2654435761) % (cols * rows);
+          const threshold = seed / (cols * rows);
+          const visible = p > threshold;
+          return (
+            <div
+              key={i}
+              style={{
+                background: visible ? panelColor : "transparent",
+              }}
+            />
+          );
+        })}
+      </div>
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", zIndex: 1 }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            whiteSpace: "nowrap",
+            opacity: Math.min(textFade, textFadeOut),
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── LIGHT SWEEP ──────────────────────────────────────
+export const LightSweepScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+
+  const sweepX = interpolate(
+    frame,
+    [0, Math.max(1, durationInFrames)],
+    [-20, 120],
+    {
+      extrapolateRight: "clamp",
+      easing: Easing.linear,
+    },
+  );
+
+  const textFade = interpolate(frame, [0, 24], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const textFadeOut = interpolate(
+    Math.max(0, frame - (durationInFrames - 22)),
+    [0, 22],
+    [1, 0],
+    { extrapolateRight: "clamp", easing: E_IN },
+  );
+
+  const lightColor = isLight(bg) ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.06)";
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: `linear-gradient(90deg, transparent ${sweepX - 15}%, ${lightColor} ${sweepX}%, transparent ${sweepX + 15}%)`,
+          zIndex: 1,
+        }}
+      />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", zIndex: 2 }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            whiteSpace: "nowrap",
+            opacity: Math.min(textFade, textFadeOut),
           }}
         >
           {scene.text}

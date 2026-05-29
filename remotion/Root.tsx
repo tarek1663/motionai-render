@@ -5,28 +5,27 @@ const fps = 60;
 
 const defaultProps: MotionVideoProps = {
   scenes: [
-    { type: "wipe", text: "Motionr.", bg: "#ffffff", accentColor: "#000000" },
-    { type: "wipe", text: "Simple.", bg: "#000000", accentColor: "#ffffff" },
-    { type: "flash", text: "Rapide.", bg: "#ffffff", accentColor: "#000000" },
-    { type: "flash", text: "Précis.", bg: "#000000", accentColor: "#ffffff" },
+    { type: "splitvertical", text: "Motionr.", bg: "#ffffff" },
+    { type: "zoomtransition", text: "Simple.", bg: "#000000" },
+    { type: "iris", text: "Élégant.", bg: "#ffffff" },
+    { type: "curtain", text: "Rapide.", bg: "#000000" },
+    { type: "diagonalwipe", text: "Précis.", bg: "#ffffff" },
     {
-      type: "colorfade",
-      text: "Élégant.",
-      bg: "#ffffff",
-      accentColor: "#000000",
-    },
-    {
-      type: "colorfade",
+      type: "glitchswitch",
       text: "Puissant.",
       bg: "#000000",
       accentColor: "#10B981",
     },
+    { type: "venetian", text: "Fluide.", bg: "#ffffff" },
+    { type: "scalewipe", text: "Premium.", bg: "#000000" },
+    { type: "pixeldissolve", text: "Unique.", bg: "#ffffff" },
+    { type: "lightsweep", text: "Commence.", bg: "#000000" },
   ] as MotionVideoProps["scenes"],
-  sceneDurations: Array.from({ length: 6 }, (_, i) => ({
+  sceneDurations: Array.from({ length: 10 }, (_, i) => ({
     startFrame: i * 150,
     durationFrames: 150,
   })),
-  totalFrames: 900,
+  totalFrames: 1500,
   audioSrc: null,
   musicSrc: null,
 };
@@ -51,7 +50,7 @@ const RemotionRoot = () => (
       });
 
       const total =
-        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 900;
+        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 1500;
 
       const fmt = (p as MotionVideoProps & { format?: string }).format || "9:16";
       const w = fmt === "16:9" ? 1920 : 1080;
