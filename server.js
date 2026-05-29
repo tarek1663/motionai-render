@@ -209,6 +209,55 @@ app.post("/music", async (req, res) => {
   }
 });
 
+const fetchPhotoForScene = async (query) => {
+  try {
+    const res = await fetch(
+      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=3&orientation=landscape`,
+      { headers: { Authorization: process.env.PEXELS_API_KEY } },
+    );
+    const data = await res.json();
+    const photos = data.photos || [];
+    if (photos.length === 0) return null;
+    const photo = photos[Math.floor(Math.random() * photos.length)];
+    return photo.src.large2x || photo.src.large;
+  } catch {
+    return null;
+  }
+};
+
+const enrichScenesWithPhotos = async (scenes, mainPrompt) => {
+  const enriched = await Promise.all(
+    scenes.map(async (scene) => {
+      if (
+        scene.type === "photoreveal" ||
+        scene.type === "photocollage" ||
+        scene.type === "kenburns"
+      ) {
+        const query = scene.photoQuery || scene.text || mainPrompt;
+
+        const photo1 = await fetchPhotoForScene(query);
+        const photo2 =
+          scene.type === "photocollage"
+            ? await fetchPhotoForScene(`${query} team`)
+            : null;
+        const photo3 =
+          scene.type === "photocollage"
+            ? await fetchPhotoForScene(`${query} product`)
+            : null;
+
+        return {
+          ...scene,
+          photoUrl: photo1 || scene.photoUrl,
+          photoUrl2: photo2 || scene.photoUrl2,
+          photoUrl3: photo3 || scene.photoUrl3,
+        };
+      }
+      return scene;
+    }),
+  );
+  return enriched;
+};
+
 // ── Photos Pexels ─────────────────────────────────────
 app.post("/photos", async (req, res) => {
   try {
@@ -253,6 +302,7 @@ app.post("/photos", async (req, res) => {
 
 // ── Lancer un rendu ───────────────────────────────────
 app.post("/render", async (req, res) => {
+  try {
   const jobId = uuidv4();
   const {
     scenes,
@@ -268,6 +318,8 @@ app.post("/render", async (req, res) => {
     formatName,
     quality = "fast",
   } = req.body;
+
+  const enrichedScenes = await enrichScenesWithPhotos(scenes || [], prompt || "");
 
   const outPath = path.join(RENDERS_DIR, `${jobId}.mp4`);
   const errPath = path.join(RENDERS_DIR, `${jobId}.error`);
@@ -298,13 +350,14 @@ app.post("/render", async (req, res) => {
   );
 
   const inputProps = {
-    scenes,
+    scenes: enrichedScenes,
     sceneDurations,
     totalFrames,
     format: format || "9:16",
     audioSrc: audioUrl || null,
     musicSrc: musicUrl || null,
     musicVolume: musicVolume || 0.07,
+    prompt,
   };
 
   res.json({ jobId });
@@ -379,6 +432,10 @@ app.post("/render", async (req, res) => {
       fs.writeFileSync(errPath, err.message);
     }
   })();
+  } catch (err) {
+    console.error("Render setup error:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── Status rendu ──────────────────────────────────────
