@@ -210,6 +210,7 @@ app.post("/music", async (req, res) => {
 });
 
 const fetchPhotoForScene = async (query) => {
+  console.log("📸 Fetching photo for:", query);
   try {
     const res = await fetch(
       `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=3&orientation=landscape`,
@@ -217,10 +218,14 @@ const fetchPhotoForScene = async (query) => {
     );
     const data = await res.json();
     const photos = data.photos || [];
+    console.log("📸 Found", photos.length, "photos for:", query);
     if (photos.length === 0) return null;
     const photo = photos[Math.floor(Math.random() * photos.length)];
-    return photo.src.large2x || photo.src.large;
-  } catch {
+    const url = photo.src.large2x || photo.src.large;
+    console.log("📸 Photo URL:", url);
+    return url;
+  } catch (err) {
+    console.error("📸 Pexels error:", err.message);
     return null;
   }
 };
@@ -484,4 +489,12 @@ app.use("/photos", express.static(PHOTOS_DIR));
 app.use("/music", express.static(path.join(__dirname, "public", "music")));
 
 const PORT = process.env.PORT || 3001;
+console.log(
+  "🔑 PEXELS_API_KEY:",
+  process.env.PEXELS_API_KEY ? "✅ Définie" : "❌ MANQUANTE",
+);
+console.log(
+  "🔑 ELEVENLABS_API_KEY:",
+  process.env.ELEVENLABS_API_KEY ? "✅ Définie" : "❌ MANQUANTE",
+);
 app.listen(PORT, () => console.log(`🎬 Render server on port ${PORT}`));
