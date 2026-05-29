@@ -8967,69 +8967,45 @@ export const SplitTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
 // SYSTÈME APPLE STATE-DRIVEN — REMOTION
 // ═══════════════════════════════════════════════════════
 
-const E_APPLE_MOTION = Easing.bezier(0.16, 1, 0.3, 1);
-const E_APPLE_IN = Easing.bezier(0.4, 0, 1, 1);
+const E_APPLE = Easing.bezier(0.16, 1, 0.3, 1);
+const E_APPLE_OUT = Easing.bezier(0.4, 0, 1, 1);
 
-type AppleSpringConfig = { damping: number; stiffness: number };
-
-const useAppleReveal = (
-  delay = 0,
-  config: AppleSpringConfig = { damping: 200, stiffness: 120 },
-) => {
+const useAppleReveal = (delay = 0) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
   const progress = spring({
     frame: Math.max(0, frame - delay),
     fps,
-    config,
+    config: { damping: 200, stiffness: 120, mass: 0.6 },
     from: 0,
     to: 1,
   });
 
   return {
     opacity: interpolate(progress, [0, 1], [0, 1]),
-    y: interpolate(progress, [0, 1], [80, 0]),
-    scale: interpolate(progress, [0, 1], [0.92, 1]),
-    blur: interpolate(progress, [0, 0.4, 1], [12, 4, 0]),
+    scale: interpolate(progress, [0, 1], [0.82, 1]),
+    blur: interpolate(progress, [0, 0.5, 1], [10, 3, 0]),
+    y: interpolate(progress, [0, 1], [24, 0]),
     progress,
   };
 };
 
 const useAppleExit = (startAt: number) => {
   const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
+  const { durationInFrames } = useVideoConfig();
 
-  const progress = spring({
-    frame: Math.max(0, frame - (durationInFrames - startAt)),
-    fps,
-    config: { damping: 200, stiffness: 200 },
-    from: 0,
-    to: 1,
+  const exitFrame = Math.max(0, frame - (durationInFrames - startAt));
+  const progress = interpolate(exitFrame, [0, startAt], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_APPLE_OUT,
   });
 
   return {
     opacity: interpolate(progress, [0, 1], [1, 0]),
-    y: interpolate(progress, [0, 1], [0, -40]),
-    scale: interpolate(progress, [0, 1], [1, 0.96]),
-    blur: interpolate(progress, [0, 1], [0, 8]),
-  };
-};
-
-const useDepthLayer = (layer: "front" | "mid" | "back", delay = 0) => {
-  const speeds = { front: 1, mid: 0.7, back: 0.4 };
-  const blurs = { front: 0, mid: 2, back: 6 };
-
-  const { y, opacity, scale, blur } = useAppleReveal(delay, {
-    damping: layer === "front" ? 200 : layer === "mid" ? 150 : 100,
-    stiffness: layer === "front" ? 120 : layer === "mid" ? 90 : 60,
-  });
-
-  return {
-    opacity,
-    y: y * speeds[layer],
-    scale: interpolate(scale, [0, 1], [1 - (1 - scale) * speeds[layer], 1]),
-    blur: blur + blurs[layer],
+    scale: interpolate(progress, [0, 1], [1, 1.08]),
+    blur: interpolate(progress, [0, 0.5, 1], [0, 3, 10]),
+    y: interpolate(progress, [0, 1], [0, -20]),
   };
 };
 
@@ -9070,15 +9046,22 @@ const AppleGridBg: React.FC<{ bg: string; accent: string }> = ({ bg, accent }) =
   );
 };
 
+/** Combine entrée (scale 82%→100%) + sortie (100%→108%, fade out) — style tuto Apple */
 const appleLayerStyle = (
   reveal: ReturnType<typeof useAppleReveal>,
   exit: ReturnType<typeof useAppleExit>,
   blurScale = 1,
-) => ({
-  opacity: Math.min(reveal.opacity, exit.opacity),
-  transform: `translateY(${reveal.y + exit.y}px) scale(${Math.min(reveal.scale, exit.scale)})`,
-  filter: `blur(${Math.max(reveal.blur * blurScale, exit.blur * blurScale)}px)`,
-});
+) => {
+  const opacity = Math.min(reveal.opacity, exit.opacity);
+  const scale = reveal.progress < 0.99 ? reveal.scale : exit.scale;
+  const blur = Math.max(reveal.blur, exit.blur) * blurScale;
+  const y = reveal.y + exit.y;
+  return {
+    opacity,
+    transform: `translateY(${y}px) scale(${scale})`,
+    filter: `blur(${blur}px)`,
+  };
+};
 
 const appleText2Style = (bg: string, fontSize: number): React.CSSProperties => ({
   fontSize: Math.round(fontSize * 0.48),
@@ -9095,7 +9078,7 @@ export const AppleTextScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
   const fontSize = autoFontSize(scene.text || "", 130, 56);
   const front = useAppleReveal(0);
   const mid = useAppleReveal(12);
-  const exit = useAppleExit(18);
+  const exit = useAppleExit(20);
 
   return (
     <AbsoluteFill style={{ background: bg }}>
@@ -9135,7 +9118,7 @@ export const AppleAccentScene: React.FC<{ scene: SceneData; sceneIndex?: number 
   const fontSize = autoFontSize(scene.text || "", 110, 52);
   const front = useAppleReveal(0);
   const mid = useAppleReveal(14);
-  const exit = useAppleExit(16);
+  const exit = useAppleExit(20);
 
   return (
     <AbsoluteFill style={{ background: bg }}>
@@ -9187,7 +9170,7 @@ export const AppleNumberScene: React.FC<{ scene: SceneData; sceneIndex?: number 
   const current = Math.round(target * countProgress);
   const front = useAppleReveal(0);
   const mid = useAppleReveal(20);
-  const exit = useAppleExit(16);
+  const exit = useAppleExit(20);
 
   return (
     <AbsoluteFill style={{ background: bg }}>
@@ -9207,14 +9190,11 @@ export const AppleNumberScene: React.FC<{ scene: SceneData; sceneIndex?: number 
           </div>
         </div>
         {scene.text && (
-          <div style={{
-            opacity: Math.min(mid.opacity, exit.opacity),
-            transform: `translateY(${mid.y + exit.y * 0.7}px)`,
-          }}>
+          <div style={appleLayerStyle(mid, exit, 0.6)}>
             <div style={{
-              fontSize: 24, fontWeight: 400, fontFamily,
+              fontSize: 24, fontWeight: 500, fontFamily,
               letterSpacing: "0.06em", textTransform: "uppercase",
-              color: isLight(bg) ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)",
+              color: textColor(bg),
             }}>
               {scene.text}
             </div>
@@ -9233,7 +9213,7 @@ export const ApplePhotoScene: React.FC<{ scene: SceneData; sceneIndex?: number }
   const photoUrl = scene.photoUrl || "";
   const textReveal = useAppleReveal(0);
   const imgReveal = useAppleReveal(16);
-  const exit = useAppleExit(16);
+  const exit = useAppleExit(20);
   const imgScale = interpolate(frame, [0, durationInFrames], [1.0, 1.04], {
     extrapolateLeft: "clamp", extrapolateRight: "clamp",
   });
@@ -9271,7 +9251,7 @@ export const ApplePhotoScene: React.FC<{ scene: SceneData; sceneIndex?: number }
               ? "0 24px 64px rgba(0,0,0,0.10), 0 4px 16px rgba(0,0,0,0.06)"
               : "0 24px 64px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3)",
             border: `1px solid ${isLight(bg) ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)"}`,
-            ...appleLayerStyle(imgReveal, exit, 1),
+            ...appleLayerStyle(imgReveal, exit),
           }}>
             <img
               src={scenePhotoSrc(photoUrl)}
@@ -9296,7 +9276,7 @@ export const AppleIconScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
   const accent = safeAccent(scene.accentColor, bg);
   const iconReveal = useAppleReveal(0);
   const textReveal = useAppleReveal(14);
-  const exit = useAppleExit(16);
+  const exit = useAppleExit(20);
   const floatY = Math.sin(frame * 0.025) * 4;
   const icons = ["⚡", "🎯", "💎", "🚀", "✨", "🔥", "💡", "🎬", "📱", "🌟"];
   const icon = icons[sceneIndex % icons.length];
@@ -9312,7 +9292,9 @@ export const AppleIconScene: React.FC<{ scene: SceneData; sceneIndex?: number }>
       }}>
         <div style={{
           ...appleLayerStyle(iconReveal, exit),
-          transform: `translateY(${iconReveal.y + exit.y + floatY}px) scale(${Math.min(iconReveal.scale, exit.scale)})`,
+          transform: `translateY(${iconReveal.y + exit.y + floatY}px) scale(${
+            iconReveal.progress < 0.99 ? iconReveal.scale : exit.scale
+          })`,
         }}>
           <div style={{
             width: 72, height: 72, borderRadius: 20,
@@ -9353,7 +9335,7 @@ export const AppleCTAScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
   const front = useAppleReveal(0);
   const mid = useAppleReveal(14);
   const btn = useAppleReveal(24);
-  const exit = useAppleExit(14);
+  const exit = useAppleExit(20);
   const floatY = Math.sin(frame * 0.02) * 2;
 
   return (
@@ -9374,10 +9356,7 @@ export const AppleCTAScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
           </div>
         </div>
         {scene.text2 && (
-          <div style={{
-            opacity: Math.min(mid.opacity, exit.opacity),
-            transform: `translateY(${mid.y + exit.y * 0.7}px)`,
-          }}>
+          <div style={appleLayerStyle(mid, exit, 0.85)}>
             <div style={appleText2Style(bg, fontSize)}>
               {scene.text2}
             </div>
@@ -9385,7 +9364,9 @@ export const AppleCTAScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
         )}
         <div style={{
           ...appleLayerStyle(btn, exit),
-          transform: `translateY(${btn.y + exit.y * 0.5 + floatY}px) scale(${Math.min(btn.scale, exit.scale)})`,
+          transform: `translateY(${btn.y + exit.y + floatY}px) scale(${
+            btn.progress < 0.99 ? btn.scale : exit.scale
+          })`,
         }}>
           <div style={{
             background: isLight(bg) ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.10)",
