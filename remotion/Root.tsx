@@ -3,26 +3,47 @@ import { MotionVideo, MotionVideoProps } from "./MotionVideo";
 
 const fps = 60;
 
+const TEST_PHOTO =
+  "https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1280";
+const TEST_PHOTO_2 =
+  "https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=1280";
+const TEST_PHOTO_3 =
+  "https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=1280";
+
 const defaultProps: MotionVideoProps = {
   scenes: [
-    { type: "geobgtest", text: "Motionr.", bg: "#ffffff", geo: "dots" },
-    { type: "geobgtest", text: "Motionr.", bg: "#000000", geo: "dots" },
-    { type: "geobgtest", text: "Motionr.", bg: "#ffffff", geo: "grid" },
-    { type: "geobgtest", text: "Motionr.", bg: "#000000", geo: "grid" },
-    { type: "geobgtest", text: "Motionr.", bg: "#ffffff", geo: "diagonal" },
-    { type: "geobgtest", text: "Motionr.", bg: "#000000", geo: "circles" },
-    { type: "geobgtest", text: "Motionr.", bg: "#ffffff", geo: "perspective" },
-    { type: "geobgtest", text: "Motionr.", bg: "#000000", geo: "triangles" },
-    { type: "geobgtest", text: "Motionr.", bg: "#ffffff", geo: "cross" },
-    { type: "geobgtest", text: "Motionr.", bg: "#000000", geo: "lines" },
-    { type: "geobgtest", text: "Motionr.", bg: "#ffffff", geo: "radial" },
-    { type: "geobgtest", text: "Motionr.", bg: "#000000", geo: "radial" },
+    {
+      type: "kenburns",
+      text: "Crée sans limite.",
+      bg: "#000000",
+      photoUrl: TEST_PHOTO,
+    },
+    {
+      type: "photoreveal",
+      text: "Motionr.",
+      bg: "#ffffff",
+      photoUrl: TEST_PHOTO_2,
+    },
+    {
+      type: "photooverlay",
+      text: "L'IA vidéo.",
+      bg: "#ffffff",
+      photoUrl: TEST_PHOTO,
+    },
+    {
+      type: "photocollage",
+      text: "Partout.",
+      bg: "#ffffff",
+      photoUrl: TEST_PHOTO,
+      photoUrl2: TEST_PHOTO_2,
+      photoUrl3: TEST_PHOTO_3,
+    },
   ] as MotionVideoProps["scenes"],
-  sceneDurations: Array.from({ length: 12 }, (_, i) => ({
-    startFrame: i * 120,
-    durationFrames: 120,
+  sceneDurations: Array.from({ length: 4 }, (_, i) => ({
+    startFrame: i * 150,
+    durationFrames: 150,
   })),
-  totalFrames: 1440,
+  totalFrames: 600,
   audioSrc: null,
   musicSrc: null,
 };
@@ -47,7 +68,7 @@ const RemotionRoot = () => (
       });
 
       const total =
-        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 1440;
+        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 600;
 
       const fmt = (p as MotionVideoProps & { format?: string }).format || "9:16";
       const w = fmt === "16:9" ? 1920 : 1080;

@@ -31,17 +31,24 @@ export type SceneData = {
     | "fadepure"
     | "tracking"
     | "rotatein"
-    | "geobgtest";
+    | "geobgtest"
+    | "kenburns"
+    | "photoreveal"
+    | "photooverlay"
+    | "photocollage";
   text?: string;
   bg?: string;
   accentColor?: string;
+  photoUrl?: string;
+  photoUrl2?: string;
+  photoUrl3?: string;
+  photoQuery?: string;
   geo?:
     | "dots"
     | "grid"
     | "diagonal"
     | "circles"
     | "perspective"
-    | "triangles"
     | "hex"
     | "cross"
     | "lines"
@@ -174,27 +181,6 @@ const GeoPerspective: React.FC<{ bg: string }> = ({ bg }) => {
   );
 };
 
-const GeoTriangles: React.FC<{ bg: string }> = ({ bg }) => {
-  const light = isLight(bg);
-  const c = light ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)";
-  return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        background: bg,
-        backgroundImage: `
-        linear-gradient(60deg, ${c} 25%, transparent 25%),
-        linear-gradient(-60deg, ${c} 25%, transparent 25%),
-        linear-gradient(60deg, transparent 75%, ${c} 75%),
-        linear-gradient(-60deg, transparent 75%, ${c} 75%)
-      `,
-        backgroundSize: "80px 46px",
-      }}
-    />
-  );
-};
-
 const GeoHex: React.FC<{ bg: string }> = ({ bg }) => {
   const light = isLight(bg);
   const c = light ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)";
@@ -276,7 +262,6 @@ const GEO_MAP: Record<string, React.FC<{ bg: string }>> = {
   diagonal: GeoDiagonal,
   circles: GeoCircles,
   perspective: GeoPerspective,
-  triangles: GeoTriangles,
   hex: GeoHex,
   cross: GeoCross,
   lines: GeoLines,
@@ -1118,6 +1103,438 @@ export const GeoBgTestScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
         >
           {geoType}
         </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ═══════════════════════════════════════════════════════
+// SCÈNES IMAGES — PHOTOS PEXELS
+// ═══════════════════════════════════════════════════════
+
+// ─── 1. KEN BURNS ─────────────────────────────────────
+export const KenBurnsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const photoUrl = scene.photoUrl || "";
+
+  const kenBurns = interpolate(frame, [0, durationInFrames], [1.0, 1.08], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  const fadeIn = interpolate(frame, [0, 24], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 24, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+  const opacity = Math.min(fadeIn, fadeOut);
+
+  const textFadeIn = interpolate(Math.max(0, frame - 16), [0, 24], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const textY = interpolate(Math.max(0, frame - 16), [0, 28], [24, 0], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+
+  const fontSize = autoFontSize(scene.text || "", 120, 56);
+
+  return (
+    <AbsoluteFill style={{ background: "#000", overflow: "hidden" }}>
+      {photoUrl && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            opacity,
+            transform: `scale(${kenBurns})`,
+            transformOrigin: "center center",
+          }}
+        >
+          <img
+            src={photoUrl}
+            alt=""
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.1) 100%)",
+            }}
+          />
+        </div>
+      )}
+
+      {scene.text && (
+        <AbsoluteFill
+          style={{
+            justifyContent: "flex-end",
+            alignItems: "center",
+            padding: "0 80px 100px",
+          }}
+        >
+          <div
+            style={{
+              fontSize,
+              fontWeight: 600,
+              fontFamily: FONT,
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+              color: "#ffffff",
+              opacity: textFadeIn,
+              transform: `translateY(${textY}px)`,
+              whiteSpace: "nowrap",
+              textShadow: "0 2px 20px rgba(0,0,0,0.4)",
+            }}
+          >
+            {scene.text}
+          </div>
+        </AbsoluteFill>
+      )}
+    </AbsoluteFill>
+  );
+};
+
+// ─── 2. PHOTO REVEAL ──────────────────────────────────
+export const PhotoRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const photoUrl = scene.photoUrl || "";
+
+  const reveal = interpolate(frame, [0, 44], [0, 100], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const textFadeIn = interpolate(Math.max(0, frame - 36), [0, 20], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const textY = interpolate(Math.max(0, frame - 36), [0, 24], [20, 0], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+
+  const fontSize = autoFontSize(scene.text || "", 96, 48);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+          gap: 32,
+          padding: "60px 80px",
+          opacity: fadeOut,
+        }}
+      >
+        {scene.text && (
+          <div
+            style={{
+              fontSize,
+              fontWeight: 600,
+              fontFamily: FONT,
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+              color: textColor(bg),
+              opacity: textFadeIn,
+              transform: `translateY(${textY}px)`,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {scene.text}
+          </div>
+        )}
+
+        {photoUrl && (
+          <div
+            style={{
+              width: "78%",
+              maxWidth: 560,
+              aspectRatio: "16/9",
+              borderRadius: 16,
+              overflow: "hidden",
+              clipPath: `inset(0 ${Math.max(0, 100 - reveal)}% 0 0 round 16px)`,
+              boxShadow: isLight(bg)
+                ? "0 24px 64px rgba(0,0,0,0.12)"
+                : "0 24px 64px rgba(0,0,0,0.5)",
+            }}
+          >
+            <img
+              src={photoUrl}
+              alt=""
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          </div>
+        )}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 3. PHOTO OVERLAY ─────────────────────────────────
+export const PhotoOverlayScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const photoUrl = scene.photoUrl || "";
+
+  const imgEnter = spring({
+    frame,
+    fps,
+    config: { damping: 280, stiffness: 70, mass: 0.9 },
+    from: 0,
+    to: 1,
+  });
+  const textEnter = spring({
+    frame: Math.max(0, frame - 16),
+    fps,
+    config: { damping: 280, stiffness: 80, mass: 0.8 },
+    from: 0,
+    to: 1,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 96, 48);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "60px 80px",
+          opacity: fadeOut,
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            width: "80%",
+            maxWidth: 580,
+            aspectRatio: "16/9",
+            borderRadius: 20,
+            overflow: "hidden",
+            opacity: interpolate(imgEnter, [0, 1], [0, 1]),
+            transform: `scale(${interpolate(imgEnter, [0, 1], [0.94, 1])})`,
+            boxShadow: isLight(bg)
+              ? "0 32px 80px rgba(0,0,0,0.14)"
+              : "0 32px 80px rgba(0,0,0,0.6)",
+          }}
+        >
+          {photoUrl && (
+            <img
+              src={photoUrl}
+              alt=""
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          )}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.1) 60%, transparent 100%)",
+            }}
+          />
+          {scene.text && (
+            <div
+              style={{
+                position: "absolute",
+                bottom: 28,
+                left: 0,
+                right: 0,
+                textAlign: "center",
+                padding: "0 32px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: Math.round(fontSize * 0.65),
+                  fontWeight: 600,
+                  fontFamily: FONT,
+                  letterSpacing: "-0.03em",
+                  lineHeight: 1,
+                  color: "#ffffff",
+                  opacity: interpolate(textEnter, [0, 1], [0, 1]),
+                  transform: `translateY(${interpolate(textEnter, [0, 1], [16, 0])}px)`,
+                  whiteSpace: "nowrap",
+                  textShadow: "0 2px 16px rgba(0,0,0,0.5)",
+                }}
+              >
+                {scene.text}
+              </div>
+            </div>
+          )}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 4. PHOTO COLLAGE ─────────────────────────────────
+export const PhotoCollageScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+
+  const photos = [scene.photoUrl, scene.photoUrl2, scene.photoUrl3].filter(
+    Boolean,
+  ) as string[];
+
+  const count = photos.length || 2;
+
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const textEnter = spring({
+    frame: Math.max(0, frame - count * 10 + 10),
+    fps,
+    config: { damping: 280, stiffness: 80 },
+    from: 0,
+    to: 1,
+  });
+
+  const fontSize = autoFontSize(scene.text || "", 80, 40);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+          gap: 24,
+          padding: "60px 60px",
+          opacity: fadeOut,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            width: "100%",
+            justifyContent: "center",
+          }}
+        >
+          {(photos.length > 0 ? photos : ["", ""]).map((photo, i) => {
+            const enter = spring({
+              frame: Math.max(0, frame - i * 10),
+              fps,
+              config: { damping: 280, stiffness: 70, mass: 0.9 },
+              from: 0,
+              to: 1,
+            });
+            return (
+              <div
+                key={i}
+                style={{
+                  flex: 1,
+                  maxWidth: count === 3 ? 220 : 320,
+                  aspectRatio: "4/5",
+                  borderRadius: 14,
+                  overflow: "hidden",
+                  opacity: interpolate(enter, [0, 1], [0, 1]),
+                  transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px) scale(${interpolate(enter, [0, 1], [0.94, 1])})`,
+                  filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
+                  boxShadow: isLight(bg)
+                    ? "0 16px 40px rgba(0,0,0,0.10)"
+                    : "0 16px 40px rgba(0,0,0,0.4)",
+                }}
+              >
+                {photo ? (
+                  <img
+                    src={photo}
+                    alt=""
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      background: isLight(bg)
+                        ? "rgba(0,0,0,0.06)"
+                        : "rgba(255,255,255,0.06)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 32,
+                      color: isLight(bg)
+                        ? "rgba(0,0,0,0.15)"
+                        : "rgba(255,255,255,0.15)",
+                    }}
+                  >
+                    ▶
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {scene.text && (
+          <div
+            style={{
+              fontSize,
+              fontWeight: 600,
+              fontFamily: FONT,
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+              color: textColor(bg),
+              opacity: interpolate(textEnter, [0, 1], [0, 1]),
+              transform: `translateY(${interpolate(textEnter, [0, 1], [20, 0])}px)`,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {scene.text}
+          </div>
+        )}
       </AbsoluteFill>
     </AbsoluteFill>
   );
