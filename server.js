@@ -468,164 +468,6 @@ const enrichMockupsWithAI = async (scenes, prompt) => {
   });
 };
 
-const puppeteer = require("puppeteer-core");
-
-const getChromiumPath = () =>
-  process.env.PUPPETEER_EXECUTABLE_PATH ||
-  process.env.CHROME_EXECUTABLE ||
-  "/usr/bin/chromium" ||
-  "/usr/bin/chromium-browser";
-
-const captureWebsite = async (url) => {
-  let browser;
-  try {
-    console.log("📸 Capturing website:", url);
-    browser = await puppeteer.launch({
-      executablePath: getChromiumPath(),
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--window-size=1280,800",
-      ],
-      headless: true,
-    });
-
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1280, height: 800, deviceScaleFactor: 1 });
-
-    await page.goto(url.startsWith("http") ? url : `https://${url}`, {
-      waitUntil: "networkidle2",
-      timeout: 10000,
-    });
-
-    await new Promise((r) => setTimeout(r, 1000));
-
-    const screenshot = await page.screenshot({
-      type: "jpeg",
-      quality: 80,
-      encoding: "base64",
-    });
-
-    return `data:image/jpeg;base64,${screenshot}`;
-  } catch (err) {
-    console.error("📸 Screenshot error:", err.message);
-    return null;
-  } finally {
-    if (browser) await browser.close();
-  }
-};
-
-const captureMobileWebsite = async (url) => {
-  let browser;
-  try {
-    console.log("📸 Capturing mobile website:", url);
-    browser = await puppeteer.launch({
-      executablePath: getChromiumPath(),
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-      ],
-      headless: true,
-    });
-
-    const page = await browser.newPage();
-    await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
-    await page.setUserAgent(
-      "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
-    );
-
-    await page.goto(url.startsWith("http") ? url : `https://${url}`, {
-      waitUntil: "networkidle2",
-      timeout: 10000,
-    });
-
-    await new Promise((r) => setTimeout(r, 1000));
-
-    const screenshot = await page.screenshot({
-      type: "jpeg",
-      quality: 80,
-      encoding: "base64",
-    });
-
-    return `data:image/jpeg;base64,${screenshot}`;
-  } catch (err) {
-    console.error("📸 Mobile screenshot error:", err.message);
-    return null;
-  } finally {
-    if (browser) await browser.close();
-  }
-};
-
-const enrichMockupsWithScreenshots = async (scenes, prompt) => {
-  const p = (prompt || "").toLowerCase();
-  const urlRegex = /(https?:\/\/[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,})/g;
-  const foundUrls = (prompt || "").match(urlRegex) || [];
-
-  const getDefaultUrl = () => {
-    if (p.includes("apple")) return "apple.com";
-    if (p.includes("nike")) return "nike.com";
-    if (p.includes("spotify")) return "spotify.com";
-    if (p.includes("netflix")) return "netflix.com";
-    if (p.includes("youtube")) return "youtube.com";
-    if (p.includes("google")) return "google.com";
-    if (p.includes("instagram")) return "instagram.com";
-    if (p.includes("airbnb")) return "airbnb.fr";
-    if (p.includes("amazon")) return "amazon.fr";
-    if (p.includes("notion")) return "notion.so";
-    if (p.includes("figma")) return "figma.com";
-    if (p.includes("vercel")) return "vercel.com";
-    if (p.includes("stripe")) return "stripe.com";
-    if (p.includes("linear")) return "linear.app";
-    return foundUrls[0] || null;
-  };
-
-  const targetUrl = getDefaultUrl();
-  if (!targetUrl) return scenes;
-
-  console.log("🌐 Target URL:", targetUrl);
-
-  const mockupTypes = new Set(["iphone", "macbook", "browser", "doubledevice"]);
-  const hasMockups = scenes.some((scene) => mockupTypes.has(scene.type));
-  if (!hasMockups) return scenes;
-
-  const needsMobile = scenes.some((scene) => scene.type === "iphone");
-  const needsDesktop = scenes.some((scene) => scene.type !== "iphone" && mockupTypes.has(scene.type));
-
-  const [desktopShot, mobileShot] = await Promise.all([
-    needsDesktop ? captureWebsite(targetUrl) : Promise.resolve(null),
-    needsMobile ? captureMobileWebsite(targetUrl) : Promise.resolve(null),
-  ]);
-
-  return scenes.map((scene) => {
-    if (!mockupTypes.has(scene.type)) return scene;
-
-    if (scene.type === "doubledevice") {
-      if (!desktopShot && !mobileShot) return scene;
-      return {
-        ...scene,
-        photoUrl: desktopShot || mobileShot,
-        photoUrl2: mobileShot || desktopShot,
-        websiteUrl: targetUrl,
-        url: scene.url || targetUrl,
-      };
-    }
-
-    const screenshot = scene.type === "iphone" ? mobileShot : desktopShot;
-    if (!screenshot) return scene;
-
-    return {
-      ...scene,
-      photoUrl: screenshot,
-      websiteUrl: targetUrl,
-      url: scene.url || targetUrl,
-    };
-  });
-};
-
 // Chrome persistant
 let browserInstance = null;
 
@@ -890,38 +732,29 @@ app.post("/render", async (req, res) => {
     prompt || "",
   );
 
-  const enrichedWithScreenshots = await enrichMockupsWithScreenshots(
-    enrichedWithAI,
-    prompt || "",
-  );
-
   console.log(
     "📱 Scene types:",
-    enrichedWithScreenshots.map(
+    enrichedWithAI.map(
       (s) => `${s.type}:${s.mockupType || s.mockupData?.type || "none"}`,
     ),
   );
   console.log(
     "📱 First iPhone scene:",
     JSON.stringify(
-      enrichedWithScreenshots.find((s) => s.type === "iphone"),
+      enrichedWithAI.find((s) => s.type === "iphone"),
       null,
       2,
     ),
   );
   console.log(
     "📱 Mockup scenes:",
-    enrichedWithScreenshots
+    enrichedWithAI
       .filter((s) => s.mockupData)
       .map((s) => `${s.type}:${s.mockupData?.type}`),
   );
   console.log(
-    "🌐 Mockups with screenshots:",
-    enrichedWithScreenshots.filter((s) => s.photoUrl?.startsWith("data:image")).map((s) => s.type),
-  );
-  console.log(
     "🤖 Mockups with AI UI:",
-    enrichedWithScreenshots.filter((s) => s.aiUI).map((s) => s.type),
+    enrichedWithAI.filter((s) => s.aiUI).map((s) => s.type),
   );
 
   const outPath = path.join(RENDERS_DIR, `${jobId}.mp4`);
@@ -952,25 +785,25 @@ app.post("/render", async (req, res) => {
     })
   );
 
-  const sceneDurations = syncScenesWithVoice(enrichedWithScreenshots, phraseTimestamps, 60);
+  const sceneDurations = syncScenesWithVoice(enrichedWithAI, phraseTimestamps, 60);
   const computedTotalFrames = sceneDurations.reduce(
     (acc, s) => acc + s.durationFrames,
     0,
   );
   const adjustedTotalFrames = Math.max(
     computedTotalFrames || requestedTotalFrames || 1800,
-    enrichedWithScreenshots.length * 60,
+    enrichedWithAI.length * 60,
   );
 
   console.log(
     "🎬 Total frames:",
     adjustedTotalFrames,
     "— Scenes:",
-    enrichedWithScreenshots.length,
+    enrichedWithAI.length,
   );
 
   const inputProps = {
-    scenes: enrichedWithScreenshots,
+    scenes: enrichedWithAI,
     sceneDurations,
     totalFrames: adjustedTotalFrames,
     phraseTimestamps,
