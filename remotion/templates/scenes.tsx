@@ -1354,7 +1354,7 @@ export const CounterScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
   const progress = interpolate(frame, [0, Math.max(1, durationInFrames * 0.75)], [0, 1], {
     extrapolateRight: "clamp",
-    easing: Easing.out(Easing.expo),
+    easing: Easing.out(Easing.cubic),
   });
   const current = Math.round(target * progress);
 
@@ -1581,7 +1581,7 @@ export const MultiStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             Math.max(0, frame - delay),
             [0, Math.max(1, 50)],
             [0, 1],
-            { extrapolateRight: "clamp", easing: Easing.out(Easing.expo) },
+            { extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) },
           );
           const current = Math.round(stat.value * countProgress);
 
