@@ -26,6 +26,9 @@ import {
   GeoBgTestScene,
   PhotoRevealScene,
   PhotoCollageScene,
+  CounterScene,
+  ProgressBarScene,
+  MultiStatsScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -81,6 +84,12 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <PhotoRevealScene scene={sceneWithIndex} />;
     case "photocollage":
       return <PhotoCollageScene scene={sceneWithIndex} />;
+    case "counter":
+      return <CounterScene scene={sceneWithIndex} />;
+    case "progressbar":
+      return <ProgressBarScene scene={sceneWithIndex} />;
+    case "multistats":
+      return <MultiStatsScene scene={sceneWithIndex} />;
     default:
       return <SingleWordScene scene={sceneWithIndex} />;
   }

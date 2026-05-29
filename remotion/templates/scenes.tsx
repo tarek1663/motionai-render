@@ -33,10 +33,17 @@ export type SceneData = {
     | "rotatein"
     | "geobgtest"
     | "photoreveal"
-    | "photocollage";
+    | "photocollage"
+    | "counter"
+    | "progressbar"
+    | "multistats";
   text?: string;
   bg?: string;
   accentColor?: string;
+  counterTo?: number;
+  suffix?: string;
+  prefix?: string;
+  stats?: Array<{ value: number; label: string; suffix?: string }>;
   photoUrl?: string;
   photoUrl2?: string;
   photoUrl3?: string;
@@ -1327,6 +1334,307 @@ export const PhotoCollageScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
             {scene.text}
           </div>
         )}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ═══════════════════════════════════════════════════════
+// SCÈNES CHIFFRES & STATS
+// ═══════════════════════════════════════════════════════
+
+// ─── COMPTEUR ─────────────────────────────────────────
+export const CounterScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const target = scene.counterTo ?? 1000;
+  const suffix = scene.suffix || "";
+  const prefix = scene.prefix || "";
+
+  const progress = interpolate(frame, [0, durationInFrames * 0.75], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.expo),
+  });
+  const current = Math.round(target * progress);
+
+  const fadeIn = interpolate(frame, [0, 20], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+  const opacity = Math.min(fadeIn, fadeOut);
+
+  const labelFade = interpolate(Math.max(0, frame - 10), [0, 20], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+
+  const displayValue =
+    current >= 1000
+      ? `${(current / 1000).toFixed(current % 1000 === 0 ? 0 : 1)}K`
+      : current.toLocaleString("fr-FR");
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+          gap: 8,
+          opacity,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 200,
+            fontWeight: 700,
+            fontFamily: FONT,
+            letterSpacing: "-0.07em",
+            lineHeight: 1,
+            color: textColor(bg),
+            whiteSpace: "nowrap",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {prefix}
+          {displayValue}
+          {suffix}
+        </div>
+        {scene.text && (
+          <div
+            style={{
+              fontSize: 28,
+              fontWeight: 400,
+              fontFamily: FONT,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              color: isLight(bg) ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)",
+              opacity: labelFade,
+            }}
+          >
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── PROGRESS BAR ─────────────────────────────────────
+export const ProgressBarScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const target = scene.counterTo ?? 75;
+  const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
+
+  const progress = interpolate(frame, [8, durationInFrames * 0.75], [0, target], {
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+
+  const fadeIn = interpolate(frame, [0, 20], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+  const opacity = Math.min(fadeIn, fadeOut);
+
+  const barWidth = interpolate(frame, [8, durationInFrames * 0.75], [0, target], {
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "flex-start",
+          padding: "0 120px",
+          flexDirection: "column",
+          gap: 24,
+          opacity,
+        }}
+      >
+        {scene.text && (
+          <div
+            style={{
+              fontSize: 36,
+              fontWeight: 600,
+              fontFamily: FONT,
+              letterSpacing: "-0.02em",
+              color: textColor(bg),
+            }}
+          >
+            {scene.text}
+          </div>
+        )}
+
+        <div
+          style={{
+            width: "100%",
+            height: 6,
+            background: isLight(bg) ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)",
+            borderRadius: 100,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              width: `${barWidth}%`,
+              height: "100%",
+              background: accent,
+              borderRadius: 100,
+              boxShadow: `0 0 16px ${accent}66`,
+            }}
+          />
+        </div>
+
+        <div
+          style={{
+            fontSize: 96,
+            fontWeight: 700,
+            fontFamily: FONT,
+            letterSpacing: "-0.05em",
+            lineHeight: 1,
+            color: accent,
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {Math.round(progress)}%
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── MULTI STATS ──────────────────────────────────────
+export const MultiStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+
+  const stats = scene.stats || [
+    { value: 10000, label: "utilisateurs", suffix: "+" },
+    { value: 72, label: "animations", suffix: "" },
+    { value: 98, label: "satisfaction", suffix: "%" },
+  ];
+
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+          gap: 0,
+          padding: "0 100px",
+          opacity: fadeOut,
+        }}
+      >
+        {stats.map((stat, i) => {
+          const delay = i * 18;
+          const enter = spring({
+            frame: Math.max(0, frame - delay),
+            fps,
+            config: { damping: 280, stiffness: 80, mass: 0.8 },
+            from: 0,
+            to: 1,
+          });
+
+          const countProgress = interpolate(
+            Math.max(0, frame - delay),
+            [0, 50],
+            [0, 1],
+            { extrapolateRight: "clamp", easing: Easing.out(Easing.expo) },
+          );
+          const current = Math.round(stat.value * countProgress);
+
+          const isLast = i === stats.length - 1;
+          const borderColor = isLight(bg)
+            ? "rgba(0,0,0,0.06)"
+            : "rgba(255,255,255,0.06)";
+
+          return (
+            <div
+              key={i}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "baseline",
+                justifyContent: "space-between",
+                paddingBottom: isLast ? 0 : 24,
+                marginBottom: isLast ? 0 : 24,
+                borderBottom: isLast ? "none" : `1px solid ${borderColor}`,
+                opacity: interpolate(enter, [0, 1], [0, 1]),
+                transform: `translateY(${interpolate(enter, [0, 1], [30, 0])}px)`,
+                filter: `blur(${interpolate(enter, [0, 0.5, 1], [6, 1, 0])}px)`,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 80,
+                  fontWeight: 700,
+                  fontFamily: FONT,
+                  letterSpacing: "-0.05em",
+                  lineHeight: 1,
+                  color: textColor(bg),
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {current >= 1000 ? `${(current / 1000).toFixed(0)}K` : current}
+                {stat.suffix}
+              </div>
+              <div
+                style={{
+                  fontSize: 22,
+                  fontWeight: 400,
+                  fontFamily: FONT,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  color: isLight(bg) ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)",
+                }}
+              >
+                {stat.label}
+              </div>
+            </div>
+          );
+        })}
       </AbsoluteFill>
     </AbsoluteFill>
   );

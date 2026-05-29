@@ -3,35 +3,59 @@ import { MotionVideo, MotionVideoProps } from "./MotionVideo";
 
 const fps = 60;
 
-const TEST_PHOTO =
-  "https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1280";
-const TEST_PHOTO_2 =
-  "https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=1280";
-const TEST_PHOTO_3 =
-  "https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=1280";
-
 const defaultProps: MotionVideoProps = {
   scenes: [
     {
-      type: "photoreveal",
-      text: "Motionr.",
+      type: "counter",
+      text: "vidéos générées",
       bg: "#ffffff",
-      photoUrl: TEST_PHOTO_2,
+      counterTo: 12400,
     },
     {
-      type: "photocollage",
-      text: "Partout.",
+      type: "counter",
+      text: "utilisateurs actifs",
+      bg: "#000000",
+      counterTo: 8500,
+      suffix: "+",
+    },
+    {
+      type: "progressbar",
+      text: "Satisfaction client",
       bg: "#ffffff",
-      photoUrl: TEST_PHOTO,
-      photoUrl2: TEST_PHOTO_2,
-      photoUrl3: TEST_PHOTO_3,
+      accentColor: "#000000",
+      counterTo: 98,
+    },
+    {
+      type: "progressbar",
+      text: "Taux de complétion",
+      bg: "#000000",
+      accentColor: "#ffffff",
+      counterTo: 76,
+    },
+    {
+      type: "multistats",
+      bg: "#ffffff",
+      stats: [
+        { value: 12400, label: "vidéos créées", suffix: "+" },
+        { value: 72, label: "animations", suffix: "" },
+        { value: 98, label: "satisfaction", suffix: "%" },
+      ],
+    },
+    {
+      type: "multistats",
+      bg: "#000000",
+      stats: [
+        { value: 8500, label: "utilisateurs", suffix: "+" },
+        { value: 4, label: "jours gratuits", suffix: "" },
+        { value: 1080, label: "résolution", suffix: "p" },
+      ],
     },
   ] as MotionVideoProps["scenes"],
-  sceneDurations: Array.from({ length: 2 }, (_, i) => ({
+  sceneDurations: Array.from({ length: 6 }, (_, i) => ({
     startFrame: i * 150,
     durationFrames: 150,
   })),
-  totalFrames: 300,
+  totalFrames: 900,
   audioSrc: null,
   musicSrc: null,
 };
@@ -56,7 +80,7 @@ const RemotionRoot = () => (
       });
 
       const total =
-        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 300;
+        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 900;
 
       const fmt = (p as MotionVideoProps & { format?: string }).format || "9:16";
       const w = fmt === "16:9" ? 1920 : 1080;
