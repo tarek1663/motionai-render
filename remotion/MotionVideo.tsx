@@ -50,14 +50,9 @@ import {
   PulseButtonScene,
   UIProgressScene,
   QuoteScene,
-  BeforeAfterScene,
   TimelineScene,
   SocialStatsScene,
-  CinematicTitleScene,
   ChecklistScene,
-  LocationScene,
-  ProductMockupScene,
-  HeadlineScene,
   AudioVizScene,
 } from "./templates/scenes";
 
@@ -162,22 +157,12 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <UIProgressScene scene={sceneWithIndex} />;
     case "quote":
       return <QuoteScene scene={sceneWithIndex} />;
-    case "beforeafter":
-      return <BeforeAfterScene scene={sceneWithIndex} />;
     case "timeline":
       return <TimelineScene scene={sceneWithIndex} />;
     case "socialstats":
       return <SocialStatsScene scene={sceneWithIndex} />;
-    case "cinematictitle":
-      return <CinematicTitleScene scene={sceneWithIndex} />;
     case "checklist":
       return <ChecklistScene scene={sceneWithIndex} />;
-    case "location":
-      return <LocationScene scene={sceneWithIndex} />;
-    case "productmockup":
-      return <ProductMockupScene scene={sceneWithIndex} />;
-    case "headline":
-      return <HeadlineScene scene={sceneWithIndex} />;
     case "audioviz":
       return <AudioVizScene scene={sceneWithIndex} />;
     default:

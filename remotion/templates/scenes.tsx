@@ -58,27 +58,18 @@ export type SceneData = {
     | "pulsebutton"
     | "uiprogress"
     | "quote"
-    | "beforeafter"
     | "timeline"
     | "socialstats"
-    | "cinematictitle"
     | "checklist"
-    | "location"
-    | "productmockup"
-    | "headline"
     | "audioviz";
   text?: string;
   notifText?: string;
   buttonText?: string;
   author?: string;
-  before?: string;
-  after?: string;
   steps?: Array<{ number: string; label: string }>;
   platform?: string;
   statLabel?: string;
-  subtitle?: string;
   items?: string[];
-  tag?: string;
   shape?: "circle" | "square";
   bg?: string;
   accentColor?: string;

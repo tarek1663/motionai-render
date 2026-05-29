@@ -13,13 +13,6 @@ const defaultProps: MotionVideoProps = {
       accentColor: "#000000",
     },
     {
-      type: "beforeafter",
-      before: "Des heures",
-      after: "2 minutes",
-      bg: "#000000",
-      accentColor: "#10B981",
-    },
-    {
       type: "timeline",
       bg: "#ffffff",
       accentColor: "#000000",
@@ -38,35 +31,10 @@ const defaultProps: MotionVideoProps = {
       counterTo: 250000,
     },
     {
-      type: "cinematictitle",
-      text: "Motionr",
-      subtitle: "L'IA vidéo",
-      bg: "#000000",
-    },
-    {
       type: "checklist",
       bg: "#ffffff",
       accentColor: "#000000",
       items: ["Script auto", "Voix naturelle", "1080p", "Prêt à publier"],
-    },
-    {
-      type: "location",
-      text: "Paris, France",
-      bg: "#ffffff",
-      accentColor: "#000000",
-    },
-    {
-      type: "productmockup",
-      text: "Motionr App",
-      bg: "#000000",
-      accentColor: "#10B981",
-    },
-    {
-      type: "headline",
-      text: "L'IA crée vos vidéos.",
-      tag: "NOUVEAU",
-      bg: "#ffffff",
-      accentColor: "#000000",
     },
     {
       type: "audioviz",
@@ -75,11 +43,11 @@ const defaultProps: MotionVideoProps = {
       accentColor: "#ffffff",
     },
   ] as MotionVideoProps["scenes"],
-  sceneDurations: Array.from({ length: 10 }, (_, i) => ({
+  sceneDurations: Array.from({ length: 5 }, (_, i) => ({
     startFrame: i * 150,
     durationFrames: 150,
   })),
-  totalFrames: 1500,
+  totalFrames: 750,
   audioSrc: null,
   musicSrc: null,
 };
@@ -104,7 +72,7 @@ const RemotionRoot = () => (
       });
 
       const total =
-        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 1500;
+        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 750;
 
       const fmt = (p as MotionVideoProps & { format?: string }).format || "9:16";
       const w = fmt === "16:9" ? 1920 : 1080;
