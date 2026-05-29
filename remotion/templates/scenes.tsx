@@ -4668,8 +4668,17 @@ export const IPhoneScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const bg = scene.bg || "#000000";
   const accent = safeAccent(scene.accentColor, bg);
   const photoUrl = scene.photoUrl || "";
-  const mockupData = scene.mockupData || {};
-  const mockupType = mockupData.type || "saas";
+  const mockupData = (scene as SceneData & { mockupData?: Record<string, unknown> }).mockupData || {};
+  const mockupType = (mockupData.type as string) || "saas";
+
+  if (frame === 0) {
+    console.log(
+      "📱 iPhone mockupType:",
+      mockupType,
+      "mockupData:",
+      JSON.stringify(mockupData),
+    );
+  }
 
   const enter = spring({ frame, fps, config: { damping: 260, stiffness: 70, mass: 1 }, from: 0, to: 1 });
   const floatY = Math.sin(frame * 0.04) * 8;
