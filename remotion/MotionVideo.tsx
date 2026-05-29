@@ -32,6 +32,9 @@ import {
   AccentWordScene,
   UnderlineScene,
   ColorShiftScene,
+  LineDrawScene,
+  ShapeScene,
+  ExpandingShapeScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -99,6 +102,12 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <UnderlineScene scene={sceneWithIndex} />;
     case "colorshift":
       return <ColorShiftScene scene={sceneWithIndex} />;
+    case "linedraw":
+      return <LineDrawScene scene={sceneWithIndex} />;
+    case "shape":
+      return <ShapeScene scene={sceneWithIndex} />;
+    case "expandingshape":
+      return <ExpandingShapeScene scene={sceneWithIndex} />;
     default:
       return <SingleWordScene scene={sceneWithIndex} />;
   }

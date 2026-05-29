@@ -39,8 +39,12 @@ export type SceneData = {
     | "multistats"
     | "accentword"
     | "underline"
-    | "colorshift";
+    | "colorshift"
+    | "linedraw"
+    | "shape"
+    | "expandingshape";
   text?: string;
+  shape?: "circle" | "square";
   bg?: string;
   accentColor?: string;
   accentIndex?: number;
@@ -1822,6 +1826,261 @@ export const ColorShiftScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             letterSpacing: "-0.03em",
             lineHeight: 1,
             color: textColor2,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ═══════════════════════════════════════════════════════
+// SCÈNES FORMES & LIGNES
+// ═══════════════════════════════════════════════════════
+
+// ─── LIGNE QUI SE TRACE ───────────────────────────────
+export const LineDrawScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const accent = scene.accentColor || textColor(bg);
+
+  const lineW = interpolate(frame, [0, 32], [0, 100], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const textFade = interpolate(Math.max(0, frame - 28), [0, 20], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const textY = interpolate(Math.max(0, frame - 28), [0, 24], [20, 0], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 130, 60);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+          gap: 24,
+          opacity: fadeOut,
+        }}
+      >
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            opacity: textFade,
+            transform: `translateY(${textY}px)`,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {scene.text}
+        </div>
+
+        <div
+          style={{
+            width: `${lineW}%`,
+            maxWidth: 400,
+            height: 2,
+            background: accent,
+            borderRadius: 100,
+          }}
+        />
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── CERCLE / CARRÉ ───────────────────────────────────
+export const ShapeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const accent = scene.accentColor || textColor(bg);
+  const shape = scene.shape || "circle";
+
+  const enter = spring({
+    frame,
+    fps,
+    config: { damping: 280, stiffness: 70, mass: 1 },
+    from: 0,
+    to: 1,
+  });
+  const textEnter = spring({
+    frame: Math.max(0, frame - 14),
+    fps,
+    config: { damping: 280, stiffness: 80, mass: 0.8 },
+    from: 0,
+    to: 1,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const shapeScale = interpolate(enter, [0, 1], [0.4, 1]);
+  const shapeOpacity = Math.min(interpolate(enter, [0, 0.3], [0, 1]), fadeOut);
+
+  const fontSize = autoFontSize(scene.text || "", 100, 48);
+  const shapeSize = 320;
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div
+          style={{
+            position: "absolute",
+            width: shapeSize,
+            height: shapeSize,
+            borderRadius: shape === "circle" ? "50%" : shape === "square" ? 20 : "50%",
+            border: `1.5px solid ${accent}`,
+            opacity: shapeOpacity * 0.4,
+            transform: `scale(${shapeScale})`,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            width: shapeSize * 0.7,
+            height: shapeSize * 0.7,
+            borderRadius: shape === "circle" ? "50%" : shape === "square" ? 14 : "50%",
+            border: `1px solid ${accent}`,
+            opacity: shapeOpacity * 0.2,
+            transform: `scale(${shapeScale * 1.1})`,
+          }}
+        />
+
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            opacity: Math.min(interpolate(textEnter, [0, 1], [0, 1]), fadeOut),
+            transform: `scale(${interpolate(textEnter, [0, 1], [0.92, 1])})`,
+            filter: `blur(${interpolate(textEnter, [0, 0.5, 1], [6, 1, 0])}px)`,
+            whiteSpace: "nowrap",
+            zIndex: 1,
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── EXPANDING SHAPE ──────────────────────────────────
+export const ExpandingShapeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const accent = scene.accentColor || textColor(bg);
+
+  const expand = interpolate(
+    frame,
+    [0, Math.max(1, durationInFrames * 0.8)],
+    [0, 1],
+    {
+      extrapolateRight: "clamp",
+      easing: E_OUT,
+    },
+  );
+  const textEnter = spring({
+    frame: Math.max(0, frame - 10),
+    fps,
+    config: { damping: 280, stiffness: 80, mass: 0.8 },
+    from: 0,
+    to: 1,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 130, 60);
+
+  const circles = [
+    { delay: 0, maxSize: 600, opacity: 0.08 },
+    { delay: 0.1, maxSize: 900, opacity: 0.05 },
+    { delay: 0.2, maxSize: 1200, opacity: 0.03 },
+  ];
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+
+      {circles.map((c, i) => {
+        const localExpand = Math.max(0, expand - c.delay);
+        const size = localExpand * c.maxSize;
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              width: size,
+              height: size,
+              borderRadius: "50%",
+              border: `1px solid ${accent}`,
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              opacity: c.opacity * fadeOut,
+            }}
+          />
+        );
+      })}
+
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            opacity: Math.min(interpolate(textEnter, [0, 1], [0, 1]), fadeOut),
+            transform: `scale(${interpolate(textEnter, [0, 1], [0.92, 1])})`,
+            filter: `blur(${interpolate(textEnter, [0, 0.5, 1], [6, 1, 0])}px)`,
             whiteSpace: "nowrap",
           }}
         >
