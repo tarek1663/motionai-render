@@ -4687,25 +4687,241 @@ export const WeightRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 // MOCKUPS & REPRÉSENTATIONS ANIMÉES
 // ═══════════════════════════════════════════════════════
 
+// ─── REPRODUCTIONS UI DE SITES/APPS CONNUS ───────────
+const renderKnownUI = (siteName: string, accent: string, frame: number) => {
+  const site = siteName.toLowerCase();
+
+  if (site.includes("spotify")) {
+    const progress = interpolate(Math.max(0, frame - 20), [0, 60], [0, 72], { extrapolateRight: "clamp" });
+    return (
+      <div style={{ width: "100%", height: "100%", background: "#121212", padding: "16px 12px", display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ fontSize: 9, fontWeight: 700, fontFamily: FONT, color: "#fff", letterSpacing: "0.08em" }}>EN COURS DE LECTURE</div>
+        <div style={{ width: 80, height: 80, borderRadius: 8, background: "linear-gradient(135deg, #1DB954, #158a3e)", margin: "0 auto" }} />
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, fontFamily: FONT, color: "#fff" }}>Top Hits 2025</div>
+          <div style={{ fontSize: 9, fontFamily: FONT, color: "#aaa" }}>Playlist</div>
+        </div>
+        <div style={{ width: "100%", height: 3, background: "#333", borderRadius: 2, overflow: "hidden" }}>
+          <div style={{ width: `${progress}%`, height: "100%", background: "#1DB954", borderRadius: 2 }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+          {["⏮", "⏸", "⏭"].map((b, i) => (
+            <div key={i} style={{ fontSize: i === 1 ? 20 : 12, color: i === 1 ? "#fff" : "#aaa" }}>{b}</div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (site.includes("netflix")) {
+    return (
+      <div style={{ width: "100%", height: "100%", background: "#141414", padding: "12px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ fontSize: 16, fontWeight: 900, fontFamily: FONT, color: "#E50914", letterSpacing: "-0.04em" }}>NETFLIX</div>
+        <div style={{ width: "100%", height: 60, background: "linear-gradient(135deg, #333, #111)", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ fontSize: 18, color: "rgba(255,255,255,0.3)" }}>▶</div>
+        </div>
+        <div style={{ fontSize: 9, fontWeight: 700, fontFamily: FONT, color: "#fff" }}>Continuer à regarder</div>
+        <div style={{ display: "flex", gap: 4 }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} style={{ flex: 1, height: 36, background: "#222", borderRadius: 4 }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (site.includes("instagram")) {
+    return (
+      <div style={{ width: "100%", height: "100%", background: "#000", padding: "10px 8px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, fontFamily: FONT, color: "#fff" }}>instagram</div>
+          <div style={{ fontSize: 10, color: "#fff" }}>❤️ 💬</div>
+        </div>
+        <div style={{ display: "flex", gap: 6, overflowX: "hidden" }}>
+          {[accent, "#E91E8C", "#FF5722"].map((c, i) => (
+            <div key={i} style={{
+              width: 36, height: 36, borderRadius: "50%",
+              background: `linear-gradient(135deg, ${c}, ${c}88)`,
+              border: "2px solid #333", flexShrink: 0,
+            }} />
+          ))}
+        </div>
+        <div style={{ width: "100%", height: 80, background: "#111", borderRadius: 6 }} />
+        <div style={{ display: "flex", gap: 12, fontSize: 10, color: "#fff" }}>
+          <span>❤️ 2.4K</span>
+          <span>💬 142</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (site.includes("youtube")) {
+    const playProgress = interpolate(Math.max(0, frame - 16), [0, 80], [0, 65], { extrapolateRight: "clamp" });
+    return (
+      <div style={{ width: "100%", height: "100%", background: "#0f0f0f", padding: "10px 8px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 900, fontFamily: FONT, color: "#FF0000" }}>▶ YouTube</div>
+        <div style={{ width: "100%", height: 70, background: "#222", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+          <div style={{ fontSize: 22, color: "rgba(255,255,255,0.8)" }}>▶</div>
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, background: "#333" }}>
+            <div style={{ width: `${playProgress}%`, height: "100%", background: "#FF0000" }} />
+          </div>
+        </div>
+        <div style={{ fontSize: 9, fontWeight: 700, fontFamily: FONT, color: "#fff", lineHeight: 1.3 }}>Top 10 des moments incroyables</div>
+        <div style={{ fontSize: 8, fontFamily: FONT, color: "#aaa" }}>2.4M vues · il y a 3 jours</div>
+        <div style={{ display: "flex", gap: 4 }}>
+          {[1, 2].map((i) => (
+            <div key={i} style={{ flex: 1, height: 28, background: "#222", borderRadius: 4 }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (site.includes("airbnb")) {
+    return (
+      <div style={{ width: "100%", height: "100%", background: "#fff", padding: "10px 8px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ fontSize: 14, fontWeight: 900, fontFamily: FONT, color: "#FF5A5F" }}>airbnb</div>
+        <div style={{ width: "100%", height: 70, background: "#f0f0f0", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🏠</div>
+        <div style={{ fontSize: 9, fontWeight: 700, fontFamily: FONT, color: "#000" }}>Appartement Paris 11e</div>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div style={{ fontSize: 10, fontWeight: 800, fontFamily: FONT, color: "#000" }}>€120 / nuit</div>
+          <div style={{ fontSize: 9, fontFamily: FONT, color: "#888" }}>⭐ 4.9</div>
+        </div>
+        <div style={{ background: "#FF5A5F", borderRadius: 8, padding: "5px", textAlign: "center" }}>
+          <span style={{ fontSize: 9, fontWeight: 700, fontFamily: FONT, color: "#fff" }}>Réserver</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (site.includes("notion")) {
+    return (
+      <div style={{ width: "100%", height: "100%", background: "#fff", padding: "10px 8px", display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, fontFamily: FONT, color: "#000" }}>📄 Mon Workspace</div>
+        {["📌 Roadmap Q4", "✅ Tasks du jour", "📊 Analytics"].map((item, i) => (
+          <div key={i} style={{
+            padding: "5px 8px", borderRadius: 6,
+            background: i === 0 ? "#f5f5f5" : "transparent",
+            fontSize: 9, fontFamily: FONT, color: "#333",
+          }}>
+            {item}
+          </div>
+        ))}
+        <div style={{ width: "70%", height: 4, background: "#f0f0f0", borderRadius: 2 }} />
+        <div style={{ width: "50%", height: 4, background: "#f0f0f0", borderRadius: 2 }} />
+      </div>
+    );
+  }
+
+  if (site.includes("stripe")) {
+    const barH = [60, 75, 45, 88, 72, 90, 68].map((h, i) =>
+      interpolate(Math.max(0, frame - i * 4), [0, 20], [0, h], { extrapolateRight: "clamp" }),
+    );
+    return (
+      <div style={{ width: "100%", height: "100%", background: "#0a2540", padding: "10px 8px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ fontSize: 10, fontWeight: 800, fontFamily: FONT, color: "#fff" }}>Stripe Dashboard</div>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 800, fontFamily: FONT, color: "#fff" }}>€24,521</div>
+            <div style={{ fontSize: 8, fontFamily: FONT, color: "#635BFF" }}>+18.2% ce mois</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 40 }}>
+          {barH.map((h, i) => (
+            <div key={i} style={{
+              flex: 1, height: `${h}%`, borderRadius: "2px 2px 0 0",
+              background: i === 5 ? "#635BFF" : "rgba(99,91,255,0.3)",
+            }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (site.includes("uber") || site.includes("delivery") || site.includes("livraison")) {
+    return (
+      <div style={{ width: "100%", height: "100%", background: "#000", padding: "10px 8px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ fontSize: 14, fontWeight: 900, fontFamily: FONT, color: "#fff" }}>Uber</div>
+        <div style={{ background: "#1a1a1a", borderRadius: 10, padding: "8px" }}>
+          <div style={{ fontSize: 8, fontFamily: FONT, color: "#888", marginBottom: 4 }}>EN ROUTE</div>
+          <div style={{ fontSize: 14, fontWeight: 800, fontFamily: FONT, color: "#fff" }}>8 min</div>
+          <div style={{ fontSize: 8, fontFamily: FONT, color: accent }}>● Votre chauffeur arrive</div>
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          {["🚗", "🛵", "🚲"].map((icon, i) => (
+            <div key={i} style={{
+              flex: 1, background: i === 0 ? accent : "#1a1a1a",
+              borderRadius: 8, padding: "6px", textAlign: "center", fontSize: 12,
+            }}>{icon}</div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (site.includes("linear") || site.includes("saas") || site.includes("app")) {
+    const barH = [50, 70, 40, 85, 65].map((h, i) =>
+      interpolate(Math.max(0, frame - i * 5), [0, 20], [0, h], { extrapolateRight: "clamp" }),
+    );
+    return (
+      <div style={{ width: "100%", height: "100%", background: "#0a0a0a", padding: "10px 8px", display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: 9, fontWeight: 700, fontFamily: FONT, color: "#fff" }}>Dashboard</div>
+          <div style={{ width: 16, height: 16, borderRadius: "50%", background: accent }} />
+        </div>
+        <div style={{ display: "flex", gap: 4 }}>
+          {[{ label: "Users", val: "1.2K" }, { label: "MRR", val: "€8K" }].map((s, i) => (
+            <div key={i} style={{ flex: 1, background: "#1a1a1a", borderRadius: 6, padding: "6px" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, fontFamily: FONT, color: i === 0 ? accent : "#fff" }}>{s.val}</div>
+              <div style={{ fontSize: 7, fontFamily: FONT, color: "#555" }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 36, marginTop: 4 }}>
+          {barH.map((h, i) => (
+            <div key={i} style={{ flex: 1, height: `${h}%`, borderRadius: "2px 2px 0 0", background: i === 3 ? accent : `${accent}44` }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ width: "100%", height: "100%", background: "#0a0a0a", padding: "12px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ width: "60%", height: 8, borderRadius: 4, background: accent + "99" }} />
+      <div style={{ width: "80%", height: 5, borderRadius: 3, background: "#222" }} />
+      <div style={{ width: "70%", height: 5, borderRadius: 3, background: "#1a1a1a" }} />
+      <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+        {[1, 2].map((i) => (
+          <div key={i} style={{ flex: 1, height: 40, borderRadius: 8, background: i === 1 ? accent + "22" : "#111", border: `1px solid ${i === 1 ? accent + "44" : "#222"}` }} />
+        ))}
+      </div>
+      <div style={{ width: 80, height: 24, borderRadius: 6, background: accent, marginTop: 4 }} />
+    </div>
+  );
+};
+
+const renderMockupScreen = (scene: SceneData, accent: string, frame: number) => {
+  const photoUrl = scene.photoUrl || "";
+  if (photoUrl && !photoUrl.includes("pexels")) {
+    return (
+      <img
+        src={photoUrl}
+        alt=""
+        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
+      />
+    );
+  }
+  const siteName = scene.websiteUrl || scene.url || scene.text || "";
+  return renderKnownUI(siteName, accent, frame);
+};
+
 // ─── 1. IPHONE FLOTTANT ───────────────────────────────
 export const IPhoneScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const bg = scene.bg || "#000000";
   const accent = safeAccent(scene.accentColor, bg);
-  const photoUrl = scene.photoUrl || "";
-  const mockupData = (scene as SceneData & { mockupData?: Record<string, unknown> }).mockupData || {};
-  const mockupType = (mockupData.type as string) || "saas";
-
-  if (frame === 0) {
-    console.log(
-      "📱 iPhone mockupType:",
-      mockupType,
-      "mockupData:",
-      JSON.stringify(mockupData),
-    );
-  }
-
   const enter = spring({ frame, fps, config: { damping: 260, stiffness: 70, mass: 1 }, from: 0, to: 1 });
   const floatY = Math.sin(frame * 0.04) * 8;
   const floatR = Math.sin(frame * 0.03) * 2;
@@ -4715,243 +4931,7 @@ export const IPhoneScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   });
   const fontSize = autoFontSize(scene.text || "", 72, 36);
 
-  const renderScreen = () => {
-    if (photoUrl) {
-      return (
-        <img
-          src={photoUrl}
-          alt=""
-          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
-        />
-      );
-    }
-
-    const c = (mockupData.color as string) || accent;
-
-    if (mockupType === "player") {
-      const progressW = interpolate(Math.max(0, frame - 24), [0, 60], [0, (mockupData.progress as number) || 65], {
-        extrapolateRight: "clamp", easing: Easing.linear,
-      });
-      return (
-        <div style={{
-          width: "100%", height: "100%",
-          background: `linear-gradient(135deg, ${c}33, ${c}11)`,
-          display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center",
-          gap: 10, padding: "20px 14px",
-        }}>
-          <div style={{ width: 50, height: 50, borderRadius: 12, background: c, opacity: 0.9 }} />
-          <div style={{ fontSize: 11, fontWeight: 700, fontFamily: FONT, color: "#fff", textAlign: "center" }}>
-            {mockupData.title as string}
-          </div>
-          <div style={{ fontSize: 9, fontFamily: FONT, color: "rgba(255,255,255,0.6)" }}>
-            {mockupData.artist as string}
-          </div>
-          <div style={{ width: "80%", height: 3, background: "rgba(255,255,255,0.2)", borderRadius: 2, overflow: "hidden" }}>
-            <div style={{ width: `${progressW}%`, height: "100%", background: c, borderRadius: 2 }} />
-          </div>
-          <div style={{ display: "flex", gap: 20, marginTop: 4 }}>
-            {["⏮", "⏸", "⏭"].map((btn, i) => (
-              <div key={i} style={{ fontSize: i === 1 ? 18 : 12, color: i === 1 ? c : "rgba(255,255,255,0.6)" }}>{btn}</div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    if (mockupType === "fitness") {
-      return (
-        <div style={{
-          width: "100%", height: "100%",
-          background: "#0a0a0a",
-          display: "flex", flexDirection: "column",
-          gap: 8, padding: "20px 12px",
-        }}>
-          <div style={{ fontSize: 10, fontFamily: FONT, color: "rgba(255,255,255,0.5)", letterSpacing: "0.06em" }}>AUJOURD&apos;HUI</div>
-          {[
-            { icon: "👟", label: "Pas", value: mockupData.steps as string },
-            { icon: "🔥", label: "Cal", value: mockupData.calories as string },
-            { icon: "📍", label: "km", value: mockupData.km as string },
-          ].map((stat, i) => {
-            const statEnter = interpolate(Math.max(0, frame - 24 - i * 8), [0, 16], [0, 1], { extrapolateRight: "clamp" });
-            return (
-              <div key={i} style={{
-                display: "flex", alignItems: "center", gap: 8,
-                background: "rgba(255,255,255,0.06)", borderRadius: 10,
-                padding: "8px 10px", opacity: statEnter,
-              }}>
-                <span style={{ fontSize: 14 }}>{stat.icon}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, fontFamily: FONT, color: "#fff" }}>{stat.value}</div>
-                  <div style={{ fontSize: 8, fontFamily: FONT, color: "rgba(255,255,255,0.4)" }}>{stat.label}</div>
-                </div>
-                <div style={{ width: 30, height: 30, borderRadius: "50%", background: `${c}22`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <div style={{ width: 20, height: 20, borderRadius: "50%", background: c, opacity: 0.8 }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      );
-    }
-
-    if (mockupType === "video") {
-      return (
-        <div style={{
-          width: "100%", height: "100%",
-          background: "#0a0a0a",
-          display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center",
-          gap: 8, padding: 16,
-        }}>
-          <div style={{ width: "100%", aspectRatio: "16/9", background: `${c}33`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>▶</div>
-          <div style={{ fontSize: 10, fontWeight: 700, fontFamily: FONT, color: "#fff", textAlign: "center" }}>{mockupData.title as string}</div>
-          <div style={{ fontSize: 8, fontFamily: FONT, color: "rgba(255,255,255,0.5)" }}>{mockupData.views as string}</div>
-        </div>
-      );
-    }
-
-    if (mockupType === "product") {
-      return (
-        <div style={{
-          width: "100%", height: "100%",
-          background: "#ffffff",
-          display: "flex", flexDirection: "column",
-          alignItems: "center", gap: 8,
-        }}>
-          <div style={{ width: "100%", height: "50%", background: `${c}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>
-            🛍️
-          </div>
-          <div style={{ padding: "0 12px", width: "100%" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, fontFamily: FONT, color: "#000" }}>{mockupData.name as string}</div>
-            <div style={{ fontSize: 14, fontWeight: 800, fontFamily: FONT, color: c, marginTop: 4 }}>{mockupData.price as string}</div>
-            <div style={{ marginTop: 8, background: c, borderRadius: 8, padding: "6px", textAlign: "center" }}>
-              <span style={{ fontSize: 10, fontWeight: 700, fontFamily: FONT, color: "#fff" }}>Ajouter au panier</span>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (mockupType === "food") {
-      return (
-        <div style={{
-          width: "100%", height: "100%",
-          background: "#fff",
-          display: "flex", flexDirection: "column",
-          gap: 8, padding: "16px 12px",
-        }}>
-          <div style={{ fontSize: 28, textAlign: "center" }}>🍽️</div>
-          <div style={{ fontSize: 12, fontWeight: 700, fontFamily: FONT, color: "#000", textAlign: "center" }}>{mockupData.dish as string}</div>
-          <div style={{ fontSize: 9, fontFamily: FONT, color: "rgba(0,0,0,0.5)", textAlign: "center" }}>⏱ {mockupData.time as string}</div>
-          <div style={{ marginTop: 4, background: c, borderRadius: 8, padding: "8px", textAlign: "center" }}>
-            <span style={{ fontSize: 11, fontWeight: 700, fontFamily: FONT, color: "#fff" }}>{mockupData.price as string}</span>
-          </div>
-        </div>
-      );
-    }
-
-    if (mockupType === "finance") {
-      const chartProgress = interpolate(Math.max(0, frame - 20), [0, 40], [0, 1], { extrapolateRight: "clamp" });
-      return (
-        <div style={{
-          width: "100%", height: "100%",
-          background: "#0a0a1a",
-          display: "flex", flexDirection: "column",
-          gap: 8, padding: "16px 12px",
-        }}>
-          <div style={{ fontSize: 9, fontFamily: FONT, color: "rgba(255,255,255,0.4)" }}>PORTFOLIO</div>
-          <div style={{ fontSize: 20, fontWeight: 800, fontFamily: FONT, color: "#fff", letterSpacing: "-0.04em" }}>{mockupData.value as string}</div>
-          <div style={{ fontSize: 11, fontWeight: 600, fontFamily: FONT, color: "#30d158" }}>{mockupData.amount as string}</div>
-          <svg width="120" height="40" style={{ marginTop: 4 }}>
-            <polyline
-              points={`0,35 20,28 40,30 60,15 80,18 ${120 * chartProgress},${10 + Math.sin(chartProgress * 3) * 5}`}
-              fill="none"
-              stroke="#30d158"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-      );
-    }
-
-    if (mockupType === "delivery") {
-      return (
-        <div style={{
-          width: "100%", height: "100%",
-          background: "#0a0a0a",
-          display: "flex", flexDirection: "column",
-          gap: 8, padding: "16px 12px",
-        }}>
-          <div style={{ fontSize: 9, fontFamily: FONT, color: "rgba(255,255,255,0.4)" }}>LIVRAISON</div>
-          <div style={{ fontSize: 16, fontWeight: 800, fontFamily: FONT, color: "#fff" }}>{mockupData.eta as string}</div>
-          <div style={{ fontSize: 10, fontFamily: FONT, color: c }}>📍 {mockupData.status as string}</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
-            {((mockupData.steps as string[]) || []).map((step, i) => {
-              const isDone = i <= ((mockupData.activeStep as number) || 2);
-              return (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{
-                    width: 8, height: 8, borderRadius: "50%",
-                    background: isDone ? c : "rgba(255,255,255,0.2)",
-                    boxShadow: isDone ? `0 0 6px ${c}` : "none",
-                  }} />
-                  <div style={{
-                    fontSize: 9, fontFamily: FONT,
-                    color: isDone ? "#fff" : "rgba(255,255,255,0.3)",
-                    fontWeight: isDone ? 600 : 400,
-                  }}>{step}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-
-    if (mockupType === "social") {
-      return (
-        <div style={{
-          width: "100%", height: "100%",
-          background: "#000",
-          display: "flex", flexDirection: "column",
-          alignItems: "center", gap: 8, padding: "16px 12px",
-        }}>
-          <div style={{ width: 40, height: 40, borderRadius: "50%", background: `linear-gradient(135deg, ${c}, ${c}88)` }} />
-          <div style={{ fontSize: 10, fontWeight: 700, fontFamily: FONT, color: "#fff" }}>@motionr</div>
-          <div style={{ display: "flex", gap: 16 }}>
-            {[{ label: "Abonnés", value: mockupData.followers as string }, { label: "Likes", value: mockupData.likes as string }].map((s, i) => (
-              <div key={i} style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 14, fontWeight: 800, fontFamily: FONT, color: c }}>{s.value}</div>
-                <div style={{ fontSize: 8, fontFamily: FONT, color: "rgba(255,255,255,0.4)" }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ width: "100%", background: c, borderRadius: 8, padding: "6px", textAlign: "center", marginTop: 4 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, fontFamily: FONT, color: "#fff" }}>Suivre</span>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div style={{
-        width: "100%", height: "100%",
-        background: `linear-gradient(135deg, ${c}22, ${c}08)`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        flexDirection: "column", gap: 8, padding: 16,
-      }}>
-        <div style={{ width: "80%", height: 6, borderRadius: 3, background: `${c}88` }} />
-        <div style={{ width: "60%", height: 4, borderRadius: 2, background: `${c}44` }} />
-        <div style={{ width: "70%", height: 4, borderRadius: 2, background: `${c}33` }} />
-        <div style={{ marginTop: 8, width: 40, height: 40, borderRadius: 12, background: c, opacity: 0.8 }} />
-        <div style={{ fontSize: 10, fontWeight: 700, fontFamily: FONT, color: "#fff", opacity: 0.8 }}>
-          {(mockupData.title as string) || scene.text}
-        </div>
-      </div>
-    );
-  };
+  const renderScreen = () => renderMockupScreen(scene, accent, frame);
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
@@ -5063,30 +5043,8 @@ export const MacBookScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
               </div>
             </div>
             {/* Contenu écran */}
-            <div style={{ height: 200, opacity: screenOpacity }}>
-              {photoUrl ? (
-                <img src={photoUrl} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} alt="" />
-              ) : (
-                <div style={{
-                  height: "100%", background: "#0a0a0a",
-                  padding: "20px", display: "flex", flexDirection: "column", gap: 8,
-                }}>
-                  <div style={{ width: "45%", height: 10, borderRadius: 4, background: accent + "99" }} />
-                  <div style={{ width: "65%", height: 6, borderRadius: 3, background: "#333" }} />
-                  <div style={{ width: "55%", height: 6, borderRadius: 3, background: "#2a2a2a" }} />
-                  <div style={{
-                    marginTop: 8, display: "flex", gap: 8,
-                  }}>
-                    {[1, 2, 3].map(i => (
-                      <div key={i} style={{
-                        flex: 1, height: 60, borderRadius: 8,
-                        background: i === 1 ? accent + "33" : "#1a1a1a",
-                        border: `1px solid ${i === 1 ? accent + "44" : "#222"}`,
-                      }} />
-                    ))}
-                  </div>
-                </div>
-              )}
+            <div style={{ height: 200, opacity: screenOpacity, overflow: "hidden" }}>
+              {renderMockupScreen(scene, accent, frame)}
             </div>
           </div>
           {/* Base */}
@@ -5160,25 +5118,7 @@ export const DoubleDeviceScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
                 ))}
               </div>
               <div style={{ height: 110, background: "#0a0a0a", overflow: "hidden" }}>
-                {photoUrl ? (
-                  <img src={photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
-                ) : (
-                  <div style={{
-                    height: "100%", padding: 12, display: "flex", flexDirection: "column", gap: 6,
-                  }}>
-                    <div style={{ width: "50%", height: 6, borderRadius: 3, background: accent + "88" }} />
-                    <div style={{ width: "70%", height: 4, borderRadius: 2, background: "#222" }} />
-                    <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                      {[1, 2].map(i => (
-                        <div key={i} style={{
-                          flex: 1, height: 36, borderRadius: 6,
-                          background: i === 1 ? accent + "22" : "#1a1a1a",
-                          border: `1px solid ${i === 1 ? accent + "33" : "#222"}`,
-                        }} />
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {renderMockupScreen(scene, accent, frame)}
               </div>
             </div>
             <div style={{ background: "#2a2a2a", height: 7, borderRadius: "0 0 3px 3px", border: "2px solid #333", borderTop: "none" }} />
@@ -5204,16 +5144,10 @@ export const DoubleDeviceScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
               background: "#000", borderRadius: "0 0 8px 8px",
               zIndex: 2,
             }} />
-            {mobilePhotoUrl ? (
-              <img src={mobilePhotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
-            ) : (
-              <div style={{
-                width: "100%", height: "100%",
-                background: `linear-gradient(135deg, ${accent}22, ${accent}08)`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <div style={{ width: 24, height: 24, borderRadius: 6, background: accent, opacity: 0.8 }} />
-              </div>
+            {renderMockupScreen(
+              { ...scene, photoUrl: mobilePhotoUrl || scene.photoUrl },
+              accent,
+              frame,
             )}
           </div>
         </div>
@@ -5308,31 +5242,8 @@ export const BrowserScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
           </div>
 
           {/* Contenu */}
-          <div style={{ height: 220, opacity: contentFade }}>
-            {photoUrl ? (
-              <img src={photoUrl} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} alt="" />
-            ) : (
-              <div style={{
-                height: "100%",
-                background: isLight(bg) ? "#ffffff" : "#0a0a0a",
-                padding: "20px",
-                display: "flex", flexDirection: "column", gap: 8,
-              }}>
-                {/* Hero */}
-                <div style={{
-                  width: "55%", height: 14, borderRadius: 4,
-                  background: isLight(bg) ? "#111" : accent,
-                  opacity: isLight(bg) ? 0.9 : 0.8,
-                }} />
-                <div style={{ width: "75%", height: 8, borderRadius: 3, background: isLight(bg) ? "#ddd" : "#222" }} />
-                <div style={{ width: "60%", height: 8, borderRadius: 3, background: isLight(bg) ? "#eee" : "#1a1a1a" }} />
-                <div style={{
-                  marginTop: 10,
-                  width: 100, height: 32, borderRadius: 8,
-                  background: accent, opacity: 0.9,
-                }} />
-              </div>
-            )}
+          <div style={{ height: 220, opacity: contentFade, overflow: "hidden" }}>
+            {renderMockupScreen(scene, accent, frame)}
           </div>
         </div>
 
