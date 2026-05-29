@@ -44,8 +44,6 @@ import {
   CurtainScene,
   DiagonalWipeScene,
   GlitchSwitchScene,
-  VenetianScene,
-  ScaleWipeScene,
   PixelDissolveScene,
   LightSweepScene,
 } from "./templates/scenes";
@@ -139,10 +137,6 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <DiagonalWipeScene scene={sceneWithIndex} />;
     case "glitchswitch":
       return <GlitchSwitchScene scene={sceneWithIndex} />;
-    case "venetian":
-      return <VenetianScene scene={sceneWithIndex} />;
-    case "scalewipe":
-      return <ScaleWipeScene scene={sceneWithIndex} />;
     case "pixeldissolve":
       return <PixelDissolveScene scene={sceneWithIndex} />;
     case "lightsweep":

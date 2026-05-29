@@ -16,16 +16,14 @@ const defaultProps: MotionVideoProps = {
       bg: "#000000",
       accentColor: "#10B981",
     },
-    { type: "venetian", text: "Fluide.", bg: "#ffffff" },
-    { type: "scalewipe", text: "Premium.", bg: "#000000" },
     { type: "pixeldissolve", text: "Unique.", bg: "#ffffff" },
     { type: "lightsweep", text: "Commence.", bg: "#000000" },
   ] as MotionVideoProps["scenes"],
-  sceneDurations: Array.from({ length: 10 }, (_, i) => ({
+  sceneDurations: Array.from({ length: 8 }, (_, i) => ({
     startFrame: i * 150,
     durationFrames: 150,
   })),
-  totalFrames: 1500,
+  totalFrames: 1200,
   audioSrc: null,
   musicSrc: null,
 };
@@ -50,7 +48,7 @@ const RemotionRoot = () => (
       });
 
       const total =
-        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 1500;
+        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 1200;
 
       const fmt = (p as MotionVideoProps & { format?: string }).format || "9:16";
       const w = fmt === "16:9" ? 1920 : 1080;
