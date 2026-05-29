@@ -6,13 +6,6 @@ const fps = 60;
 const defaultProps: MotionVideoProps = {
   scenes: [
     {
-      type: "splitcolor",
-      text: "Jaune ou noir.",
-      bg: "#FDD835",
-      bg2: "#000000",
-      geo: "dots",
-    },
-    {
       type: "colorletters",
       text: "Motionr.",
       bg: "#000000",
@@ -42,11 +35,11 @@ const defaultProps: MotionVideoProps = {
       geo: "dots",
     },
   ] as MotionVideoProps["scenes"],
-  sceneDurations: Array.from({ length: 5 }, (_, i) => ({
+  sceneDurations: Array.from({ length: 4 }, (_, i) => ({
     startFrame: i * 150,
     durationFrames: 150,
   })),
-  totalFrames: 750,
+  totalFrames: 600,
   audioSrc: null,
   musicSrc: null,
 };
@@ -71,7 +64,7 @@ const RemotionRoot = () => (
       });
 
       const total =
-        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 750;
+        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 600;
 
       const fmt = (p as MotionVideoProps & { format?: string }).format || "9:16";
       const w = fmt === "16:9" ? 1920 : 1080;

@@ -62,7 +62,6 @@ export type SceneData = {
     | "socialstats"
     | "checklist"
     | "audioviz"
-    | "splitcolor"
     | "colorletters"
     | "gradient"
     | "hierarchytext"
@@ -3954,107 +3953,6 @@ export const AudioVizScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
               />
             );
           })}
-        </div>
-      </AbsoluteFill>
-    </AbsoluteFill>
-  );
-};
-
-// ─── SPLIT COLOR ──────────────────────────────────────
-export const SplitColorScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
-  const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
-  const bg1 = scene.bg || "#000000";
-  const bg2 = scene.bg2 || scene.accentColor || "#ffffff";
-
-  const enter = spring({
-    frame,
-    fps,
-    config: { damping: 280, stiffness: 80 },
-    from: 0,
-    to: 1,
-  });
-  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: E_IN,
-  });
-
-  const fontSize = autoFontSize(scene.text || "", 140, 64);
-  const words = (scene.text || "").split(" ");
-  const half = Math.ceil(words.length / 2);
-  const left = words.slice(0, half).join(" ");
-  const right = words.slice(half).join(" ");
-
-  return (
-    <AbsoluteFill style={{ overflow: "hidden" }}>
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "50%",
-          height: "100%",
-          background: bg1,
-        }}
-      >
-        <GeoBackground bg={bg1} geo={scene.geo} />
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          right: 0,
-          width: "50%",
-          height: "100%",
-          background: bg2,
-        }}
-      >
-        <GeoBackground bg={bg2} geo={scene.geo} />
-      </div>
-
-      <AbsoluteFill
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-          opacity: fadeOut,
-        }}
-      >
-        <div style={{ display: "flex", whiteSpace: "nowrap", gap: "0.2em" }}>
-          <span
-            style={{
-              fontSize,
-              fontWeight: 700,
-              fontFamily: FONT,
-              letterSpacing: "-0.03em",
-              color: mainTextColor(scene, bg1),
-              textShadow: mainTextShadow(bg1),
-              opacity: interpolate(enter, [0, 1], [0, 1]),
-              transform: `translateX(${interpolate(enter, [0, 1], [-40, 0])}px) scale(${interpolate(enter, [0, 1], [0.92, 1])})`,
-              filter: `blur(${interpolate(enter, [0, 0.5, 1], [6, 1, 0])}px)`,
-              display: "inline-block",
-            }}
-          >
-            {left}
-          </span>
-          {right && (
-            <span
-              style={{
-                fontSize,
-                fontWeight: 700,
-                fontFamily: FONT,
-                letterSpacing: "-0.03em",
-                color: mainTextColor(scene, bg2),
-                textShadow: mainTextShadow(bg2),
-                opacity: interpolate(enter, [0, 1], [0, 1]),
-                transform: `translateX(${interpolate(enter, [0, 1], [40, 0])}px) scale(${interpolate(enter, [0, 1], [0.92, 1])})`,
-                filter: `blur(${interpolate(enter, [0, 0.5, 1], [6, 1, 0])}px)`,
-                display: "inline-block",
-              }}
-            >
-              {right}
-            </span>
-          )}
         </div>
       </AbsoluteFill>
     </AbsoluteFill>

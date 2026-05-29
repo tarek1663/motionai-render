@@ -54,7 +54,6 @@ import {
   SocialStatsScene,
   ChecklistScene,
   AudioVizScene,
-  SplitColorScene,
   ColorLettersScene,
   GradientScene,
   HierarchyTextScene,
@@ -170,8 +169,6 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <ChecklistScene scene={sceneWithIndex} />;
     case "audioviz":
       return <AudioVizScene scene={sceneWithIndex} />;
-    case "splitcolor":
-      return <SplitColorScene scene={sceneWithIndex} />;
     case "colorletters":
       return <ColorLettersScene scene={sceneWithIndex} />;
     case "gradient":
