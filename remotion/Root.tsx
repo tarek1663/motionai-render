@@ -6,51 +6,80 @@ const fps = 60;
 const defaultProps: MotionVideoProps = {
   scenes: [
     {
-      type: "notification",
-      text: "Vidéo prête.",
-      bg: "#000000",
-      accentColor: "#10B981",
-      notifText: "Ta vidéo est prête à télécharger ✓",
-    },
-    {
-      type: "notification",
-      text: "Simple.",
+      type: "quote",
+      text: "L'IA change tout.",
+      author: "Motionr",
       bg: "#ffffff",
       accentColor: "#000000",
-      notifText: "Nouvelle vidéo générée",
     },
     {
-      type: "pulsebutton",
-      text: "Prêt à créer ?",
-      bg: "#000000",
-      accentColor: "#10B981",
-      buttonText: "Commencer →",
-    },
-    {
-      type: "pulsebutton",
-      text: "Rejoins-nous.",
-      bg: "#ffffff",
-      accentColor: "#000000",
-      buttonText: "Essayer gratuitement",
-    },
-    {
-      type: "uiprogress",
-      text: "Génération vidéo",
+      type: "beforeafter",
+      before: "Des heures",
+      after: "2 minutes",
       bg: "#000000",
       accentColor: "#10B981",
     },
     {
-      type: "uiprogress",
-      text: "En cours...",
+      type: "timeline",
       bg: "#ffffff",
       accentColor: "#000000",
+      steps: [
+        { number: "01", label: "Décris ton idée" },
+        { number: "02", label: "L'IA génère" },
+        { number: "03", label: "Tu publies" },
+      ],
+    },
+    {
+      type: "socialstats",
+      bg: "#000000",
+      accentColor: "#10B981",
+      platform: "Instagram",
+      statLabel: "abonnés",
+      counterTo: 250000,
+    },
+    {
+      type: "cinematictitle",
+      text: "Motionr",
+      subtitle: "L'IA vidéo",
+      bg: "#000000",
+    },
+    {
+      type: "checklist",
+      bg: "#ffffff",
+      accentColor: "#000000",
+      items: ["Script auto", "Voix naturelle", "1080p", "Prêt à publier"],
+    },
+    {
+      type: "location",
+      text: "Paris, France",
+      bg: "#ffffff",
+      accentColor: "#000000",
+    },
+    {
+      type: "productmockup",
+      text: "Motionr App",
+      bg: "#000000",
+      accentColor: "#10B981",
+    },
+    {
+      type: "headline",
+      text: "L'IA crée vos vidéos.",
+      tag: "NOUVEAU",
+      bg: "#ffffff",
+      accentColor: "#000000",
+    },
+    {
+      type: "audioviz",
+      text: "Voix naturelle.",
+      bg: "#000000",
+      accentColor: "#ffffff",
     },
   ] as MotionVideoProps["scenes"],
-  sceneDurations: Array.from({ length: 6 }, (_, i) => ({
+  sceneDurations: Array.from({ length: 10 }, (_, i) => ({
     startFrame: i * 150,
     durationFrames: 150,
   })),
-  totalFrames: 900,
+  totalFrames: 1500,
   audioSrc: null,
   musicSrc: null,
 };
@@ -75,7 +104,7 @@ const RemotionRoot = () => (
       });
 
       const total =
-        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 900;
+        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 1500;
 
       const fmt = (p as MotionVideoProps & { format?: string }).format || "9:16";
       const w = fmt === "16:9" ? 1920 : 1080;

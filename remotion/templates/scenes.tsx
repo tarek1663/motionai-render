@@ -56,10 +56,29 @@ export type SceneData = {
     | "lightsweep"
     | "notification"
     | "pulsebutton"
-    | "uiprogress";
+    | "uiprogress"
+    | "quote"
+    | "beforeafter"
+    | "timeline"
+    | "socialstats"
+    | "cinematictitle"
+    | "checklist"
+    | "location"
+    | "productmockup"
+    | "headline"
+    | "audioviz";
   text?: string;
   notifText?: string;
   buttonText?: string;
+  author?: string;
+  before?: string;
+  after?: string;
+  steps?: Array<{ number: string; label: string }>;
+  platform?: string;
+  statLabel?: string;
+  subtitle?: string;
+  items?: string[];
+  tag?: string;
   shape?: "circle" | "square";
   bg?: string;
   accentColor?: string;
@@ -3297,3 +3316,850 @@ export const UIProgressScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
     </AbsoluteFill>
   );
 };
+
+// ═══════════════════════════════════════════════════════════
+// SCÈNES UNIVERSELLES
+// ═══════════════════════════════════════════════════════════
+
+const sceneOpacity = (
+  frame: number,
+  durationInFrames: number,
+): number => {
+  const fadeIn = interpolate(frame, [0, 20], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+  return Math.min(fadeIn, fadeOut);
+};
+
+const PlatformIcon: React.FC<{ platform: string; size?: number }> = ({
+  platform,
+  size = 28,
+}) => {
+  const p = (platform || "instagram").toLowerCase();
+  const common: React.CSSProperties = {
+    width: size,
+    height: size,
+    display: "block",
+  };
+  if (p === "youtube") {
+    return (
+      <svg viewBox="0 0 24 24" style={common} fill="currentColor">
+        <path d="M23 7.5a3 3 0 0 0-2.1-2.1C19.5 5 12 5 12 5s-7.5 0-8.9.4A3 3 0 0 0 1 7.5 31 31 0 0 0 .6 12 31 31 0 0 0 1 16.5 3 3 0 0 0 3.1 18.6C4.5 19 12 19 12 19s7.5 0 8.9-.4a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .4-4.5 31 31 0 0 0-.4-4.5z" />
+        <path fill="#fff" d="M10 15.5v-7l6 3.5-6 3.5z" />
+      </svg>
+    );
+  }
+  if (p === "tiktok") {
+    return (
+      <svg viewBox="0 0 24 24" style={common} fill="currentColor">
+        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
+      </svg>
+    );
+  }
+  if (p === "linkedin") {
+    return (
+      <svg viewBox="0 0 24 24" style={common} fill="currentColor">
+        <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.95v5.66H9.34V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zm1.78 13.02H3.56V9h3.56v11.45z" />
+      </svg>
+    );
+  }
+  if (p === "x" || p === "twitter") {
+    return (
+      <svg viewBox="0 0 24 24" style={common} fill="currentColor">
+        <path d="M18.9 2.25h3.68l-8.04 9.19L24 21.75h-7.4l-5.8-7.58-6.64 7.58H.47l8.6-9.83L0 2.25h7.59l5.24 6.93 6.07-6.93zm-1.29 17.52h2.04L6.51 4.24H4.32l13.29 15.53z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" style={common} fill="currentColor">
+      <path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.43.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.43.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41-.56-.22-.96-.48-1.38-.9-.42-.42-.68-.82-.9-1.38-.16-.43-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.43-.16 1.06-.36 2.23-.41 1.27-.06 1.65-.07 4.85-.07zM12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.87.35 4.1.63c-.78.3-1.44.7-2.1 1.36-.66.66-1.06 1.32-1.36 2.1-.28.77-.5 1.68-.56 2.95C.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.28 2.18.56 2.95.3.78.7 1.44 1.36 2.1.66.66 1.32 1.06 2.1 1.36.77.28 1.68.5 2.95.56 1.28.06 1.69.07 4.95.07s3.67-.01 4.95-.07c1.27-.06 2.18-.28 2.95-.56.78-.3 1.44-.7 2.1-1.36.66-.66 1.06-1.32 1.36-2.1.28-.77.5-1.68.56-2.95.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.28-2.18-.56-2.95-.3-.78-.7-1.44-1.36-2.1-.66-.66-1.32-1.06-2.1-1.36-.77-.28-1.68-.5-2.95-.56C15.67.01 15.26 0 12 0zm0 5.84a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32zm0 10.16a3.99 3.99 0 1 1 0-7.98 3.99 3.99 0 0 1 0 7.98zm6.41-11.55a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88z" />
+    </svg>
+  );
+};
+
+export const QuoteScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#f5f5f7";
+  const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
+  const opacity = sceneOpacity(frame, durationInFrames);
+  const quote = scene.text || "La simplicité est la sophistication suprême.";
+  const author = scene.author || "";
+
+  const lineH = spring({
+    frame: frame - 4,
+    fps,
+    config: { damping: 200, stiffness: 120 },
+    from: 0,
+    to: 1,
+  });
+
+  const contentY = interpolate(
+    spring({ frame, fps, config: { damping: 220, stiffness: 90 }, from: 0, to: 1 }),
+    [0, 1],
+    [24, 0],
+  );
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "0 100px",
+          opacity,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            gap: 32,
+            maxWidth: 900,
+            transform: `translateY(${contentY}px)`,
+          }}
+        >
+          <div
+            style={{
+              width: 4,
+              borderRadius: 4,
+              flexShrink: 0,
+              background: accent,
+              alignSelf: "stretch",
+              transform: `scaleY(${lineH})`,
+              transformOrigin: "top",
+            }}
+          />
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <div
+              style={{
+                fontSize: autoFontSize(quote, 52, 32),
+                fontWeight: 500,
+                fontFamily: FONT,
+                letterSpacing: "-0.02em",
+                lineHeight: 1.35,
+                color: textColor(bg),
+              }}
+            >
+              &ldquo;{quote}&rdquo;
+            </div>
+            {author ? (
+              <div
+                style={{
+                  fontSize: 18,
+                  fontWeight: 600,
+                  fontFamily: FONT,
+                  color: accent,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {author}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const BeforeAfterScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
+  const opacity = sceneOpacity(frame, durationInFrames);
+  const before = scene.before || "Avant";
+  const after = scene.after || "Après";
+
+  const split = spring({
+    frame: frame - 6,
+    fps,
+    config: { damping: 200, stiffness: 70 },
+    from: 0,
+    to: 1,
+  });
+  const dividerX = interpolate(split, [0, 1], [50, 50]);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{ flexDirection: "row", opacity }}>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 48,
+            background: isLight(bg) ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.04)",
+            transform: `translateX(${interpolate(split, [0, 1], [-8, 0])}%)`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 700,
+              fontFamily: FONT,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: isLight(bg) ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)",
+              marginBottom: 16,
+            }}
+          >
+            Avant
+          </div>
+          <div
+            style={{
+              fontSize: autoFontSize(before, 48, 28),
+              fontWeight: 600,
+              fontFamily: FONT,
+              letterSpacing: "-0.03em",
+              color: textColor(bg),
+              textAlign: "center",
+            }}
+          >
+            {before}
+          </div>
+        </div>
+        <div
+          style={{
+            width: 3,
+            background: accent,
+            transform: `scaleY(${split})`,
+            transformOrigin: "center",
+          }}
+        />
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 48,
+            background: isLight(bg) ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)",
+            transform: `translateX(${interpolate(split, [0, 1], [8, 0])}%)`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 700,
+              fontFamily: FONT,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: accent,
+              marginBottom: 16,
+            }}
+          >
+            Après
+          </div>
+          <div
+            style={{
+              fontSize: autoFontSize(after, 48, 28),
+              fontWeight: 700,
+              fontFamily: FONT,
+              letterSpacing: "-0.03em",
+              color: textColor(bg),
+              textAlign: "center",
+            }}
+          >
+            {after}
+          </div>
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const TimelineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
+  const opacity = sceneOpacity(frame, durationInFrames);
+  const steps = scene.steps?.length
+    ? scene.steps
+    : [
+        { number: "01", label: "Découverte" },
+        { number: "02", label: "Création" },
+        { number: "03", label: "Livraison" },
+      ];
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "flex-start",
+          padding: "0 120px",
+          opacity,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 28, width: "100%" }}>
+          {steps.map((step, i) => {
+            const enter = spring({
+              frame: frame - i * 10,
+              fps,
+              config: { damping: 200, stiffness: 90 },
+              from: 0,
+              to: 1,
+            });
+            const x = interpolate(enter, [0, 1], [-40, 0]);
+            return (
+              <div
+                key={`${step.number}-${i}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 24,
+                  opacity: enter,
+                  transform: `translateX(${x}px)`,
+                }}
+              >
+                <div
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: "50%",
+                    border: `2px solid ${accent}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 16,
+                    fontWeight: 700,
+                    fontFamily: FONT,
+                    color: accent,
+                    flexShrink: 0,
+                  }}
+                >
+                  {step.number}
+                </div>
+                <div
+                  style={{
+                    fontSize: 28,
+                    fontWeight: 600,
+                    fontFamily: FONT,
+                    letterSpacing: "-0.02em",
+                    color: textColor(bg),
+                  }}
+                >
+                  {step.label}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const SocialStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
+  const opacity = sceneOpacity(frame, durationInFrames);
+  const platform = scene.platform || "instagram";
+  const target = scene.counterTo ?? 10000;
+  const statLabel = scene.statLabel || "Abonnés";
+
+  const progress = interpolate(
+    frame,
+    [12, Math.max(13, durationInFrames * 0.7)],
+    [0, 1],
+    { extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) },
+  );
+  const current = Math.round(target * progress);
+  const displayValue =
+    current >= 1000000
+      ? `${(current / 1000000).toFixed(current % 1000000 === 0 ? 0 : 1)}M`
+      : current >= 1000
+        ? `${(current / 1000).toFixed(current % 1000 === 0 ? 0 : 1)}K`
+        : current.toLocaleString("fr-FR");
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+          gap: 16,
+          opacity,
+        }}
+      >
+        <div style={{ color: accent, marginBottom: 8 }}>
+          <PlatformIcon platform={platform} size={40} />
+        </div>
+        <div
+          style={{
+            fontSize: 120,
+            fontWeight: 700,
+            fontFamily: FONT,
+            letterSpacing: "-0.06em",
+            color: textColor(bg),
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {displayValue}
+        </div>
+        <div
+          style={{
+            fontSize: 22,
+            fontWeight: 500,
+            fontFamily: FONT,
+            color: isLight(bg) ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.45)",
+            letterSpacing: "0.02em",
+          }}
+        >
+          {statLabel}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const CinematicTitleScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = "#000000";
+  const opacity = sceneOpacity(frame, durationInFrames);
+  const title = scene.text || "TITRE";
+  const subtitle = scene.subtitle || "";
+  const bandH = 72;
+  const titleEnter = spring({
+    frame: frame - 18,
+    fps,
+    config: { damping: 200, stiffness: 80 },
+    from: 0,
+    to: 1,
+  });
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: bandH, background: "#000" }} />
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: bandH, background: "#000" }} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+          gap: 12,
+          opacity,
+          padding: `${bandH + 24}px 80px`,
+        }}
+      >
+        <div
+          style={{
+            fontSize: autoFontSize(title, 72, 40),
+            fontWeight: 700,
+            fontFamily: FONT,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "#ffffff",
+            textAlign: "center",
+            transform: `scale(${interpolate(titleEnter, [0, 1], [0.92, 1])})`,
+            opacity: titleEnter,
+          }}
+        >
+          {title}
+        </div>
+        {subtitle ? (
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 400,
+              fontFamily: FONT,
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.55)",
+              opacity: titleEnter,
+            }}
+          >
+            {subtitle}
+          </div>
+        ) : null}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const ChecklistScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#34c759");
+  const opacity = sceneOpacity(frame, durationInFrames);
+  const items = scene.items?.length
+    ? scene.items
+    : ["Script validé", "Voix off", "Export 4K"];
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "flex-start",
+          padding: "0 120px",
+          opacity,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+          {items.map((item, i) => {
+            const enter = spring({
+              frame: frame - i * 8,
+              fps,
+              config: { damping: 200, stiffness: 100 },
+              from: 0,
+              to: 1,
+            });
+            const checked = enter > 0.85;
+            return (
+              <div
+                key={`${item}-${i}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 18,
+                  opacity: enter,
+                  transform: `translateX(${interpolate(enter, [0, 1], [-20, 0])}px)`,
+                }}
+              >
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    border: `2px solid ${checked ? accent : isLight(bg) ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.25)"}`,
+                    background: checked ? accent : "transparent",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: checked ? (isLight(accent) ? "#000" : "#fff") : "transparent",
+                  }}
+                >
+                  {checked ? "✓" : ""}
+                </div>
+                <div
+                  style={{
+                    fontSize: 28,
+                    fontWeight: 500,
+                    fontFamily: FONT,
+                    letterSpacing: "-0.02em",
+                    color: textColor(bg),
+                  }}
+                >
+                  {item}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const LocationScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#f5f5f7";
+  const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
+  const opacity = sceneOpacity(frame, durationInFrames);
+  const place = scene.text || "Paris, France";
+
+  const pulse = spring({
+    frame,
+    fps,
+    config: { damping: 120, stiffness: 40 },
+    from: 0,
+    to: 1,
+  });
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "column",
+          gap: 28,
+          opacity,
+        }}
+      >
+        <div style={{ position: "relative", width: 120, height: 120 }}>
+          {[0, 1, 2].map((i) => {
+            const scale = interpolate(pulse, [0, 1], [0.6 + i * 0.2, 1.4 + i * 0.35]);
+            const ringOpacity = interpolate(pulse, [0, 0.5, 1], [0.5, 0.2, 0]);
+            return (
+              <div
+                key={i}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: "50%",
+                  border: `2px solid ${accent}`,
+                  opacity: ringOpacity * (1 - i * 0.25),
+                  transform: `scale(${scale})`,
+                }}
+              />
+            );
+          })}
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -55%)",
+              width: 0,
+              height: 0,
+              borderLeft: "14px solid transparent",
+              borderRight: "14px solid transparent",
+              borderBottom: `28px solid ${accent}`,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: "58%",
+              transform: "translate(-50%, 0)",
+              width: 12,
+              height: 12,
+              borderRadius: "50%",
+              background: accent,
+            }}
+          />
+        </div>
+        <div
+          style={{
+            fontSize: autoFontSize(place, 44, 28),
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            color: textColor(bg),
+            textAlign: "center",
+          }}
+        >
+          {place}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const ProductMockupScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#f5f5f7";
+  const opacity = sceneOpacity(frame, durationInFrames);
+  const photoUrl = scene.photoUrl || "";
+
+  const enter = spring({
+    frame,
+    fps,
+    config: { damping: 200, stiffness: 70 },
+    from: 0,
+    to: 1,
+  });
+  const phoneY = interpolate(enter, [0, 1], [60, 0]);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity,
+        }}
+      >
+        <div
+          style={{
+            width: 280,
+            height: 560,
+            borderRadius: 44,
+            padding: 12,
+            background: isLight(bg) ? "#1d1d1f" : "#2c2c2e",
+            boxShadow: isLight(bg)
+              ? "0 40px 80px rgba(0,0,0,0.18)"
+              : "0 40px 80px rgba(0,0,0,0.5)",
+            transform: `translateY(${phoneY}px) scale(${interpolate(enter, [0, 1], [0.9, 1])})`,
+            opacity: enter,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              borderRadius: 34,
+              overflow: "hidden",
+              background: "#000",
+            }}
+          >
+            {photoUrl ? (
+              <img
+                src={photoUrl}
+                alt=""
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  background: "linear-gradient(160deg, #333 0%, #111 100%)",
+                }}
+              />
+            )}
+          </div>
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const HeadlineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
+  const opacity = sceneOpacity(frame, durationInFrames);
+  const tag = scene.tag || "Nouveau";
+  const headline = scene.text || "Votre message ici";
+
+  const enter = spring({
+    frame,
+    fps,
+    config: { damping: 220, stiffness: 90 },
+    from: 0,
+    to: 1,
+  });
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "flex-start",
+          padding: "0 100px",
+          opacity,
+          gap: 20,
+          flexDirection: "column",
+        }}
+      >
+        <div
+          style={{
+            display: "inline-block",
+            padding: "8px 16px",
+            borderRadius: 100,
+            background: accent,
+            color: isLight(accent) ? "#000" : "#fff",
+            fontSize: 13,
+            fontWeight: 700,
+            fontFamily: FONT,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            opacity: enter,
+            transform: `translateY(${interpolate(enter, [0, 1], [12, 0])}px)`,
+          }}
+        >
+          {tag}
+        </div>
+        <div
+          style={{
+            fontSize: autoFontSize(headline, 88, 44),
+            fontWeight: 700,
+            fontFamily: FONT,
+            letterSpacing: "-0.04em",
+            lineHeight: 1.05,
+            color: textColor(bg),
+            opacity: enter,
+            transform: `translateY(${interpolate(enter, [0, 1], [20, 0])}px)`,
+          }}
+        >
+          {headline}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const AudioVizScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
+  const opacity = sceneOpacity(frame, durationInFrames);
+  const bars = 24;
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            height: 200,
+          }}
+        >
+          {Array.from({ length: bars }).map((_, i) => {
+            const h =
+              24 +
+              Math.abs(
+                Math.sin((frame / 8) * (1 + i * 0.15) + i * 0.5) *
+                  Math.cos((frame / 14) + i * 0.3),
+              ) *
+                140;
+            return (
+              <div
+                key={i}
+                style={{
+                  width: 8,
+                  height: h,
+                  borderRadius: 4,
+                  background: accent,
+                  opacity: 0.35 + (i / bars) * 0.65,
+                }}
+              />
+            );
+          })}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
