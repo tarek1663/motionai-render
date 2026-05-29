@@ -64,6 +64,8 @@ export type SceneData = {
     | "audioviz";
   text?: string;
   notifText?: string;
+  notifTitle?: string;
+  notifIcon?: string;
   buttonText?: string;
   author?: string;
   steps?: Array<{ number: string; label: string }> | string[];
@@ -3056,6 +3058,9 @@ export const NotificationScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
     { extrapolateRight: "clamp", easing: E_IN },
   );
   const fontSize = autoFontSize(scene.text || "", 80, 40);
+  const notifTitle = scene.notifTitle || "Motionr";
+  const notifText = scene.notifText || "Notification";
+  const notifIcon = scene.notifIcon || "🎬";
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
@@ -3117,7 +3122,7 @@ export const NotificationScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
               fontSize: 20,
             }}
           >
-            🎬
+            {notifIcon}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
@@ -3129,7 +3134,7 @@ export const NotificationScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
                 letterSpacing: "-0.02em",
               }}
             >
-              Motionr
+              {notifTitle}
             </div>
             <div
               style={{
@@ -3143,7 +3148,7 @@ export const NotificationScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
                 whiteSpace: "nowrap",
               }}
             >
-              {scene.notifText || "Ta vidéo est prête ✓"}
+              {notifText}
             </div>
           </div>
           <div
