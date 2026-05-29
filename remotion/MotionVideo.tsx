@@ -24,9 +24,7 @@ import {
   TrackingScene,
   RotateInScene,
   GeoBgTestScene,
-  KenBurnsScene,
   PhotoRevealScene,
-  PhotoOverlayScene,
   PhotoCollageScene,
 } from "./templates/scenes";
 
@@ -79,12 +77,8 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <RotateInScene scene={sceneWithIndex} />;
     case "geobgtest":
       return <GeoBgTestScene scene={sceneWithIndex} />;
-    case "kenburns":
-      return <KenBurnsScene scene={sceneWithIndex} />;
     case "photoreveal":
       return <PhotoRevealScene scene={sceneWithIndex} />;
-    case "photooverlay":
-      return <PhotoOverlayScene scene={sceneWithIndex} />;
     case "photocollage":
       return <PhotoCollageScene scene={sceneWithIndex} />;
     default:

@@ -13,22 +13,10 @@ const TEST_PHOTO_3 =
 const defaultProps: MotionVideoProps = {
   scenes: [
     {
-      type: "kenburns",
-      text: "Crée sans limite.",
-      bg: "#000000",
-      photoUrl: TEST_PHOTO,
-    },
-    {
       type: "photoreveal",
       text: "Motionr.",
       bg: "#ffffff",
       photoUrl: TEST_PHOTO_2,
-    },
-    {
-      type: "photooverlay",
-      text: "L'IA vidéo.",
-      bg: "#ffffff",
-      photoUrl: TEST_PHOTO,
     },
     {
       type: "photocollage",
@@ -39,11 +27,11 @@ const defaultProps: MotionVideoProps = {
       photoUrl3: TEST_PHOTO_3,
     },
   ] as MotionVideoProps["scenes"],
-  sceneDurations: Array.from({ length: 4 }, (_, i) => ({
+  sceneDurations: Array.from({ length: 2 }, (_, i) => ({
     startFrame: i * 150,
     durationFrames: 150,
   })),
-  totalFrames: 600,
+  totalFrames: 300,
   audioSrc: null,
   musicSrc: null,
 };
@@ -68,7 +56,7 @@ const RemotionRoot = () => (
       });
 
       const total =
-        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 600;
+        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 300;
 
       const fmt = (p as MotionVideoProps & { format?: string }).format || "9:16";
       const w = fmt === "16:9" ? 1920 : 1080;
