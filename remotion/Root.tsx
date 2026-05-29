@@ -6,41 +6,40 @@ const fps = 60;
 const defaultProps: MotionVideoProps = {
   scenes: [
     {
-      type: "quote",
-      text: "L'IA change tout.",
-      author: "Motionr",
-      bg: "#ffffff",
-      accentColor: "#000000",
+      type: "splitcolor",
+      text: "Jaune ou noir.",
+      bg: "#FDD835",
+      bg2: "#000000",
+      geo: "dots",
     },
     {
-      type: "timeline",
-      bg: "#ffffff",
-      accentColor: "#000000",
-      steps: [
-        { number: "01", label: "Décris ton idée" },
-        { number: "02", label: "L'IA génère" },
-        { number: "03", label: "Tu publies" },
-      ],
-    },
-    {
-      type: "socialstats",
+      type: "colorletters",
+      text: "Motionr.",
       bg: "#000000",
       accentColor: "#10B981",
-      platform: "Instagram",
-      statLabel: "abonnés",
-      counterTo: 250000,
+      geo: "grid",
     },
     {
-      type: "checklist",
+      type: "gradient",
+      text: "Premium.",
+      bg: "#000000",
+      bg2: "#1a1a2e",
+      accentColor: "#7C3AED",
+      geo: "cross",
+    },
+    {
+      type: "hierarchytext",
+      text: "Simple puissant rapide.",
       bg: "#ffffff",
       accentColor: "#000000",
-      items: ["Script auto", "Voix naturelle", "1080p", "Prêt à publier"],
+      geo: "lines",
     },
     {
-      type: "audioviz",
-      text: "Voix naturelle.",
+      type: "spotlight",
+      text: "L'IA vidéo.",
       bg: "#000000",
       accentColor: "#ffffff",
+      geo: "dots",
     },
   ] as MotionVideoProps["scenes"],
   sceneDurations: Array.from({ length: 5 }, (_, i) => ({
@@ -80,14 +79,11 @@ const RemotionRoot = () => (
 
       return {
         durationInFrames: total,
-        fps: 60,
         width: w,
         height: h,
         props: {
           ...p,
-          sceneDurations: sceneDurationsAdjusted.length
-            ? sceneDurationsAdjusted
-            : p.sceneDurations,
+          sceneDurations: sceneDurationsAdjusted,
         },
       };
     }}

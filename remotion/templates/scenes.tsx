@@ -61,8 +61,15 @@ export type SceneData = {
     | "timeline"
     | "socialstats"
     | "checklist"
-    | "audioviz";
+    | "audioviz"
+    | "splitcolor"
+    | "colorletters"
+    | "gradient"
+    | "hierarchytext"
+    | "spotlight";
   text?: string;
+  textAccent?: boolean;
+  bg2?: string;
   notifText?: string;
   notifTitle?: string;
   notifIcon?: string;
@@ -120,6 +127,15 @@ const isLight = (hex: string): boolean => {
 };
 
 const textColor = (bg: string): string => (isLight(bg) ? "#000000" : "#ffffff");
+
+const safeAccent = (accentColor: string | undefined, bg: string): string =>
+  accentColor || (isLight(bg) ? "#000000" : "#ffffff");
+
+const mainTextColor = (scene: SceneData, bg: string): string =>
+  scene.textAccent ? safeAccent(scene.accentColor, bg) : textColor(bg);
+
+const mainTextShadow = (bg: string): string =>
+  isLight(bg) ? "0 2px 12px rgba(0,0,0,0.08)" : "0 2px 20px rgba(0,0,0,0.4)";
 
 const getUIProgressStepLabels = (scene: SceneData): string[] => {
   const raw = scene.steps;
@@ -343,6 +359,11 @@ const GeoBackground: React.FC<{ bg: string; geo?: string }> = ({ bg, geo }) => {
   const patternColor =
     luminance > 0.5 ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.10)";
 
+  const rotation = interpolate(frame, [0, durationInFrames], [0, 2], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
   const base: React.CSSProperties = {
     position: "absolute",
     inset: 0,
@@ -401,6 +422,7 @@ const GeoBackground: React.FC<{ bg: string; geo?: string }> = ({ bg, geo }) => {
       ...base,
       backgroundImage: `radial-gradient(circle, ${patternColor} 1.5px, transparent 1.5px)`,
       backgroundSize: "40px 40px",
+      transform: `scale(${scale}) rotate(${rotation}deg)`,
     },
     grid: {
       ...base,
@@ -409,6 +431,7 @@ const GeoBackground: React.FC<{ bg: string; geo?: string }> = ({ bg, geo }) => {
         linear-gradient(90deg, ${patternColor} 1px, transparent 1px)
       `,
       backgroundSize: "56px 56px",
+      transform: `scale(${scale}) rotate(${rotation}deg)`,
     },
     diagonal: {
       ...base,
@@ -437,6 +460,7 @@ const GeoBackground: React.FC<{ bg: string; geo?: string }> = ({ bg, geo }) => {
       `,
       backgroundSize: "80px 80px, 80px 80px, 20px 20px, 20px 20px",
       backgroundPosition: "-1px -1px, -1px -1px, -1px -1px, -1px -1px",
+      transform: `scale(${scale}) rotate(${rotation}deg)`,
     },
     lines: {
       ...base,
@@ -508,7 +532,8 @@ export const SingleWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             opacity,
             transform: `translateY(${y}px) scale(${scale})`,
             filter: `blur(${blur}px)`,
@@ -585,7 +610,8 @@ export const MaskRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
                 fontFamily: FONT,
                 letterSpacing: "-0.03em",
                 lineHeight: 1,
-                color: textColor(bg),
+                color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
                 whiteSpace: "nowrap",
               }}
             >
@@ -648,7 +674,8 @@ export const SlideWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             opacity,
             transform: `translateX(${x}px)`,
             whiteSpace: "nowrap",
@@ -700,7 +727,8 @@ export const ZoomWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             opacity,
             transform: `scale(${scale})`,
             filter: `blur(${blur}px)`,
@@ -763,7 +791,8 @@ export const FadeUpLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
                   fontFamily: FONT,
                   letterSpacing: "-0.03em",
                   lineHeight: 1,
-                  color: textColor(bg),
+                  color: mainTextColor(scene, bg),
+                  textShadow: mainTextShadow(bg),
                   display: "inline-block",
                   opacity: interpolate(enter, [0, 1], [0, 1]),
                   transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px)`,
@@ -816,7 +845,8 @@ export const BlurInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             opacity,
             filter: `blur(${blur}px)`,
             whiteSpace: "nowrap",
@@ -869,7 +899,8 @@ export const ScaleInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             opacity,
             transform: `scale(${scale})`,
             filter: `blur(${blur}px)`,
@@ -922,7 +953,8 @@ export const SlideUpScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             opacity,
             transform: `translateY(${y}px)`,
             whiteSpace: "nowrap",
@@ -981,7 +1013,8 @@ export const ClipTopScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
               fontFamily: FONT,
               letterSpacing: "-0.03em",
               lineHeight: 1,
-              color: textColor(bg),
+              color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
               whiteSpace: "nowrap",
             }}
           >
@@ -1040,7 +1073,8 @@ export const StaggerWordsScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
                   fontFamily: FONT,
                   letterSpacing: "-0.03em",
                   lineHeight: 1,
-                  color: textColor(bg),
+                  color: mainTextColor(scene, bg),
+                  textShadow: mainTextShadow(bg),
                   display: "inline-block",
                   opacity: interpolate(enter, [0, 1], [0, 1]),
                   transform: `translateY(${interpolate(enter, [0, 1], [50, 0])}px) rotate(${interpolate(enter, [0, 1], [4, 0])}deg)`,
@@ -1097,7 +1131,8 @@ export const FadePureScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             whiteSpace: "nowrap",
           }}
         >
@@ -1144,7 +1179,8 @@ export const TrackingScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: `${tracking}em`,
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             opacity,
             whiteSpace: "nowrap",
           }}
@@ -1196,7 +1232,8 @@ export const RotateInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             opacity,
             transform: `translateY(${y}px) rotate(${rotate}deg)`,
             whiteSpace: "nowrap",
@@ -1253,7 +1290,8 @@ export const GeoBgTestScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             opacity,
             whiteSpace: "nowrap",
           }}
@@ -1323,7 +1361,8 @@ export const PhotoRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
               fontFamily: FONT,
               letterSpacing: "-0.03em",
               lineHeight: 1,
-              color: textColor(bg),
+              color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
               opacity: textFadeIn,
               transform: `translateY(${textY}px)`,
               whiteSpace: "nowrap",
@@ -1477,7 +1516,8 @@ export const PhotoCollageScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
               fontFamily: FONT,
               letterSpacing: "-0.03em",
               lineHeight: 1,
-              color: textColor(bg),
+              color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
               opacity: interpolate(textEnter, [0, 1], [0, 1]),
               transform: `translateY(${interpolate(textEnter, [0, 1], [20, 0])}px)`,
               whiteSpace: "nowrap",
@@ -1550,7 +1590,8 @@ export const CounterScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.07em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             whiteSpace: "nowrap",
             fontVariantNumeric: "tabular-nums",
           }}
@@ -1618,7 +1659,8 @@ export const ProgressBarScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
               fontWeight: 600,
               fontFamily: FONT,
               letterSpacing: "-0.02em",
-              color: textColor(bg),
+              color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             }}
           >
             {scene.text}
@@ -1745,7 +1787,8 @@ export const MultiStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
                   fontFamily: FONT,
                   letterSpacing: "-0.05em",
                   lineHeight: 1,
-                  color: textColor(bg),
+                  color: mainTextColor(scene, bg),
+                  textShadow: mainTextShadow(bg),
                   fontVariantNumeric: "tabular-nums",
                   whiteSpace: "nowrap",
                 }}
@@ -1884,7 +1927,8 @@ export const UnderlineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
               fontFamily: FONT,
               letterSpacing: "-0.03em",
               lineHeight: 1,
-              color: textColor(bg),
+              color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
               transform: `translateY(${textY}px)`,
               whiteSpace: "nowrap",
               paddingBottom: 12,
@@ -2048,7 +2092,8 @@ export const LineDrawScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             opacity: textFade,
             transform: `translateY(${textY}px)`,
             whiteSpace: "nowrap",
@@ -2144,7 +2189,8 @@ export const ShapeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             opacity: Math.min(interpolate(textEnter, [0, 1], [0, 1]), fadeOut),
             transform: `scale(${interpolate(textEnter, [0, 1], [0.92, 1])})`,
             filter: `blur(${interpolate(textEnter, [0, 0.5, 1], [6, 1, 0])}px)`,
@@ -2234,7 +2280,8 @@ export const ExpandingShapeScene: React.FC<{ scene: SceneData }> = ({ scene }) =
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             opacity: Math.min(interpolate(textEnter, [0, 1], [0, 1]), fadeOut),
             transform: `scale(${interpolate(textEnter, [0, 1], [0.92, 1])})`,
             filter: `blur(${interpolate(textEnter, [0, 0.5, 1], [6, 1, 0])}px)`,
@@ -2325,7 +2372,8 @@ export const WipeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             opacity: Math.min(textFade, textFadeOut),
             whiteSpace: "nowrap",
           }}
@@ -2397,7 +2445,8 @@ export const FlashScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             opacity: Math.min(textFade, textFadeOut),
             whiteSpace: "nowrap",
           }}
@@ -2469,7 +2518,8 @@ export const ColorFadeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             opacity: Math.min(textFade, textFadeOut),
             whiteSpace: "nowrap",
           }}
@@ -2550,7 +2600,8 @@ export const SplitVerticalScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             whiteSpace: "nowrap",
             opacity: Math.min(textFade, textFadeOut),
           }}
@@ -2611,7 +2662,8 @@ export const ZoomTransitionScene: React.FC<{ scene: SceneData }> = ({ scene }) =
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             whiteSpace: "nowrap",
           }}
         >
@@ -2673,7 +2725,8 @@ export const IrisScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             whiteSpace: "nowrap",
             opacity: Math.min(textFade, textFadeOut),
           }}
@@ -2750,7 +2803,8 @@ export const CurtainScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             whiteSpace: "nowrap",
             opacity: Math.min(textFade, textFadeOut),
           }}
@@ -2814,7 +2868,8 @@ export const DiagonalWipeScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             whiteSpace: "nowrap",
             opacity: Math.min(textFade, textFadeOut),
           }}
@@ -2860,7 +2915,8 @@ export const GlitchSwitchScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             whiteSpace: "nowrap",
             opacity,
             transform: `translate(${glitchX}px, ${glitchY}px)`,
@@ -2962,7 +3018,8 @@ export const PixelDissolveScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             whiteSpace: "nowrap",
             opacity: Math.min(textFade, textFadeOut),
           }}
@@ -3023,7 +3080,8 @@ export const LightSweepScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             whiteSpace: "nowrap",
             opacity: Math.min(textFade, textFadeOut),
           }}
@@ -3095,7 +3153,8 @@ export const NotificationScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
             fontFamily: FONT,
             letterSpacing: "-0.03em",
             lineHeight: 1,
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             whiteSpace: "nowrap",
             opacity: Math.min(textFade, textFadeOut),
           }}
@@ -3242,7 +3301,8 @@ export const PulseButtonScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
               fontFamily: FONT,
               letterSpacing: "-0.03em",
               lineHeight: 1,
-              color: textColor(bg),
+              color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
               whiteSpace: "nowrap",
               opacity: Math.min(textFade, fadeOut),
               transform: `translateY(${interpolate(enter, [0, 1], [20, 0])}px)`,
@@ -3575,7 +3635,8 @@ export const QuoteScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
                 fontFamily: FONT,
                 letterSpacing: "-0.02em",
                 lineHeight: 1.35,
-                color: textColor(bg),
+                color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
               }}
             >
               &ldquo;{quote}&rdquo;
@@ -3681,7 +3742,8 @@ export const TimelineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
                     fontWeight: 600,
                     fontFamily: FONT,
                     letterSpacing: "-0.02em",
-                    color: textColor(bg),
+                    color: mainTextColor(scene, bg),
+                  textShadow: mainTextShadow(bg),
                   }}
                 >
                   {step.label}
@@ -3740,7 +3802,8 @@ export const SocialStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             fontWeight: 700,
             fontFamily: FONT,
             letterSpacing: "-0.06em",
-            color: textColor(bg),
+            color: mainTextColor(scene, bg),
+            textShadow: mainTextShadow(bg),
             fontVariantNumeric: "tabular-nums",
           }}
         >
@@ -3828,7 +3891,8 @@ export const ChecklistScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
                     fontWeight: 500,
                     fontFamily: FONT,
                     letterSpacing: "-0.02em",
-                    color: textColor(bg),
+                    color: mainTextColor(scene, bg),
+                  textShadow: mainTextShadow(bg),
                   }}
                 >
                   {item}
@@ -3890,6 +3954,388 @@ export const AudioVizScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
               />
             );
           })}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── SPLIT COLOR ──────────────────────────────────────
+export const SplitColorScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg1 = scene.bg || "#000000";
+  const bg2 = scene.bg2 || scene.accentColor || "#ffffff";
+
+  const enter = spring({
+    frame,
+    fps,
+    config: { damping: 280, stiffness: 80 },
+    from: 0,
+    to: 1,
+  });
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: E_IN,
+  });
+
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+  const words = (scene.text || "").split(" ");
+  const half = Math.ceil(words.length / 2);
+  const left = words.slice(0, half).join(" ");
+  const right = words.slice(half).join(" ");
+
+  return (
+    <AbsoluteFill style={{ overflow: "hidden" }}>
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "50%",
+          height: "100%",
+          background: bg1,
+        }}
+      >
+        <GeoBackground bg={bg1} geo={scene.geo} />
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          right: 0,
+          width: "50%",
+          height: "100%",
+          background: bg2,
+        }}
+      >
+        <GeoBackground bg={bg2} geo={scene.geo} />
+      </div>
+
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity: fadeOut,
+        }}
+      >
+        <div style={{ display: "flex", whiteSpace: "nowrap", gap: "0.2em" }}>
+          <span
+            style={{
+              fontSize,
+              fontWeight: 700,
+              fontFamily: FONT,
+              letterSpacing: "-0.03em",
+              color: mainTextColor(scene, bg1),
+              textShadow: mainTextShadow(bg1),
+              opacity: interpolate(enter, [0, 1], [0, 1]),
+              transform: `translateX(${interpolate(enter, [0, 1], [-40, 0])}px) scale(${interpolate(enter, [0, 1], [0.92, 1])})`,
+              filter: `blur(${interpolate(enter, [0, 0.5, 1], [6, 1, 0])}px)`,
+              display: "inline-block",
+            }}
+          >
+            {left}
+          </span>
+          {right && (
+            <span
+              style={{
+                fontSize,
+                fontWeight: 700,
+                fontFamily: FONT,
+                letterSpacing: "-0.03em",
+                color: mainTextColor(scene, bg2),
+                textShadow: mainTextShadow(bg2),
+                opacity: interpolate(enter, [0, 1], [0, 1]),
+                transform: `translateX(${interpolate(enter, [0, 1], [40, 0])}px) scale(${interpolate(enter, [0, 1], [0.92, 1])})`,
+                filter: `blur(${interpolate(enter, [0, 0.5, 1], [6, 1, 0])}px)`,
+                display: "inline-block",
+              }}
+            >
+              {right}
+            </span>
+          )}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── COLOR LETTERS ────────────────────────────────────
+export const ColorLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const accent = safeAccent(scene.accentColor, bg);
+  const letters = (scene.text || "").split("");
+  const fontSize = autoFontSize(scene.text || "", 160, 72);
+
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: E_IN,
+  });
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity: fadeOut,
+        }}
+      >
+        <div style={{ display: "flex", whiteSpace: "nowrap" }}>
+          {letters.map((letter, i) => {
+            const delay = i * 5;
+            const enter = spring({
+              frame: Math.max(0, frame - delay),
+              fps,
+              config: { damping: 280, stiffness: 100, mass: 0.7 },
+              from: 0,
+              to: 1,
+            });
+
+            const isColorLetter = i % 2 === 0;
+            const color = isColorLetter ? accent : textColor(bg);
+
+            return (
+              <span
+                key={i}
+                style={{
+                  fontSize,
+                  fontWeight: 700,
+                  fontFamily: FONT,
+                  letterSpacing: "-0.03em",
+                  lineHeight: 1,
+                  color,
+                  display: "inline-block",
+                  opacity: interpolate(enter, [0, 1], [0, 1]),
+                  transform: `translateY(${interpolate(enter, [0, 1], [30, 0])}px) scale(${interpolate(enter, [0, 1], [0.8, 1])})`,
+                  filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
+                  textShadow: mainTextShadow(bg),
+                }}
+              >
+                {letter === " " ? "\u00A0" : letter}
+              </span>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── GRADIENT ─────────────────────────────────────────
+export const GradientScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg1 = scene.bg || "#000000";
+  const bg2 = scene.bg2 || scene.accentColor || "#1a1a1a";
+
+  const angle = interpolate(frame, [0, durationInFrames], [135, 165], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  const enter = spring({
+    frame,
+    fps,
+    config: { damping: 280, stiffness: 80 },
+    from: 0,
+    to: 1,
+  });
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: E_IN,
+  });
+
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  const r1 = parseInt(bg1.replace("#", "").slice(0, 2), 16) || 0;
+  const g1 = parseInt(bg1.replace("#", "").slice(2, 4), 16) || 0;
+  const b1 = parseInt(bg1.replace("#", "").slice(4, 6), 16) || 0;
+  const lum = (0.299 * r1 + 0.587 * g1 + 0.114 * b1) / 255;
+  const tColor = lum > 0.5 ? "#000000" : "#ffffff";
+
+  return (
+    <AbsoluteFill
+      style={{
+        background: `linear-gradient(${angle}deg, ${bg1}, ${bg2})`,
+        overflow: "hidden",
+      }}
+    >
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 700,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: tColor,
+            whiteSpace: "nowrap",
+            opacity: Math.min(interpolate(enter, [0, 1], [0, 1]), fadeOut),
+            transform: `scale(${interpolate(enter, [0, 1], [0.92, 1])}) translateY(${interpolate(enter, [0, 1], [24, 0])}px)`,
+            filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
+            textShadow: "0 2px 20px rgba(0,0,0,0.15)",
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── HIERARCHY TEXT ───────────────────────────────────
+export const HierarchyTextScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const accent = safeAccent(scene.accentColor, bg);
+  const words = (scene.text || "").split(" ");
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: E_IN,
+  });
+
+  const sizes = words.map((_, i) => {
+    if (i === 0) return 160;
+    if (i === 1) return 100;
+    return 72;
+  });
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "flex-end",
+          flexDirection: "row",
+          flexWrap: "wrap",
+          padding: "0 80px",
+          gap: "0.15em",
+          opacity: fadeOut,
+        }}
+      >
+        {words.map((word, i) => {
+          const enter = spring({
+            frame: Math.max(0, frame - i * 10),
+            fps,
+            config: { damping: 280, stiffness: 80, mass: 0.8 },
+            from: 0,
+            to: 1,
+          });
+          return (
+            <span
+              key={i}
+              style={{
+                fontSize: sizes[i] || 72,
+                fontWeight: i === 0 ? 900 : 600,
+                fontFamily: FONT,
+                letterSpacing: "-0.04em",
+                lineHeight: 1,
+                color: i === 0 ? accent : textColor(bg),
+                display: "inline-block",
+                opacity: interpolate(enter, [0, 1], [0, 1]),
+                transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px)`,
+                filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
+                textShadow: mainTextShadow(bg),
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── SPOTLIGHT ────────────────────────────────────────
+export const SpotlightScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+
+  const enter = spring({
+    frame,
+    fps,
+    config: { damping: 280, stiffness: 80 },
+    from: 0,
+    to: 1,
+  });
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: E_IN,
+  });
+
+  const spotSize = interpolate(enter, [0, 1], [0, 120]);
+  const spotOpacity = interpolate(enter, [0, 0.3], [0, 1]);
+
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: `radial-gradient(ellipse ${spotSize}% ${spotSize * 0.6}% at 50% 45%,
+          ${isLight(bg) ? "rgba(0,0,0,0.0)" : "rgba(255,255,255,0.08)"} 0%,
+          transparent 100%)`,
+          opacity: spotOpacity,
+        }}
+      />
+
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: `${spotSize * 0.8}%`,
+          height: "55%",
+          background: `linear-gradient(to bottom,
+          ${isLight(bg) ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.04)"} 0%,
+          transparent 100%)`,
+          opacity: spotOpacity,
+        }}
+      />
+
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity: fadeOut,
+        }}
+      >
+        <div
+          style={{
+            fontSize,
+            fontWeight: 700,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: mainTextColor(scene, bg),
+            whiteSpace: "nowrap",
+            opacity: interpolate(enter, [0, 1], [0, 1]),
+            transform: `scale(${interpolate(enter, [0, 1], [0.92, 1])}) translateY(${interpolate(enter, [0, 1], [24, 0])}px)`,
+            filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
+            textShadow: isLight(bg)
+              ? "0 2px 12px rgba(0,0,0,0.1)"
+              : `0 0 40px ${safeAccent(scene.accentColor, bg)}44, 0 2px 20px rgba(0,0,0,0.5)`,
+          }}
+        >
+          {scene.text}
         </div>
       </AbsoluteFill>
     </AbsoluteFill>

@@ -54,6 +54,11 @@ import {
   SocialStatsScene,
   ChecklistScene,
   AudioVizScene,
+  SplitColorScene,
+  ColorLettersScene,
+  GradientScene,
+  HierarchyTextScene,
+  SpotlightScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -165,6 +170,16 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <ChecklistScene scene={sceneWithIndex} />;
     case "audioviz":
       return <AudioVizScene scene={sceneWithIndex} />;
+    case "splitcolor":
+      return <SplitColorScene scene={sceneWithIndex} />;
+    case "colorletters":
+      return <ColorLettersScene scene={sceneWithIndex} />;
+    case "gradient":
+      return <GradientScene scene={sceneWithIndex} />;
+    case "hierarchytext":
+      return <HierarchyTextScene scene={sceneWithIndex} />;
+    case "spotlight":
+      return <SpotlightScene scene={sceneWithIndex} />;
     default:
       return <SingleWordScene scene={sceneWithIndex} />;
   }
