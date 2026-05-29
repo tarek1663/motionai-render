@@ -1352,7 +1352,7 @@ export const CounterScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const suffix = scene.suffix || "";
   const prefix = scene.prefix || "";
 
-  const progress = interpolate(frame, [0, durationInFrames * 0.75], [0, 1], {
+  const progress = interpolate(frame, [0, Math.max(1, durationInFrames * 0.75)], [0, 1], {
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.expo),
   });
@@ -1440,7 +1440,7 @@ export const ProgressBarScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const target = scene.counterTo ?? 75;
   const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
 
-  const progress = interpolate(frame, [8, durationInFrames * 0.75], [0, target], {
+  const progress = interpolate(frame, [8, Math.max(9, durationInFrames * 0.75)], [0, target], {
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
@@ -1461,7 +1461,7 @@ export const ProgressBarScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   );
   const opacity = Math.min(fadeIn, fadeOut);
 
-  const barWidth = interpolate(frame, [8, durationInFrames * 0.75], [0, target], {
+  const barWidth = interpolate(frame, [8, Math.max(9, durationInFrames * 0.75)], [0, target], {
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
@@ -1579,7 +1579,7 @@ export const MultiStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 
           const countProgress = interpolate(
             Math.max(0, frame - delay),
-            [0, 50],
+            [0, Math.max(1, 50)],
             [0, 1],
             { extrapolateRight: "clamp", easing: Easing.out(Easing.expo) },
           );
