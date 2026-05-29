@@ -29,6 +29,9 @@ import {
   CounterScene,
   ProgressBarScene,
   MultiStatsScene,
+  AccentWordScene,
+  UnderlineScene,
+  ColorShiftScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -90,6 +93,12 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <ProgressBarScene scene={sceneWithIndex} />;
     case "multistats":
       return <MultiStatsScene scene={sceneWithIndex} />;
+    case "accentword":
+      return <AccentWordScene scene={sceneWithIndex} />;
+    case "underline":
+      return <UnderlineScene scene={sceneWithIndex} />;
+    case "colorshift":
+      return <ColorShiftScene scene={sceneWithIndex} />;
     default:
       return <SingleWordScene scene={sceneWithIndex} />;
   }

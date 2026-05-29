@@ -36,10 +36,16 @@ export type SceneData = {
     | "photocollage"
     | "counter"
     | "progressbar"
-    | "multistats";
+    | "multistats"
+    | "accentword"
+    | "underline"
+    | "colorshift";
   text?: string;
   bg?: string;
   accentColor?: string;
+  accentIndex?: number;
+  fromBg?: string;
+  toBg?: string;
   counterTo?: number;
   suffix?: string;
   prefix?: string;
@@ -1589,6 +1595,238 @@ export const MultiStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             </div>
           );
         })}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ═══════════════════════════════════════════════════════
+// SCÈNES COULEURS & ACCENT
+// ═══════════════════════════════════════════════════════
+
+// ─── MOT EN COULEUR ACCENT ────────────────────────────
+export const AccentWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
+  const words = (scene.text || "").split(" ");
+  const accentIndex = scene.accentIndex ?? 0;
+
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity: fadeOut,
+        }}
+      >
+        <div style={{ display: "flex", gap: "0.25em", whiteSpace: "nowrap" }}>
+          {words.map((word, i) => {
+            const delay = i * 8;
+            const enter = spring({
+              frame: Math.max(0, frame - delay),
+              fps,
+              config: { damping: 280, stiffness: 80, mass: 0.8 },
+              from: 0,
+              to: 1,
+            });
+            const isAccent = i === accentIndex;
+            return (
+              <span
+                key={i}
+                style={{
+                  fontSize,
+                  fontWeight: 600,
+                  fontFamily: FONT,
+                  letterSpacing: "-0.03em",
+                  lineHeight: 1,
+                  color: isAccent ? accent : textColor(bg),
+                  display: "inline-block",
+                  opacity: interpolate(enter, [0, 1], [0, 1]),
+                  transform: `translateY(${interpolate(enter, [0, 1], [30, 0])}px) scale(${interpolate(enter, [0, 1], [0.88, 1])})`,
+                  filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
+                }}
+              >
+                {word}
+              </span>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── UNDERLINE ANIMÉ ──────────────────────────────────
+export const UnderlineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
+
+  const textFade = interpolate(frame, [0, 24], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const textY = interpolate(frame, [0, 28], [30, 0], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const underlineW = interpolate(Math.max(0, frame - 20), [0, 28], [0, 100], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity: Math.min(textFade, fadeOut),
+        }}
+      >
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <div
+            style={{
+              fontSize,
+              fontWeight: 600,
+              fontFamily: FONT,
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+              color: textColor(bg),
+              transform: `translateY(${textY}px)`,
+              whiteSpace: "nowrap",
+              paddingBottom: 12,
+            }}
+          >
+            {scene.text}
+          </div>
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              width: `${underlineW}%`,
+              height: Math.max(3, Math.round(fontSize * 0.025)),
+              background: accent,
+              borderRadius: 100,
+              boxShadow: `0 0 12px ${accent}44`,
+            }}
+          />
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── COLOR SHIFT ──────────────────────────────────────
+export const ColorShiftScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+
+  const fromBg = scene.fromBg || "#ffffff";
+  const toBg = scene.toBg || "#000000";
+
+  const progress = interpolate(
+    frame,
+    [0, Math.max(1, durationInFrames * 0.7)],
+    [0, 1],
+    {
+      extrapolateRight: "clamp",
+      easing: E_OUT,
+    },
+  );
+
+  const r1 = parseInt(fromBg.slice(1, 3), 16);
+  const g1 = parseInt(fromBg.slice(3, 5), 16);
+  const b1 = parseInt(fromBg.slice(5, 7), 16);
+  const r2 = parseInt(toBg.slice(1, 3), 16);
+  const g2 = parseInt(toBg.slice(3, 5), 16);
+  const b2 = parseInt(toBg.slice(5, 7), 16);
+
+  const r = Math.round(r1 + (r2 - r1) * progress);
+  const g = Math.round(g1 + (g2 - g1) * progress);
+  const b = Math.round(b1 + (b2 - b1) * progress);
+  const bg = `rgb(${r},${g},${b})`;
+
+  const textFade = interpolate(frame, [0, 24], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+  const textProgress = progress > 0.5 ? 1 : 0;
+  const textColor2 =
+    textProgress === 0
+      ? r1 + g1 + b1 > 380
+        ? "#000000"
+        : "#ffffff"
+      : r2 + g2 + b2 > 380
+        ? "#000000"
+        : "#ffffff";
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity: Math.min(textFade, fadeOut),
+        }}
+      >
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor2,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {scene.text}
+        </div>
       </AbsoluteFill>
     </AbsoluteFill>
   );
