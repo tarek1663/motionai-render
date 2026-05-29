@@ -71,8 +71,22 @@ export type SceneData = {
     | "eraseletters"
     | "splitlines"
     | "bgnumber"
-    | "twolines";
+    | "twolines"
+    | "iphone"
+    | "macbook"
+    | "doubledevice"
+    | "browser"
+    | "dashboard"
+    | "chat"
+    | "network"
+    | "dataflow"
+    | "worldmap"
+    | "horizontaltimeline";
   text?: string;
+  url?: string;
+  dashTitle?: string;
+  messages?: Array<{ text: string; isUser: boolean }>;
+  events?: Array<{ year: string; label: string }>;
   textAccent?: boolean;
   bg2?: string;
   color2?: string;
@@ -4700,3 +4714,1032 @@ export const TwoLinesScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   );
 };
 
+
+// ═══════════════════════════════════════════════════════
+// MOCKUPS & REPRÉSENTATIONS ANIMÉES
+// ═══════════════════════════════════════════════════════
+
+// ─── 1. IPHONE FLOTTANT ───────────────────────────────
+export const IPhoneScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const accent = safeAccent(scene.accentColor, bg);
+  const photoUrl = scene.photoUrl || "";
+
+  const enter = spring({ frame, fps, config: { damping: 260, stiffness: 70, mass: 1 }, from: 0, to: 1 });
+  const floatY = Math.sin(frame * 0.04) * 8;
+  const floatR = Math.sin(frame * 0.03) * 2;
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
+  });
+
+  const textEnter = spring({ frame: Math.max(0, frame - 24), fps, config: { damping: 280, stiffness: 80 }, from: 0, to: 1 });
+  const fontSize = autoFontSize(scene.text || "", 72, 36);
+
+  const screenOn = interpolate(Math.max(0, frame - 20), [0, 20], [0, 1], {
+    extrapolateRight: "clamp", easing: E_OUT,
+  });
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+      <AbsoluteFill style={{
+        justifyContent: "center", alignItems: "center",
+        flexDirection: "column", gap: 28, opacity: fadeOut,
+      }}>
+        {/* iPhone */}
+        <div style={{
+          width: 160, aspectRatio: "9/19.5",
+          background: isLight(bg) ? "#1a1a1a" : "#f0f0f0",
+          borderRadius: 36,
+          border: `6px solid ${isLight(bg) ? "#000" : "#ddd"}`,
+          overflow: "hidden",
+          transform: `translateY(${interpolate(enter, [0, 1], [80, 0]) + floatY}px) scale(${interpolate(enter, [0, 1], [0.7, 1])}) rotate(${floatR}deg)`,
+          opacity: interpolate(enter, [0, 0.3], [0, 1]),
+          boxShadow: isLight(bg)
+            ? "0 40px 80px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.1)"
+            : "0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05)",
+          position: "relative",
+        }}>
+          {/* Notch */}
+          <div style={{
+            position: "absolute", top: 0, left: "50%",
+            transform: "translateX(-50%)",
+            width: 56, height: 10,
+            background: isLight(bg) ? "#000" : "#ddd",
+            borderRadius: "0 0 14px 14px",
+            zIndex: 3,
+          }} />
+          {/* Écran */}
+          <div style={{
+            width: "100%", height: "100%",
+            opacity: screenOn,
+            background: accent + "22",
+          }}>
+            {photoUrl ? (
+              <img src={photoUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              <div style={{
+                width: "100%", height: "100%",
+                background: `linear-gradient(135deg, ${accent}33, ${accent}11)`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexDirection: "column", gap: 8, padding: 16,
+              }}>
+                {/* Mini UI */}
+                <div style={{ width: "80%", height: 6, borderRadius: 3, background: `${accent}66` }} />
+                <div style={{ width: "60%", height: 4, borderRadius: 2, background: `${accent}44` }} />
+                <div style={{ width: "70%", height: 4, borderRadius: 2, background: `${accent}44` }} />
+                <div style={{ marginTop: 8, width: 40, height: 40, borderRadius: 12, background: accent, opacity: 0.8 }} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Texte */}
+        {scene.text && (
+          <div style={{
+            fontSize, fontWeight: 600, fontFamily: FONT,
+            letterSpacing: "-0.03em", lineHeight: 1,
+            color: textColor(bg), whiteSpace: "nowrap",
+            opacity: interpolate(textEnter, [0, 1], [0, 1]),
+            transform: `translateY(${interpolate(textEnter, [0, 1], [16, 0])}px)`,
+          }}>
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 2. MACBOOK ───────────────────────────────────────
+export const MacBookScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const accent = safeAccent(scene.accentColor, bg);
+  const photoUrl = scene.photoUrl || "";
+
+  // Ouverture du lid
+  const lidAngle = interpolate(Math.max(0, frame - 4), [0, 36], [100, 0], {
+    extrapolateRight: "clamp", easing: E_OUT,
+  });
+  const screenOpacity = interpolate(Math.max(0, frame - 20), [0, 20], [0, 1], {
+    extrapolateRight: "clamp", easing: E_OUT,
+  });
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
+  });
+
+  const enter = spring({ frame, fps, config: { damping: 280, stiffness: 60, mass: 1 }, from: 0, to: 1 });
+  const fontSize = autoFontSize(scene.text || "", 72, 36);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+      <AbsoluteFill style={{
+        justifyContent: "center", alignItems: "center",
+        flexDirection: "column", gap: 24, opacity: fadeOut,
+      }}>
+        {/* MacBook */}
+        <div style={{
+          width: "76%", maxWidth: 520,
+          opacity: interpolate(enter, [0, 0.3], [0, 1]),
+          transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px) scale(${interpolate(enter, [0, 1], [0.9, 1])})`,
+        }}>
+          {/* Écran */}
+          <div style={{
+            background: "#1a1a1a",
+            borderRadius: "16px 16px 0 0",
+            border: "2px solid #333",
+            overflow: "hidden",
+            transformOrigin: "bottom center",
+            transform: `perspective(800px) rotateX(${lidAngle}deg)`,
+            boxShadow: "0 -4px 20px rgba(0,0,0,0.2)",
+          }}>
+            {/* Barre navigateur */}
+            <div style={{
+              background: "#222", padding: "7px 12px",
+              display: "flex", alignItems: "center", gap: 6,
+              borderBottom: "1px solid #333",
+            }}>
+              {["#ff5f56", "#ffbd2e", "#27c93f"].map((c, i) => (
+                <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: c }} />
+              ))}
+              <div style={{
+                flex: 1, background: "#2a2a2a", borderRadius: 4,
+                padding: "3px 10px", fontSize: 9,
+                color: "#555", marginLeft: 8, textAlign: "center",
+                fontFamily: FONT,
+              }}>
+                {scene.url || "motionr.app"}
+              </div>
+            </div>
+            {/* Contenu écran */}
+            <div style={{ height: 200, opacity: screenOpacity }}>
+              {photoUrl ? (
+                <img src={photoUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <div style={{
+                  height: "100%", background: "#0a0a0a",
+                  padding: "20px", display: "flex", flexDirection: "column", gap: 8,
+                }}>
+                  <div style={{ width: "45%", height: 10, borderRadius: 4, background: accent + "99" }} />
+                  <div style={{ width: "65%", height: 6, borderRadius: 3, background: "#333" }} />
+                  <div style={{ width: "55%", height: 6, borderRadius: 3, background: "#2a2a2a" }} />
+                  <div style={{
+                    marginTop: 8, display: "flex", gap: 8,
+                  }}>
+                    {[1, 2, 3].map(i => (
+                      <div key={i} style={{
+                        flex: 1, height: 60, borderRadius: 8,
+                        background: i === 1 ? accent + "33" : "#1a1a1a",
+                        border: `1px solid ${i === 1 ? accent + "44" : "#222"}`,
+                      }} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          {/* Base */}
+          <div style={{
+            background: "#2a2a2a", height: 12,
+            borderRadius: "0 0 4px 4px",
+            border: "2px solid #333", borderTop: "none",
+          }} />
+          {/* Pied */}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <div style={{ width: "40%", height: 6, background: "#222", borderRadius: "0 0 6px 6px" }} />
+          </div>
+        </div>
+
+        {/* Texte */}
+        {scene.text && (
+          <div style={{
+            fontSize, fontWeight: 600, fontFamily: FONT,
+            letterSpacing: "-0.03em", lineHeight: 1,
+            color: textColor(bg), whiteSpace: "nowrap",
+            opacity: screenOpacity,
+          }}>
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 3. DOUBLE DEVICE ─────────────────────────────────
+export const DoubleDeviceScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const accent = safeAccent(scene.accentColor, bg);
+
+  const macEnter = spring({ frame, fps, config: { damping: 260, stiffness: 70, mass: 1 }, from: 0, to: 1 });
+  const phoneEnter = spring({ frame: Math.max(0, frame - 12), fps, config: { damping: 260, stiffness: 80, mass: 0.8 }, from: 0, to: 1 });
+  const textEnter = spring({ frame: Math.max(0, frame - 28), fps, config: { damping: 280, stiffness: 80 }, from: 0, to: 1 });
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
+  });
+  const floatY = Math.sin(frame * 0.04) * 5;
+  const fontSize = autoFontSize(scene.text || "", 60, 32);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+      <AbsoluteFill style={{
+        justifyContent: "center", alignItems: "center",
+        flexDirection: "column", gap: 24, opacity: fadeOut,
+      }}>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 20 }}>
+          {/* MacBook mini */}
+          <div style={{
+            width: 280,
+            opacity: interpolate(macEnter, [0, 0.3], [0, 1]),
+            transform: `translateY(${interpolate(macEnter, [0, 1], [40, 0]) + floatY * 0.5}px) scale(${interpolate(macEnter, [0, 1], [0.85, 1])})`,
+          }}>
+            <div style={{
+              background: "#1a1a1a", borderRadius: "10px 10px 0 0",
+              border: "2px solid #333", overflow: "hidden",
+            }}>
+              <div style={{
+                background: "#222", padding: "5px 8px",
+                display: "flex", gap: 4, alignItems: "center",
+              }}>
+                {["#ff5f56", "#ffbd2e", "#27c93f"].map((c, i) => (
+                  <div key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: c }} />
+                ))}
+              </div>
+              <div style={{
+                height: 110, background: "#0a0a0a",
+                padding: 12, display: "flex", flexDirection: "column", gap: 6,
+              }}>
+                <div style={{ width: "50%", height: 6, borderRadius: 3, background: accent + "88" }} />
+                <div style={{ width: "70%", height: 4, borderRadius: 2, background: "#222" }} />
+                <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                  {[1, 2].map(i => (
+                    <div key={i} style={{
+                      flex: 1, height: 36, borderRadius: 6,
+                      background: i === 1 ? accent + "22" : "#1a1a1a",
+                      border: `1px solid ${i === 1 ? accent + "33" : "#222"}`,
+                    }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div style={{ background: "#2a2a2a", height: 7, borderRadius: "0 0 3px 3px", border: "2px solid #333", borderTop: "none" }} />
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <div style={{ width: "35%", height: 4, background: "#222", borderRadius: "0 0 4px 4px" }} />
+            </div>
+          </div>
+
+          {/* iPhone mini */}
+          <div style={{
+            width: 80, aspectRatio: "9/19.5",
+            background: "#1a1a1a", borderRadius: 20,
+            border: "3px solid #333", overflow: "hidden",
+            opacity: interpolate(phoneEnter, [0, 0.3], [0, 1]),
+            transform: `translateY(${interpolate(phoneEnter, [0, 1], [60, 0]) + floatY}px) scale(${interpolate(phoneEnter, [0, 1], [0.8, 1])})`,
+            boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
+            position: "relative",
+          }}>
+            <div style={{
+              position: "absolute", top: 0, left: "50%",
+              transform: "translateX(-50%)",
+              width: 28, height: 6,
+              background: "#000", borderRadius: "0 0 8px 8px",
+              zIndex: 2,
+            }} />
+            <div style={{
+              width: "100%", height: "100%",
+              background: `linear-gradient(135deg, ${accent}22, ${accent}08)`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <div style={{ width: 24, height: 24, borderRadius: 6, background: accent, opacity: 0.8 }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Texte */}
+        {scene.text && (
+          <div style={{
+            fontSize, fontWeight: 600, fontFamily: FONT,
+            letterSpacing: "-0.03em", lineHeight: 1,
+            color: textColor(bg), whiteSpace: "nowrap",
+            opacity: interpolate(textEnter, [0, 1], [0, 1]),
+            transform: `translateY(${interpolate(textEnter, [0, 1], [16, 0])}px)`,
+          }}>
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 4. BROWSER MOCKUP ────────────────────────────────
+export const BrowserScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const accent = safeAccent(scene.accentColor, bg);
+  const photoUrl = scene.photoUrl || "";
+
+  const enter = spring({ frame, fps, config: { damping: 260, stiffness: 70, mass: 1 }, from: 0, to: 1 });
+  const contentFade = interpolate(Math.max(0, frame - 20), [0, 24], [0, 1], {
+    extrapolateRight: "clamp", easing: E_OUT,
+  });
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
+  });
+
+  // Loading bar
+  const loadW = interpolate(Math.max(0, frame - 4), [0, 28], [0, 100], {
+    extrapolateRight: "clamp", easing: E_OUT,
+  });
+
+  const fontSize = autoFontSize(scene.text || "", 72, 36);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+      <AbsoluteFill style={{
+        justifyContent: "center", alignItems: "center",
+        flexDirection: "column", gap: 20, opacity: fadeOut,
+        padding: "0 60px",
+      }}>
+        {/* Browser */}
+        <div style={{
+          width: "100%", maxWidth: 560,
+          borderRadius: 16,
+          overflow: "hidden",
+          border: `1px solid ${isLight(bg) ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"}`,
+          boxShadow: isLight(bg) ? "0 24px 60px rgba(0,0,0,0.12)" : "0 24px 60px rgba(0,0,0,0.5)",
+          opacity: interpolate(enter, [0, 0.3], [0, 1]),
+          transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px) scale(${interpolate(enter, [0, 1], [0.94, 1])})`,
+        }}>
+          {/* Toolbar */}
+          <div style={{
+            background: isLight(bg) ? "#f5f5f5" : "#1a1a1a",
+            padding: "10px 14px",
+            display: "flex", alignItems: "center", gap: 8,
+            borderBottom: `1px solid ${isLight(bg) ? "#e0e0e0" : "#2a2a2a"}`,
+          }}>
+            {["#ff5f56", "#ffbd2e", "#27c93f"].map((c, i) => (
+              <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />
+            ))}
+            {/* Loading bar */}
+            <div style={{
+              flex: 1, height: 28, borderRadius: 6,
+              background: isLight(bg) ? "#e8e8e8" : "#2a2a2a",
+              overflow: "hidden", position: "relative",
+              display: "flex", alignItems: "center",
+              paddingLeft: 10,
+            }}>
+              <div style={{
+                position: "absolute", left: 0, top: 0,
+                width: `${loadW}%`, height: 2,
+                background: accent,
+                boxShadow: `0 0 8px ${accent}88`,
+              }} />
+              <span style={{
+                fontSize: 10, color: isLight(bg) ? "#999" : "#555",
+                fontFamily: FONT, zIndex: 1,
+              }}>
+                {scene.url || "motionr.app"}
+              </span>
+            </div>
+          </div>
+
+          {/* Contenu */}
+          <div style={{ height: 220, opacity: contentFade }}>
+            {photoUrl ? (
+              <img src={photoUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              <div style={{
+                height: "100%",
+                background: isLight(bg) ? "#ffffff" : "#0a0a0a",
+                padding: "20px",
+                display: "flex", flexDirection: "column", gap: 8,
+              }}>
+                {/* Hero */}
+                <div style={{
+                  width: "55%", height: 14, borderRadius: 4,
+                  background: isLight(bg) ? "#111" : accent,
+                  opacity: isLight(bg) ? 0.9 : 0.8,
+                }} />
+                <div style={{ width: "75%", height: 8, borderRadius: 3, background: isLight(bg) ? "#ddd" : "#222" }} />
+                <div style={{ width: "60%", height: 8, borderRadius: 3, background: isLight(bg) ? "#eee" : "#1a1a1a" }} />
+                <div style={{
+                  marginTop: 10,
+                  width: 100, height: 32, borderRadius: 8,
+                  background: accent, opacity: 0.9,
+                }} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {scene.text && (
+          <div style={{
+            fontSize, fontWeight: 600, fontFamily: FONT,
+            letterSpacing: "-0.03em", lineHeight: 1,
+            color: textColor(bg), whiteSpace: "nowrap",
+            opacity: contentFade,
+          }}>
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 5. DASHBOARD ─────────────────────────────────────
+export const DashboardScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const accent = safeAccent(scene.accentColor, bg);
+
+  const enter = spring({ frame, fps, config: { damping: 260, stiffness: 70, mass: 1 }, from: 0, to: 1 });
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
+  });
+
+  const bars = [65, 82, 45, 90, 71, 55, 88];
+  const fontSize = autoFontSize(scene.text || "", 60, 32);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+      <AbsoluteFill style={{
+        justifyContent: "center", alignItems: "center",
+        flexDirection: "column", gap: 20, opacity: fadeOut,
+        padding: "0 60px",
+      }}>
+        {/* Dashboard card */}
+        <div style={{
+          width: "100%", maxWidth: 520,
+          background: isLight(bg) ? "#ffffff" : "#111111",
+          borderRadius: 20,
+          border: `1px solid ${isLight(bg) ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)"}`,
+          padding: "24px",
+          boxShadow: isLight(bg) ? "0 20px 60px rgba(0,0,0,0.1)" : "0 20px 60px rgba(0,0,0,0.4)",
+          opacity: interpolate(enter, [0, 0.3], [0, 1]),
+          transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px) scale(${interpolate(enter, [0, 1], [0.94, 1])})`,
+        }}>
+          {/* Header */}
+          <div style={{
+            display: "flex", justifyContent: "space-between",
+            alignItems: "center", marginBottom: 20,
+          }}>
+            <div style={{
+              fontSize: 14, fontWeight: 700, fontFamily: FONT,
+              color: isLight(bg) ? "#000" : "#fff",
+              letterSpacing: "-0.02em",
+            }}>
+              {scene.dashTitle || "Analytics"}
+            </div>
+            <div style={{
+              fontSize: 11, fontWeight: 600, fontFamily: FONT,
+              color: accent, padding: "3px 8px",
+              background: accent + "18", borderRadius: 100,
+            }}>
+              +24%
+            </div>
+          </div>
+
+          {/* Barres */}
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 80 }}>
+            {bars.map((h, i) => {
+              const barH = interpolate(
+                Math.max(0, frame - i * 5),
+                [0, 24], [0, h],
+                { extrapolateRight: "clamp", easing: E_OUT }
+              );
+              return (
+                <div key={i} style={{
+                  flex: 1, borderRadius: "4px 4px 0 0",
+                  height: `${barH}%`,
+                  background: i === 4 ? accent : isLight(bg) ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)",
+                  boxShadow: i === 4 ? `0 0 12px ${accent}66` : "none",
+                }} />
+              );
+            })}
+          </div>
+
+          {/* Stats row */}
+          <div style={{
+            display: "flex", gap: 12, marginTop: 16,
+          }}>
+            {[
+              { label: "Vues", value: "24.5K" },
+              { label: "Clics", value: "8.2K" },
+              { label: "Conv.", value: "12%" },
+            ].map((s, i) => {
+              const statEnter = interpolate(
+                Math.max(0, frame - 24 - i * 8),
+                [0, 18], [0, 1],
+                { extrapolateRight: "clamp", easing: E_OUT }
+              );
+              return (
+                <div key={i} style={{
+                  flex: 1, padding: "8px",
+                  background: isLight(bg) ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)",
+                  borderRadius: 8, opacity: statEnter,
+                }}>
+                  <div style={{
+                    fontSize: 16, fontWeight: 700, fontFamily: FONT,
+                    color: i === 0 ? accent : isLight(bg) ? "#000" : "#fff",
+                    letterSpacing: "-0.03em",
+                  }}>{s.value}</div>
+                  <div style={{
+                    fontSize: 10, fontFamily: FONT,
+                    color: isLight(bg) ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)",
+                  }}>{s.label}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {scene.text && (
+          <div style={{
+            fontSize, fontWeight: 600, fontFamily: FONT,
+            letterSpacing: "-0.03em", lineHeight: 1,
+            color: textColor(bg), whiteSpace: "nowrap",
+            opacity: interpolate(enter, [0, 1], [0, 1]),
+          }}>
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 6. CHAT MESSAGES ─────────────────────────────────
+export const ChatScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const accent = safeAccent(scene.accentColor, bg);
+
+  const messages = scene.messages || [
+    { text: "Comment ça marche ?", isUser: false },
+    { text: "Décris ton idée.", isUser: true },
+    { text: "Vidéo générée en 2 min.", isUser: true },
+  ];
+
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
+  });
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+      <AbsoluteFill style={{
+        justifyContent: "center", alignItems: "center",
+        padding: "0 60px", opacity: fadeOut,
+      }}>
+        <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", gap: 10 }}>
+          {messages.map((msg, i) => {
+            const msgEnter = spring({
+              frame: Math.max(0, frame - i * 16), fps,
+              config: { damping: 280, stiffness: 100, mass: 0.7 },
+              from: 0, to: 1,
+            });
+            return (
+              <div key={i} style={{
+                display: "flex",
+                justifyContent: msg.isUser ? "flex-end" : "flex-start",
+                opacity: interpolate(msgEnter, [0, 1], [0, 1]),
+                transform: `translateY(${interpolate(msgEnter, [0, 1], [20, 0])}px) scale(${interpolate(msgEnter, [0, 1], [0.9, 1])})`,
+              }}>
+                <div style={{
+                  maxWidth: "75%",
+                  background: msg.isUser
+                    ? accent
+                    : isLight(bg) ? "#f0f0f0" : "#1a1a1a",
+                  borderRadius: msg.isUser ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                  padding: "10px 14px",
+                  boxShadow: msg.isUser ? `0 4px 12px ${accent}44` : "none",
+                }}>
+                  <div style={{
+                    fontSize: 14, fontWeight: 500, fontFamily: FONT,
+                    color: msg.isUser
+                      ? (isLight(accent) ? "#000" : "#fff")
+                      : textColor(bg),
+                    letterSpacing: "-0.01em",
+                    lineHeight: 1.4,
+                  }}>
+                    {msg.text}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 7. RÉSEAU DE CONNEXIONS ──────────────────────────
+export const NetworkScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const accent = safeAccent(scene.accentColor, bg);
+
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
+  });
+
+  const nodes = [
+    { x: 540, y: 500, size: 20, delay: 0, isCenter: true },
+    { x: 280, y: 320, size: 10, delay: 8 },
+    { x: 800, y: 280, size: 10, delay: 12 },
+    { x: 200, y: 640, size: 8, delay: 16 },
+    { x: 860, y: 620, size: 8, delay: 20 },
+    { x: 400, y: 780, size: 8, delay: 14 },
+    { x: 680, y: 760, size: 8, delay: 18 },
+    { x: 160, y: 460, size: 6, delay: 22 },
+    { x: 920, y: 440, size: 6, delay: 24 },
+  ];
+
+  const textEnter = spring({ frame: Math.max(0, frame - 32), fps, config: { damping: 280, stiffness: 80 }, from: 0, to: 1 });
+  const fontSize = autoFontSize(scene.text || "", 72, 36);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+      <AbsoluteFill style={{ opacity: fadeOut }}>
+        <svg width="1080" height="900" style={{ position: "absolute", top: "50%", left: 0, transform: "translateY(-50%)" }}>
+          {/* Connexions */}
+          {nodes.slice(1).map((node, i) => {
+            const center = nodes[0];
+            const lineEnter = interpolate(Math.max(0, frame - node.delay), [0, 20], [0, 1], {
+              extrapolateRight: "clamp", easing: E_OUT,
+            });
+            return (
+              <line key={i}
+                x1={center.x} y1={center.y}
+                x2={node.x} y2={node.y}
+                stroke={accent}
+                strokeWidth="1"
+                strokeDasharray="300"
+                strokeDashoffset={300 * (1 - lineEnter)}
+                opacity={0.2 + lineEnter * 0.2}
+              />
+            );
+          })}
+          {/* Nodes */}
+          {nodes.map((node, i) => {
+            const nodeEnter = spring({
+              frame: Math.max(0, frame - node.delay), fps,
+              config: { damping: 14, stiffness: 300, mass: 0.4 },
+              from: 0, to: 1,
+            });
+            const pulse = node.isCenter ? 1 + Math.sin(frame * 0.08) * 0.15 : 1;
+            return (
+              <g key={i}>
+                {node.isCenter && (
+                  <circle cx={node.x} cy={node.y} r={node.size * 3}
+                    fill={accent} opacity={0.08 + Math.sin(frame * 0.08) * 0.04} />
+                )}
+                <circle
+                  cx={node.x} cy={node.y}
+                  r={node.size * nodeEnter * pulse}
+                  fill={node.isCenter ? accent : accent}
+                  opacity={node.isCenter ? 1 : 0.6}
+                  style={{ filter: node.isCenter ? `drop-shadow(0 0 8px ${accent})` : "none" }}
+                />
+              </g>
+            );
+          })}
+        </svg>
+
+        {scene.text && (
+          <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", padding: "0 0 80px" }}>
+            <div style={{
+              fontSize, fontWeight: 600, fontFamily: FONT,
+              letterSpacing: "-0.03em", lineHeight: 1,
+              color: textColor(bg), whiteSpace: "nowrap",
+              opacity: interpolate(textEnter, [0, 1], [0, 1]),
+              transform: `translateY(${interpolate(textEnter, [0, 1], [16, 0])}px)`,
+            }}>
+              {scene.text}
+            </div>
+          </AbsoluteFill>
+        )}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 8. FLUX DE DONNÉES ───────────────────────────────
+export const DataFlowScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const accent = safeAccent(scene.accentColor, bg);
+
+  const fadeIn = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: "clamp", easing: E_OUT });
+  const fadeOut = interpolate(frame, [durationInFrames - 20, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
+  });
+
+  const cols = 14;
+  const chars = "01アイウエオカキクケコABCDEF0123456789";
+  const fontSize = autoFontSize(scene.text || "", 72, 36);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+
+      {/* Colonnes de data */}
+      <AbsoluteFill style={{ opacity: Math.min(fadeIn, fadeOut) }}>
+        <div style={{ display: "flex", height: "100%", justifyContent: "space-around", padding: "0 20px" }}>
+          {Array.from({ length: cols }, (_, col) => {
+            const speed = 0.8 + (col % 3) * 0.4;
+            const offset = col * 137;
+            return (
+              <div key={col} style={{
+                display: "flex", flexDirection: "column",
+                gap: 4, overflow: "hidden", height: "100%",
+                alignItems: "center",
+                opacity: 0.15 + (col % 2) * 0.1,
+              }}>
+                {Array.from({ length: 20 }, (_, row) => {
+                  const charIdx = Math.floor((frame * speed + row * 7 + offset) % chars.length);
+                  const isAccent = (frame + row + col * 3) % 8 === 0;
+                  return (
+                    <div key={row} style={{
+                      fontSize: 14, fontFamily: "monospace",
+                      color: isAccent ? accent : textColor(bg),
+                      lineHeight: 1.6,
+                      opacity: isAccent ? 0.9 : 0.4,
+                    }}>
+                      {chars[charIdx]}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Overlay gradient centre */}
+        <div style={{
+          position: "absolute", inset: 0,
+          background: `radial-gradient(ellipse 50% 40% at 50% 50%, ${bg} 0%, transparent 100%)`,
+        }} />
+
+        {/* Texte centré */}
+        {scene.text && (
+          <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+            <div style={{
+              fontSize, fontWeight: 700, fontFamily: FONT,
+              letterSpacing: "-0.03em", lineHeight: 1,
+              color: textColor(bg), whiteSpace: "nowrap",
+              textShadow: `0 0 30px ${bg}, 0 0 60px ${bg}`,
+            }}>
+              {scene.text}
+            </div>
+          </AbsoluteFill>
+        )}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 9. CARTE DU MONDE ────────────────────────────────
+export const WorldMapScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const accent = safeAccent(scene.accentColor, bg);
+
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
+  });
+
+  const cities = [
+    { x: 480, y: 280, name: "Paris", delay: 0 },
+    { x: 220, y: 310, name: "NYC", delay: 8 },
+    { x: 155, y: 380, name: "LA", delay: 14 },
+    { x: 750, y: 290, name: "Dubaï", delay: 10 },
+    { x: 850, y: 310, name: "Tokyo", delay: 16 },
+    { x: 500, y: 430, name: "Lagos", delay: 12 },
+    { x: 310, y: 500, name: "São Paulo", delay: 18 },
+    { x: 820, y: 430, name: "Sydney", delay: 20 },
+  ];
+
+  const textEnter = spring({ frame: Math.max(0, frame - 28), fps, config: { damping: 280, stiffness: 80 }, from: 0, to: 1 });
+  const fontSize = autoFontSize(scene.text || "", 72, 36);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo="dots" />
+      <AbsoluteFill style={{ opacity: fadeOut }}>
+        <svg width="1080" height="800" style={{ position: "absolute", top: "50%", left: 0, transform: "translateY(-52%)", opacity: 0.3 }}>
+          {/* Continents simplifiés */}
+          <ellipse cx="250" cy="350" rx="120" ry="80" fill={textColor(bg)} opacity="0.08" />
+          <ellipse cx="200" cy="440" rx="90" ry="60" fill={textColor(bg)} opacity="0.08" />
+          <ellipse cx="490" cy="300" rx="100" ry="70" fill={textColor(bg)} opacity="0.08" />
+          <ellipse cx="490" cy="400" rx="60" ry="50" fill={textColor(bg)} opacity="0.06" />
+          <ellipse cx="700" cy="320" rx="50" ry="40" fill={textColor(bg)} opacity="0.08" />
+          <ellipse cx="850" cy="340" rx="80" ry="55" fill={textColor(bg)} opacity="0.08" />
+          <ellipse cx="830" cy="450" rx="55" ry="45" fill={textColor(bg)} opacity="0.06" />
+        </svg>
+
+        {/* Points des villes */}
+        <svg width="1080" height="800" style={{ position: "absolute", top: "50%", left: 0, transform: "translateY(-52%)" }}>
+          {cities.map((city, i) => {
+            const cityEnter = spring({
+              frame: Math.max(0, frame - city.delay), fps,
+              config: { damping: 14, stiffness: 300 },
+              from: 0, to: 1,
+            });
+            const pulse = 1 + Math.sin(frame * 0.06 + i) * 0.3;
+            return (
+              <g key={i}>
+                <circle cx={city.x} cy={city.y} r={8 * cityEnter * pulse}
+                  fill={accent} opacity={0.15} />
+                <circle cx={city.x} cy={city.y} r={4 * cityEnter}
+                  fill={accent}
+                  style={{ filter: `drop-shadow(0 0 6px ${accent})` }} />
+                <text x={city.x + 8} y={city.y - 6}
+                  fontSize="9" fontFamily={FONT}
+                  fill={textColor(bg)} opacity={cityEnter * 0.6}>
+                  {city.name}
+                </text>
+              </g>
+            );
+          })}
+          {/* Lignes de connexion */}
+          {cities.slice(1).map((city, i) => {
+            const lineEnter = interpolate(
+              Math.max(0, frame - city.delay - 4),
+              [0, 16], [0, 1],
+              { extrapolateRight: "clamp", easing: E_OUT }
+            );
+            return (
+              <line key={i}
+                x1={cities[0].x} y1={cities[0].y}
+                x2={city.x} y2={city.y}
+                stroke={accent}
+                strokeWidth="0.5"
+                strokeDasharray="200"
+                strokeDashoffset={200 * (1 - lineEnter)}
+                opacity={0.15}
+              />
+            );
+          })}
+        </svg>
+
+        {scene.text && (
+          <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", padding: "0 0 100px" }}>
+            <div style={{
+              fontSize, fontWeight: 600, fontFamily: FONT,
+              letterSpacing: "-0.03em", lineHeight: 1,
+              color: textColor(bg), whiteSpace: "nowrap",
+              opacity: interpolate(textEnter, [0, 1], [0, 1]),
+              transform: `translateY(${interpolate(textEnter, [0, 1], [16, 0])}px)`,
+            }}>
+              {scene.text}
+            </div>
+          </AbsoluteFill>
+        )}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 10. TIMELINE HORIZONTALE ─────────────────────────
+export const HorizontalTimelineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const accent = safeAccent(scene.accentColor, bg);
+
+  const events = scene.events || [
+    { year: "2022", label: "Lancement" },
+    { year: "2023", label: "10K users" },
+    { year: "2024", label: "Series A" },
+    { year: "2025", label: "1M vidéos" },
+  ];
+
+  const lineW = interpolate(frame, [4, 40], [0, 100], {
+    extrapolateRight: "clamp", easing: E_OUT,
+  });
+  const fadeOut = interpolate(frame, [durationInFrames - 22, durationInFrames], [1, 0], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_IN,
+  });
+
+  const textEnter = spring({ frame: Math.max(0, frame - 36), fps, config: { damping: 280, stiffness: 80 }, from: 0, to: 1 });
+  const fontSize = autoFontSize(scene.text || "", 60, 32);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <GeoBackground bg={bg} geo={scene.geo} />
+      <AbsoluteFill style={{
+        justifyContent: "center", alignItems: "center",
+        flexDirection: "column", gap: 40, opacity: fadeOut,
+        padding: "0 80px",
+      }}>
+        {/* Ligne + points */}
+        <div style={{ width: "100%", position: "relative" }}>
+          {/* Ligne principale */}
+          <div style={{
+            height: 2, borderRadius: 1,
+            background: isLight(bg) ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)",
+            marginBottom: 0, position: "relative",
+          }}>
+            <div style={{
+              position: "absolute", top: 0, left: 0,
+              height: "100%", width: `${lineW}%`,
+              background: accent, borderRadius: 1,
+              boxShadow: `0 0 8px ${accent}66`,
+            }} />
+          </div>
+
+          {/* Points et labels */}
+          <div style={{
+            display: "flex", justifyContent: "space-between",
+            marginTop: -8,
+          }}>
+            {events.map((event, i) => {
+              const delay = 8 + i * 10;
+              const dotEnter = spring({
+                frame: Math.max(0, frame - delay), fps,
+                config: { damping: 14, stiffness: 400 },
+                from: 0, to: 1,
+              });
+              const labelEnter = spring({
+                frame: Math.max(0, frame - delay - 6), fps,
+                config: { damping: 280, stiffness: 100 },
+                from: 0, to: 1,
+              });
+              const isActive = i === events.length - 1;
+
+              return (
+                <div key={i} style={{
+                  display: "flex", flexDirection: "column",
+                  alignItems: "center", gap: 12,
+                }}>
+                  {/* Point */}
+                  <div style={{
+                    width: 14, height: 14, borderRadius: "50%",
+                    background: isActive ? accent : isLight(bg) ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)",
+                    border: `2px solid ${isActive ? accent : "transparent"}`,
+                    transform: `scale(${dotEnter})`,
+                    boxShadow: isActive ? `0 0 12px ${accent}88` : "none",
+                  }} />
+                  {/* Labels */}
+                  <div style={{
+                    textAlign: "center",
+                    opacity: interpolate(labelEnter, [0, 1], [0, 1]),
+                    transform: `translateY(${interpolate(labelEnter, [0, 1], [10, 0])}px)`,
+                  }}>
+                    <div style={{
+                      fontSize: 18, fontWeight: 800, fontFamily: FONT,
+                      letterSpacing: "-0.03em",
+                      color: isActive ? accent : textColor(bg),
+                    }}>
+                      {event.year}
+                    </div>
+                    <div style={{
+                      fontSize: 12, fontWeight: 400, fontFamily: FONT,
+                      color: isLight(bg) ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)",
+                      marginTop: 2,
+                    }}>
+                      {event.label}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {scene.text && (
+          <div style={{
+            fontSize, fontWeight: 600, fontFamily: FONT,
+            letterSpacing: "-0.03em", lineHeight: 1,
+            color: textColor(bg), whiteSpace: "nowrap",
+            opacity: interpolate(textEnter, [0, 1], [0, 1]),
+            transform: `translateY(${interpolate(textEnter, [0, 1], [16, 0])}px)`,
+          }}>
+            {scene.text}
+          </div>
+        )}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};

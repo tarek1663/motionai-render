@@ -64,6 +64,16 @@ import {
   SplitLinesScene,
   BgNumberScene,
   TwoLinesScene,
+  IPhoneScene,
+  MacBookScene,
+  DoubleDeviceScene,
+  BrowserScene,
+  DashboardScene,
+  ChatScene,
+  NetworkScene,
+  DataFlowScene,
+  WorldMapScene,
+  HorizontalTimelineScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -195,6 +205,26 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <BgNumberScene scene={sceneWithIndex} />;
     case "twolines":
       return <TwoLinesScene scene={sceneWithIndex} />;
+    case "iphone":
+      return <IPhoneScene scene={sceneWithIndex} />;
+    case "macbook":
+      return <MacBookScene scene={sceneWithIndex} />;
+    case "doubledevice":
+      return <DoubleDeviceScene scene={sceneWithIndex} />;
+    case "browser":
+      return <BrowserScene scene={sceneWithIndex} />;
+    case "dashboard":
+      return <DashboardScene scene={sceneWithIndex} />;
+    case "chat":
+      return <ChatScene scene={sceneWithIndex} />;
+    case "network":
+      return <NetworkScene scene={sceneWithIndex} />;
+    case "dataflow":
+      return <DataFlowScene scene={sceneWithIndex} />;
+    case "worldmap":
+      return <WorldMapScene scene={sceneWithIndex} />;
+    case "horizontaltimeline":
+      return <HorizontalTimelineScene scene={sceneWithIndex} />;
     default:
       return <SingleWordScene scene={sceneWithIndex} />;
   }
