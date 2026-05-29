@@ -4246,54 +4246,49 @@ export const NoiseScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 // ─── DÉGRADÉ DE TEXTE ─────────────────────────────────
 export const GradientTextScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
+  const { fps } = useVideoConfig();
   const bg = scene.bg || "#000000";
   const accent = safeAccent(scene.accentColor, bg);
-  const color2 = scene.color2 || textColor(bg);
 
-  const enter = spring({
-    frame,
-    fps,
-    config: { damping: 280, stiffness: 80, mass: 0.8 },
-    from: 0,
-    to: 1,
-  });
-  const { opacity: fadeOut } = useAppleTiming();
-
-  const angle = interpolate(frame, [0, durationInFrames], [90, 120], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
+  const enter = spring({ frame, fps, config: { damping: 280, stiffness: 80, mass: 0.8 }, from: 0, to: 1 });
+  const { opacity } = useAppleTiming();
   const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  const revealW = interpolate(Math.max(0, frame - 8), [0, 36], [0, 100], {
+    extrapolateRight: "clamp", easing: E_OUT,
+  });
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
       <GeoBackground bg={bg} geo={scene.geo} />
-      <AbsoluteFill
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-          opacity: Math.min(interpolate(enter, [0, 1], [0, 1]), fadeOut),
-        }}
-      >
-        <div
-          style={{
-            fontSize,
-            fontWeight: 800,
-            fontFamily: FONT,
-            letterSpacing: "-0.04em",
-            lineHeight: 1,
+      <AbsoluteFill style={{
+        justifyContent: "center", alignItems: "center",
+        opacity,
+      }}>
+        <div style={{ position: "relative" }}>
+          <div style={{
+            fontSize, fontWeight: 800, fontFamily: FONT,
+            letterSpacing: "-0.04em", lineHeight: 1,
+            color: isLight(bg) ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)",
             whiteSpace: "nowrap",
-            transform: `scale(${interpolate(enter, [0, 1], [0.92, 1])}) translateY(${interpolate(enter, [0, 1], [24, 0])}px)`,
-            filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
-            background: `linear-gradient(${angle}deg, ${accent}, ${color2})`,
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}
-        >
-          {scene.text}
+            transform: `scale(${interpolate(enter, [0, 1], [0.92, 1])})`,
+          }}>
+            {scene.text}
+          </div>
+          <div style={{
+            position: "absolute", inset: 0,
+            clipPath: `inset(0 ${Math.max(0, 100 - revealW)}% 0 0)`,
+          }}>
+            <div style={{
+              fontSize, fontWeight: 800, fontFamily: FONT,
+              letterSpacing: "-0.04em", lineHeight: 1,
+              color: accent,
+              whiteSpace: "nowrap",
+              transform: `scale(${interpolate(enter, [0, 1], [0.92, 1])})`,
+            }}>
+              {scene.text}
+            </div>
+          </div>
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
