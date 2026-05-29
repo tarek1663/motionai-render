@@ -79,7 +79,9 @@ export type SceneData = {
     | "cleantext" | "highlightword" | "phototext" | "photocard" | "icontext" | "stat"
     | "cleanlist" | "cleanquote" | "cleancta" | "underline" | "splittext"
     | "accentfirstword" | "bignumber" | "puretext"
-    | "appletext" | "appleaccent" | "applenumber" | "applephoto" | "appleicon" | "applecta";
+    | "appletext" | "appleaccent" | "applenumber" | "applephoto" | "appleicon" | "applecta"
+    | "singleword" | "splitwords" | "zoomword" | "slideword" | "maskreveal"
+    | "appletypewriter" | "scalepunch" | "sequentialwords";
   text?: string;
   text2?: string;
   bg?: string;
@@ -9439,6 +9441,411 @@ export const AppleCTAScene: React.FC<{ scene: SceneData; sceneIndex?: number }> 
             </span>
           </div>
         </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+
+// ═══════════════════════════════════════════════════════
+// SYSTÈME WORD-BY-WORD SYNCHRONISÉ VOIX
+// ═══════════════════════════════════════════════════════
+
+const PureBg: React.FC<{ bg: string }> = ({ bg }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const scale = interpolate(frame, [0, durationInFrames], [1.0, 1.015], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp",
+  });
+  return (
+    <div style={{
+      position: "absolute", inset: 0,
+      transform: `scale(${scale})`,
+      transformOrigin: "center center",
+      background: bg,
+    }} />
+  );
+};
+
+export const SingleWordScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+
+  const enter = spring({
+    frame,
+    fps,
+    config: { damping: 200, stiffness: 120, mass: 0.6 },
+    from: 0,
+    to: 1,
+  });
+
+  const exitStart = durationInFrames - 12;
+  const exit = interpolate(
+    Math.max(0, frame - exitStart),
+    [0, 12],
+    [0, 1],
+    { extrapolateRight: "clamp", easing: Easing.bezier(0.4, 0, 1, 1) },
+  );
+
+  const opacity = Math.min(
+    interpolate(enter, [0, 1], [0, 1]),
+    interpolate(exit, [0, 1], [1, 0]),
+  );
+  const scale = enter < 0.99
+    ? interpolate(enter, [0, 1], [0.78, 1])
+    : interpolate(exit, [0, 1], [1, 1.06]);
+  const blur = Math.max(
+    interpolate(enter, [0, 0.5, 1], [12, 3, 0]),
+    interpolate(exit, [0, 1], [0, 8]),
+  );
+
+  const word = scene.text || "";
+  const fontSize = autoFontSize(word, 180, 80);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div style={{
+          fontSize, fontWeight: 600, fontFamily,
+          letterSpacing: "-0.03em", lineHeight: 1,
+          color: textColor(bg), opacity,
+          transform: `scale(${scale})`,
+          filter: `blur(${blur}px)`,
+          textAlign: "center", padding: "0 80px",
+        }}>
+          {word}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const SplitWordsScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+
+  const words = (scene.text || "").split(/\s+/).filter(Boolean);
+  const word1 = words[0] || "";
+  const word2 = words.slice(1).join(" ") || "";
+
+  const e1 = spring({ frame: Math.max(0, frame - 0), fps, config: { damping: 200, stiffness: 100 }, from: 0, to: 1 });
+  const e2 = spring({ frame: Math.max(0, frame - 8), fps, config: { damping: 200, stiffness: 100 }, from: 0, to: 1 });
+
+  const exitProgress = interpolate(
+    Math.max(0, frame - (durationInFrames - 14)),
+    [0, 14],
+    [0, 1],
+    { extrapolateRight: "clamp", easing: Easing.bezier(0.4, 0, 1, 1) },
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  const makeStyle = (enter: number, fromY: number) => ({
+    opacity: Math.min(enter, 1 - exitProgress * 0.8),
+    transform: `translateY(${interpolate(enter, [0, 1], [fromY, 0]) + interpolate(exitProgress, [0, 1], [0, fromY * -0.3])}px) scale(${interpolate(enter, [0, 1], [0.88, 1])})`,
+    filter: `blur(${Math.max(interpolate(enter, [0, 0.5, 1], [8, 2, 0]), interpolate(exitProgress, [0, 1], [0, 6]))}px)`,
+  });
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{
+        justifyContent: "center", alignItems: "center",
+        flexDirection: "column", gap: 4,
+      }}>
+        <div style={{
+          ...makeStyle(e1, -60),
+          fontSize, fontWeight: 600, fontFamily,
+          letterSpacing: "-0.03em", color: textColor(bg), textAlign: "center",
+        }}>
+          {word1}
+        </div>
+        {word2 && (
+          <div style={{
+            ...makeStyle(e2, 60),
+            fontSize: Math.round(fontSize * 0.9), fontWeight: 300, fontFamily,
+            letterSpacing: "-0.02em",
+            color: isLight(bg) ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)",
+            textAlign: "center",
+          }}>
+            {word2}
+          </div>
+        )}
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const ZoomWordScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+
+  const progress = interpolate(frame, [0, 30], [0, 1], {
+    extrapolateRight: "clamp", easing: Easing.bezier(0.16, 1, 0.3, 1),
+  });
+  const exitProgress = interpolate(
+    Math.max(0, frame - (durationInFrames - 14)),
+    [0, 14],
+    [0, 1],
+    { extrapolateRight: "clamp", easing: Easing.bezier(0.4, 0, 1, 1) },
+  );
+
+  const scale = interpolate(progress, [0, 1], [1.4, 1]);
+  const blur = interpolate(progress, [0, 1], [16, 0]);
+  const opacity = Math.min(
+    interpolate(progress, [0, 0.3], [0, 1]),
+    interpolate(exitProgress, [0, 1], [1, 0]),
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 160, 72);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div style={{
+          fontSize, fontWeight: 700, fontFamily,
+          letterSpacing: "-0.04em", lineHeight: 1,
+          color: textColor(bg), opacity,
+          transform: `scale(${scale})`,
+          filter: `blur(${blur}px)`,
+          textAlign: "center", padding: "0 80px",
+        }}>
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const SlideWordScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+
+  const enter = spring({ frame, fps, config: { damping: 180, stiffness: 100 }, from: 0, to: 1 });
+  const exitProgress = interpolate(
+    Math.max(0, frame - (durationInFrames - 14)),
+    [0, 14],
+    [0, 1],
+    { extrapolateRight: "clamp", easing: Easing.bezier(0.4, 0, 1, 1) },
+  );
+
+  const x = interpolate(enter, [0, 1], [-200, 0]);
+  const exitX = interpolate(exitProgress, [0, 1], [0, 120]);
+  const opacity = Math.min(enter, 1 - exitProgress);
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
+        <div style={{
+          fontSize, fontWeight: 700, fontFamily,
+          letterSpacing: "-0.04em", lineHeight: 1,
+          color: textColor(bg), opacity,
+          transform: `translateX(${x + exitX}px)`,
+          textAlign: "center", padding: "0 80px",
+          whiteSpace: "nowrap",
+        }}>
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const MaskRevealScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+
+  const revealW = interpolate(frame, [0, 28], [0, 110], {
+    extrapolateRight: "clamp", easing: Easing.bezier(0.16, 1, 0.3, 1),
+  });
+  const exitProgress = interpolate(
+    Math.max(0, frame - (durationInFrames - 16)),
+    [0, 16],
+    [0, 1],
+    { extrapolateRight: "clamp", easing: Easing.bezier(0.4, 0, 1, 1) },
+  );
+
+  const opacity = Math.max(0, 1 - exitProgress);
+  const fontSize = autoFontSize(scene.text || "", 140, 64);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity }}>
+        <div style={{ position: "relative", overflow: "hidden" }}>
+          <div style={{
+            fontSize, fontWeight: 700, fontFamily,
+            letterSpacing: "-0.04em", lineHeight: 1,
+            color: isLight(bg) ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)",
+            padding: "0 80px", textAlign: "center", userSelect: "none",
+          }}>
+            {scene.text}
+          </div>
+          <div style={{
+            position: "absolute", inset: 0,
+            clipPath: `inset(0 ${Math.max(0, 100 - revealW)}% 0 0)`,
+          }}>
+            <div style={{
+              fontSize, fontWeight: 700, fontFamily,
+              letterSpacing: "-0.04em", lineHeight: 1,
+              color: textColor(bg),
+              padding: "0 80px", textAlign: "center",
+            }}>
+              {scene.text}
+            </div>
+          </div>
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const AppleTypewriterScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+
+  const text = scene.text || "";
+  const charsPerFrame = 1.2;
+  const visibleChars = Math.min(text.length, Math.floor(frame * charsPerFrame));
+  const showCursor = frame < durationInFrames - 10;
+
+  const exitProgress = interpolate(
+    Math.max(0, frame - (durationInFrames - 16)),
+    [0, 16],
+    [0, 1],
+    { extrapolateRight: "clamp", easing: Easing.bezier(0.4, 0, 1, 1) },
+  );
+
+  const fontSize = autoFontSize(text, 120, 56);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{
+        justifyContent: "center", alignItems: "center",
+        opacity: Math.max(0, 1 - exitProgress),
+      }}>
+        <div style={{
+          fontSize, fontWeight: 600, fontFamily,
+          letterSpacing: "-0.025em", lineHeight: 1.1,
+          color: textColor(bg),
+          textAlign: "center", padding: "0 80px",
+        }}>
+          {text.slice(0, visibleChars)}
+          {showCursor && (
+            <span style={{
+              opacity: Math.floor(frame / 15) % 2 === 0 ? 1 : 0,
+              color: scene.accentColor || (isLight(bg) ? "#000" : "#fff"),
+              marginLeft: 2,
+            }}>|</span>
+          )}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const ScalePunchScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+
+  const punch = spring({
+    frame,
+    fps,
+    config: { damping: 14, stiffness: 400, mass: 0.4 },
+    from: 0,
+    to: 1,
+  });
+
+  const exitProgress = interpolate(
+    Math.max(0, frame - (durationInFrames - 12)),
+    [0, 12],
+    [0, 1],
+    { extrapolateRight: "clamp", easing: Easing.bezier(0.4, 0, 1, 1) },
+  );
+
+  const scale = interpolate(punch, [0, 1], [0.4, 1]);
+  const opacity = Math.min(
+    interpolate(punch, [0, 0.2], [0, 1]),
+    interpolate(exitProgress, [0, 1], [1, 0]),
+  );
+  const blur = interpolate(punch, [0, 0.3, 1], [20, 4, 0]);
+  const fontSize = autoFontSize(scene.text || "", 180, 80);
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div style={{
+          fontSize, fontWeight: 900, fontFamily,
+          letterSpacing: "-0.05em", lineHeight: 1,
+          color: textColor(bg), opacity,
+          transform: `scale(${scale})`,
+          filter: `blur(${blur}px)`,
+          textAlign: "center", padding: "0 80px",
+        }}>
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+export const SequentialWordsScene: React.FC<{ scene: SceneData; sceneIndex?: number }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+
+  const words = (scene.text || "").split(/\s+/).filter(Boolean);
+  const framesPerWord = 12;
+
+  return (
+    <AbsoluteFill style={{ background: bg }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{
+        justifyContent: "center", alignItems: "center",
+        display: "flex", flexWrap: "wrap", gap: "0.3em",
+        padding: "0 80px",
+      }}>
+        {words.map((word, i) => {
+          const wordFrame = Math.max(0, frame - i * framesPerWord);
+          const enter = spring({
+            frame: wordFrame, fps,
+            config: { damping: 200, stiffness: 120 },
+            from: 0, to: 1,
+          });
+          const exitProgress = interpolate(
+            Math.max(0, frame - (durationInFrames - 14)),
+            [0, 14],
+            [0, 1],
+            { extrapolateRight: "clamp" },
+          );
+          const fontSize = autoFontSize(scene.text || "", 100, 48);
+          return (
+            <span key={i} style={{
+              fontSize, fontWeight: 600, fontFamily,
+              letterSpacing: "-0.03em", lineHeight: 1.1,
+              color: textColor(bg),
+              opacity: Math.min(interpolate(enter, [0, 1], [0, 1]), 1 - exitProgress),
+              transform: `translateY(${interpolate(enter, [0, 1], [24, 0])}px) scale(${interpolate(enter, [0, 1], [0.88, 1])})`,
+              filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 2, 0])}px)`,
+              display: "inline-block",
+            }}>
+              {word}
+            </span>
+          );
+        })}
       </AbsoluteFill>
     </AbsoluteFill>
   );

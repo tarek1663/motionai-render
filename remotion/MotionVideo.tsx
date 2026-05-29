@@ -48,6 +48,8 @@ import {
   AccentFirstWordScene, BigNumberScene, PureTextScene,
   AppleTextScene, AppleAccentScene, AppleNumberScene,
   ApplePhotoScene, AppleIconScene, AppleCTAScene,
+  SingleWordScene, SplitWordsScene, ZoomWordScene, SlideWordScene,
+  MaskRevealScene, AppleTypewriterScene, ScalePunchScene, SequentialWordsScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -196,6 +198,14 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({ scene, i
     case "applephoto":        return <ApplePhotoScene scene={s} sceneIndex={index} />;
     case "appleicon":         return <AppleIconScene scene={s} sceneIndex={index} />;
     case "applecta":          return <AppleCTAScene scene={s} sceneIndex={index} />;
+    case "singleword":        return <SingleWordScene scene={s} sceneIndex={index} />;
+    case "splitwords":        return <SplitWordsScene scene={s} sceneIndex={index} />;
+    case "zoomword":          return <ZoomWordScene scene={s} sceneIndex={index} />;
+    case "slideword":         return <SlideWordScene scene={s} sceneIndex={index} />;
+    case "maskreveal":        return <MaskRevealScene scene={s} sceneIndex={index} />;
+    case "appletypewriter":   return <AppleTypewriterScene scene={s} sceneIndex={index} />;
+    case "scalepunch":        return <ScalePunchScene scene={s} sceneIndex={index} />;
+    case "sequentialwords":   return <SequentialWordsScene scene={s} sceneIndex={index} />;
     case "cleantext":         return <AppleTextScene scene={s} sceneIndex={index} />;
     case "highlightword":     return <HighlightWordScene scene={s} sceneIndex={index} />;
     case "phototext":         return <ApplePhotoScene scene={s} sceneIndex={index} />;
