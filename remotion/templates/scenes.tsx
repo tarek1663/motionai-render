@@ -8579,14 +8579,12 @@ export const CounterPunchScene: React.FC<{ scene: SceneData; sceneIndex?: number
 // SYSTÈME DE BASE APPLE/LINEAR — scènes clean premium
 // ═══════════════════════════════════════════════════════
 
-const E_APPLE = E_PREMIUM;
-
 const getRevealValues = (frame: number, delay = 0) => {
   const f = Math.max(0, frame - delay);
   return {
-    opacity: interpolate(f, [0, 18], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_APPLE }),
-    y: interpolate(f, [0, 20], [24, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_APPLE }),
-    blur: interpolate(f, [0, 16], [6, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_APPLE }),
+    opacity: interpolate(f, [0, 18], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_PREMIUM }),
+    y: interpolate(f, [0, 20], [24, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_PREMIUM }),
+    blur: interpolate(f, [0, 16], [6, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: E_PREMIUM }),
   };
 };
 
