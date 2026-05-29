@@ -858,9 +858,13 @@ export const FadeUpLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
   const { fps, durationInFrames } = useVideoConfig();
   const bg = scene.bg || "#ffffff";
   const text = scene.text || "";
-  const letters = text.split("");
+  const words = text.trim().split(/\s+/).filter(Boolean);
   const fontSize = autoFontSize(text, 160, 72);
   const { opacity: fadeOut } = useAppleTiming();
+  const fadeUpWordStarts = words.reduce<number[]>((starts, word, wi) => {
+    starts.push(wi === 0 ? 0 : starts[wi - 1] + words[wi - 1].length);
+    return starts;
+  }, []);
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
@@ -872,37 +876,41 @@ export const FadeUpLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
           opacity: fadeOut,
         }}
       >
-        <div style={{ display: "flex", whiteSpace: "nowrap" }}>
-          {letters.map((letter, i) => {
-            const delay = i * 4;
-            const enter = spring({
-              frame: Math.max(0, frame - delay),
-              fps,
-              config: { damping: 280, stiffness: 90, mass: 0.7 },
-              from: 0,
-              to: 1,
-            });
-            return (
-              <span
-                key={i}
-                style={{
-                  fontSize,
-                  fontWeight: 600,
-                  fontFamily: FONT,
-                  letterSpacing: "-0.03em",
-                  lineHeight: 1,
-                  color: mainTextColor(scene, bg),
-                  textShadow: mainTextShadow(bg),
-                  display: "inline-block",
-                  opacity: interpolate(enter, [0, 1], [0, 1]),
-                  transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px)`,
-                  filter: `blur(${interpolate(enter, [0, 0.5, 1], [6, 1, 0])}px)`,
-                }}
-              >
-                {letter === " " ? "\u00A0" : letter}
+        <div style={{ display: "flex", gap: "0.3em", flexWrap: "wrap", justifyContent: "center", whiteSpace: "nowrap" }}>
+          {words.map((word, wi) => (
+              <span key={wi} style={{ display: "inline-flex" }}>
+                {word.split("").map((letter, i) => {
+                  const delay = (fadeUpWordStarts[wi] + i) * 4;
+                  const enter = spring({
+                    frame: Math.max(0, frame - delay),
+                    fps,
+                    config: { damping: 280, stiffness: 90, mass: 0.7 },
+                    from: 0,
+                    to: 1,
+                  });
+                  return (
+                    <span
+                      key={i}
+                      style={{
+                        fontSize,
+                        fontWeight: 600,
+                        fontFamily: FONT,
+                        letterSpacing: "-0.03em",
+                        lineHeight: 1,
+                        color: mainTextColor(scene, bg),
+                        textShadow: mainTextShadow(bg),
+                        display: "inline-block",
+                        opacity: interpolate(enter, [0, 1], [0, 1]),
+                        transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px)`,
+                        filter: `blur(${interpolate(enter, [0, 0.5, 1], [6, 1, 0])}px)`,
+                      }}
+                    >
+                      {letter}
+                    </span>
+                  );
+                })}
               </span>
-            );
-          })}
+          ))}
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
@@ -1112,7 +1120,7 @@ export const StaggerWordsScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
           opacity: fadeOut,
         }}
       >
-        <div style={{ display: "flex", gap: "0.28em", whiteSpace: "nowrap" }}>
+        <div style={{ display: "flex", gap: "0.3em", whiteSpace: "nowrap", flexWrap: "wrap", justifyContent: "center" }}>
           {words.map((word, i) => {
             const delay = i * 10;
             const enter = spring({
@@ -1134,6 +1142,7 @@ export const StaggerWordsScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
                   color: mainTextColor(scene, bg),
                   textShadow: mainTextShadow(bg),
                   display: "inline-block",
+                  marginRight: "0.05em",
                   opacity: interpolate(enter, [0, 1], [0, 1]),
                   transform: `translateY(${interpolate(enter, [0, 1], [50, 0])}px) rotate(${interpolate(enter, [0, 1], [4, 0])}deg)`,
                   filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
@@ -1825,7 +1834,7 @@ export const AccentWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
           opacity: fadeOut,
         }}
       >
-        <div style={{ display: "flex", gap: "0.25em", whiteSpace: "nowrap" }}>
+        <div style={{ display: "flex", gap: "0.25em", whiteSpace: "nowrap", flexWrap: "wrap", justifyContent: "center" }}>
           {words.map((word, i) => {
             const delay = i * 8;
             const enter = spring({
@@ -1847,6 +1856,7 @@ export const AccentWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
                   lineHeight: 1,
                   color: isAccent ? accent : textColor(bg),
                   display: "inline-block",
+                  marginRight: "0.05em",
                   opacity: interpolate(enter, [0, 1], [0, 1]),
                   transform: `translateY(${interpolate(enter, [0, 1], [30, 0])}px) scale(${interpolate(enter, [0, 1], [0.88, 1])})`,
                   filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
@@ -3908,10 +3918,14 @@ export const ColorLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
   const { fps, durationInFrames } = useVideoConfig();
   const bg = scene.bg || "#000000";
   const accent = safeAccent(scene.accentColor, bg);
-  const letters = (scene.text || "").split("");
+  const words = (scene.text || "").trim().split(/\s+/).filter(Boolean);
   const fontSize = autoFontSize(scene.text || "", 160, 72);
 
   const { opacity: fadeOut } = useAppleTiming();
+  const colorWordStarts = words.reduce<number[]>((starts, word, wi) => {
+    starts.push(wi === 0 ? 0 : starts[wi - 1] + words[wi - 1].length);
+    return starts;
+  }, []);
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
@@ -3923,41 +3937,46 @@ export const ColorLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
           opacity: fadeOut,
         }}
       >
-        <div style={{ display: "flex", whiteSpace: "nowrap" }}>
-          {letters.map((letter, i) => {
-            const delay = i * 5;
-            const enter = spring({
-              frame: Math.max(0, frame - delay),
-              fps,
-              config: { damping: 280, stiffness: 100, mass: 0.7 },
-              from: 0,
-              to: 1,
-            });
+        <div style={{ display: "flex", gap: "0.3em", flexWrap: "wrap", justifyContent: "center", whiteSpace: "nowrap" }}>
+          {words.map((word, wi) => (
+              <span key={wi} style={{ display: "inline-flex" }}>
+                {word.split("").map((letter, i) => {
+                  const globalIndex = colorWordStarts[wi] + i;
+                  const delay = globalIndex * 5;
+                  const enter = spring({
+                    frame: Math.max(0, frame - delay),
+                    fps,
+                    config: { damping: 280, stiffness: 100, mass: 0.7 },
+                    from: 0,
+                    to: 1,
+                  });
 
-            const isColorLetter = i % 2 === 0;
-            const color = isColorLetter ? accent : textColor(bg);
+                  const isColorLetter = globalIndex % 2 === 0;
+                  const color = isColorLetter ? accent : textColor(bg);
 
-            return (
-              <span
-                key={i}
-                style={{
-                  fontSize,
-                  fontWeight: 700,
-                  fontFamily: FONT,
-                  letterSpacing: "-0.03em",
-                  lineHeight: 1,
-                  color,
-                  display: "inline-block",
-                  opacity: interpolate(enter, [0, 1], [0, 1]),
-                  transform: `translateY(${interpolate(enter, [0, 1], [30, 0])}px) scale(${interpolate(enter, [0, 1], [0.8, 1])})`,
-                  filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
-                  textShadow: mainTextShadow(bg),
-                }}
-              >
-                {letter === " " ? "\u00A0" : letter}
+                  return (
+                    <span
+                      key={i}
+                      style={{
+                        fontSize,
+                        fontWeight: 700,
+                        fontFamily: FONT,
+                        letterSpacing: "-0.03em",
+                        lineHeight: 1,
+                        color,
+                        display: "inline-block",
+                        opacity: interpolate(enter, [0, 1], [0, 1]),
+                        transform: `translateY(${interpolate(enter, [0, 1], [30, 0])}px) scale(${interpolate(enter, [0, 1], [0.8, 1])})`,
+                        filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
+                        textShadow: mainTextShadow(bg),
+                      }}
+                    >
+                      {letter}
+                    </span>
+                  );
+                })}
               </span>
-            );
-          })}
+          ))}
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
@@ -4045,43 +4064,41 @@ export const HierarchyTextScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
         style={{
           justifyContent: "center",
           alignItems: "center",
-          flexDirection: "row",
-          flexWrap: "wrap",
-          padding: "0 80px",
-          gap: "0.15em",
           opacity: fadeOut,
-          textAlign: "center",
         }}
       >
-        {words.map((word, i) => {
-          const enter = spring({
-            frame: Math.max(0, frame - i * 10),
-            fps,
-            config: { damping: 280, stiffness: 80, mass: 0.8 },
-            from: 0,
-            to: 1,
-          });
-          return (
-            <span
-              key={i}
-              style={{
-                fontSize: sizes[i] || 72,
-                fontWeight: i === 0 ? 900 : 600,
-                fontFamily: FONT,
-                letterSpacing: "-0.04em",
-                lineHeight: 1,
-                color: i === 0 ? accent : textColor(bg),
-                display: "inline-block",
-                opacity: interpolate(enter, [0, 1], [0, 1]),
-                transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px)`,
-                filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
-                textShadow: mainTextShadow(bg),
-              }}
-            >
-              {word}
-            </span>
-          );
-        })}
+        <div style={{ display: "flex", gap: "0.3em", flexWrap: "wrap", justifyContent: "center", padding: "0 80px", textAlign: "center" }}>
+          {words.map((word, i) => {
+            const enter = spring({
+              frame: Math.max(0, frame - i * 10),
+              fps,
+              config: { damping: 280, stiffness: 80, mass: 0.8 },
+              from: 0,
+              to: 1,
+            });
+            return (
+              <span
+                key={i}
+                style={{
+                  fontSize: sizes[i] || 72,
+                  fontWeight: i === 0 ? 900 : 600,
+                  fontFamily: FONT,
+                  letterSpacing: "-0.04em",
+                  lineHeight: 1,
+                  color: i === 0 ? accent : textColor(bg),
+                  display: "inline-block",
+                  marginRight: "0.05em",
+                  opacity: interpolate(enter, [0, 1], [0, 1]),
+                  transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px)`,
+                  filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
+                  textShadow: mainTextShadow(bg),
+                }}
+              >
+                {word}
+              </span>
+            );
+          })}
+        </div>
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -4300,7 +4317,8 @@ export const EraseLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
   const bg = scene.bg || "#ffffff";
-  const letters = (scene.text || "").split("");
+  const words = (scene.text || "").trim().split(/\s+/).filter(Boolean);
+  const letters = words.join("").split("");
   const fontSize = autoFontSize(scene.text || "", 160, 72);
 
   const globalEnter = spring({
@@ -4312,6 +4330,10 @@ export const EraseLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
   });
 
   const eraseStart = durationInFrames - 40;
+  const eraseWordStarts = words.reduce<number[]>((starts, word, wi) => {
+    starts.push(wi === 0 ? 0 : starts[wi - 1] + words[wi - 1].length);
+    return starts;
+  }, []);
 
   return (
     <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
@@ -4323,37 +4345,42 @@ export const EraseLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
           opacity: interpolate(globalEnter, [0, 0.3], [0, 1], { extrapolateRight: "clamp" }),
         }}
       >
-        <div style={{ display: "flex", whiteSpace: "nowrap" }}>
-          {letters.map((letter, i) => {
-            const reverseIndex = letters.length - 1 - i;
-            const eraseDelay = eraseStart + reverseIndex * 3;
-            const eraseProgress = interpolate(
-              Math.max(0, frame - eraseDelay),
-              [0, 10],
-              [1, 0],
-              { extrapolateRight: "clamp", easing: E_IN },
-            );
-            const enterProgress = interpolate(globalEnter, [0, 1], [0, 1]);
+        <div style={{ display: "flex", gap: "0.3em", flexWrap: "wrap", justifyContent: "center", whiteSpace: "nowrap" }}>
+          {words.map((word, wi) => (
+              <span key={wi} style={{ display: "inline-flex" }}>
+                {word.split("").map((letter, i) => {
+                  const globalIndex = eraseWordStarts[wi] + i;
+                  const reverseIndex = letters.length - 1 - globalIndex;
+                  const eraseDelay = eraseStart + reverseIndex * 3;
+                  const eraseProgress = interpolate(
+                    Math.max(0, frame - eraseDelay),
+                    [0, 10],
+                    [1, 0],
+                    { extrapolateRight: "clamp", easing: E_IN },
+                  );
+                  const enterProgress = interpolate(globalEnter, [0, 1], [0, 1]);
 
-            return (
-              <span
-                key={i}
-                style={{
-                  fontSize,
-                  fontWeight: 700,
-                  fontFamily: FONT,
-                  letterSpacing: "-0.03em",
-                  lineHeight: 1,
-                  color: mainTextColor(scene, bg),
-                  display: "inline-block",
-                  opacity: Math.min(enterProgress, eraseProgress),
-                  transform: `translateY(${interpolate(eraseProgress, [0, 1], [10, 0])}px)`,
-                }}
-              >
-                {letter === " " ? "\u00A0" : letter}
+                  return (
+                    <span
+                      key={i}
+                      style={{
+                        fontSize,
+                        fontWeight: 700,
+                        fontFamily: FONT,
+                        letterSpacing: "-0.03em",
+                        lineHeight: 1,
+                        color: mainTextColor(scene, bg),
+                        display: "inline-block",
+                        opacity: Math.min(enterProgress, eraseProgress),
+                        transform: `translateY(${interpolate(eraseProgress, [0, 1], [10, 0])}px)`,
+                      }}
+                    >
+                      {letter}
+                    </span>
+                  );
+                })}
               </span>
-            );
-          })}
+          ))}
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
@@ -4617,12 +4644,13 @@ export const WeightRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
         <div
           style={{
             display: "flex",
-            gap: "0.2em",
+            gap: "0.3em",
             flexWrap: "wrap",
             justifyContent: "center",
             alignItems: "center",
             padding: "0 80px",
             textAlign: "center",
+            whiteSpace: "nowrap",
           }}
         >
           {words.map((word, i) => {
@@ -4640,6 +4668,8 @@ export const WeightRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
                   whiteSpace: "nowrap",
                   textShadow: mainTextShadow(bg),
                   textAlign: "center",
+                  display: "inline-block",
+                  marginRight: "0.05em",
                 }}
               >
                 {word}
