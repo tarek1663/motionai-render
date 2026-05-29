@@ -9,6 +9,9 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
+const Anthropic = require("@anthropic-ai/sdk");
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
@@ -326,6 +329,143 @@ const generateMockupContent = (scene, prompt) => {
   }
 
   return scene;
+};
+
+const generateUIContent = async (siteName, prompt, sceneType) => {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+
+  try {
+    console.log("🤖 Generating UI for:", siteName, `(${sceneType})`);
+
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 800,
+      messages: [{
+        role: "user",
+        content: `Tu es un expert en UI design. Génère le contenu d'une interface ${sceneType === "iphone" ? "mobile iPhone" : "desktop"} pour : "${siteName}" dans le contexte : "${prompt}".
+
+Réponds UNIQUEMENT en JSON avec cette structure exacte :
+{
+  "appName": "Nom de l'app",
+  "primaryColor": "#couleur_hex",
+  "bgColor": "#couleur_fond",
+  "textColor": "#couleur_texte",
+  "elements": [
+    {
+      "type": "header",
+      "content": "texte ou emoji",
+      "style": "bold|normal|small"
+    },
+    {
+      "type": "metric",
+      "label": "label",
+      "value": "valeur",
+      "trend": "+12%"
+    },
+    {
+      "type": "bar",
+      "values": [60, 80, 45, 90, 70],
+      "color": "#hex"
+    },
+    {
+      "type": "list",
+      "items": ["item1", "item2", "item3"]
+    },
+    {
+      "type": "button",
+      "text": "texte bouton",
+      "color": "#hex"
+    },
+    {
+      "type": "progress",
+      "value": 75,
+      "label": "label"
+    },
+    {
+      "type": "avatar",
+      "emoji": "👤",
+      "name": "nom",
+      "sub": "sous-titre"
+    },
+    {
+      "type": "grid",
+      "items": ["emoji1", "emoji2", "emoji3", "emoji4"]
+    }
+  ]
+}
+
+RÈGLES :
+- Maximum 4-5 éléments pour ne pas surcharger l'écran
+- Couleurs cohérentes avec la marque/contexte
+- Contenu RÉEL et pertinent pour "${siteName}"
+- Style moderne et premium
+- Réponds UNIQUEMENT en JSON valide, pas de markdown`,
+      }],
+    });
+
+    const text = response.content[0]?.text || "";
+    const clean = text.replace(/```json|```/g, "").trim();
+    return JSON.parse(clean);
+  } catch (err) {
+    console.error("🤖 UI generation error:", err.message);
+    return null;
+  }
+};
+
+const enrichMockupsWithAI = async (scenes, prompt) => {
+  const p = (prompt || "").toLowerCase();
+
+  const isWebContext = (
+    p.includes("app") || p.includes("site") || p.includes("web") ||
+    p.includes("saas") || p.includes("dashboard") || p.includes("plateforme") ||
+    p.includes("spotify") || p.includes("netflix") || p.includes("youtube") ||
+    p.includes("instagram") || p.includes("tiktok") || p.includes("airbnb") ||
+    p.includes("uber") || p.includes("notion") || p.includes("stripe") ||
+    p.includes("figma") || p.includes("linear") || p.includes("vercel") ||
+    p.includes("amazon") || p.includes("shopify") || p.includes(".com") ||
+    p.includes(".fr") || p.includes(".app") || p.includes("mobile") ||
+    p.includes("interface") || p.includes("ui") || p.includes("ux")
+  );
+
+  if (!isWebContext) return scenes;
+
+  const siteRegex = /([a-zA-Z0-9-]+\.(com|fr|app|io|co|net|org))/i;
+  const siteMatch = prompt.match(siteRegex);
+  const siteName = siteMatch ? siteMatch[0] : prompt.slice(0, 50);
+
+  const mockupTypes = new Set(["iphone", "macbook", "browser", "doubledevice", "dashboard"]);
+  const hasMockups = scenes.some((scene) => mockupTypes.has(scene.type));
+  if (!hasMockups) return scenes;
+
+  const needsMobile = scenes.some((scene) => scene.type === "iphone");
+  const needsDesktop = scenes.some(
+    (scene) => mockupTypes.has(scene.type) && scene.type !== "iphone",
+  );
+
+  const [mobileUI, desktopUI] = await Promise.all([
+    needsMobile ? generateUIContent(siteName, prompt, "iphone") : Promise.resolve(null),
+    needsDesktop ? generateUIContent(siteName, prompt, "desktop") : Promise.resolve(null),
+  ]);
+
+  console.log("🤖 AI UI generated:", {
+    mobile: !!mobileUI,
+    desktop: !!desktopUI,
+    site: siteName,
+  });
+
+  return scenes.map((scene) => {
+    if (!mockupTypes.has(scene.type)) return scene;
+
+    const isMobile = scene.type === "iphone";
+    const uiData = isMobile ? mobileUI : desktopUI;
+    if (!uiData) return scene;
+
+    return {
+      ...scene,
+      aiUI: uiData,
+      websiteUrl: siteName,
+    };
+  });
 };
 
 const puppeteer = require("puppeteer-core");
@@ -745,8 +885,13 @@ app.post("/render", async (req, res) => {
     generateMockupContent(scene, prompt || ""),
   );
 
-  const enrichedWithScreenshots = await enrichMockupsWithScreenshots(
+  const enrichedWithAI = await enrichMockupsWithAI(
     enrichedWithMockup,
+    prompt || "",
+  );
+
+  const enrichedWithScreenshots = await enrichMockupsWithScreenshots(
+    enrichedWithAI,
     prompt || "",
   );
 
@@ -773,6 +918,10 @@ app.post("/render", async (req, res) => {
   console.log(
     "🌐 Mockups with screenshots:",
     enrichedWithScreenshots.filter((s) => s.photoUrl?.startsWith("data:image")).map((s) => s.type),
+  );
+  console.log(
+    "🤖 Mockups with AI UI:",
+    enrichedWithScreenshots.filter((s) => s.aiUI).map((s) => s.type),
   );
 
   const outPath = path.join(RENDERS_DIR, `${jobId}.mp4`);

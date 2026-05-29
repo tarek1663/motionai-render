@@ -5,6 +5,7 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.100.1",
     "@remotion/bundler": "4.0.305",
     "@remotion/cli": "4.0.305",
     "@remotion/google-fonts": "4.0.305",

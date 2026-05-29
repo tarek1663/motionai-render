@@ -125,6 +125,13 @@ export type SceneData = {
     color?: string;
     [key: string]: unknown;
   };
+  aiUI?: {
+    appName?: string;
+    primaryColor?: string;
+    bgColor?: string;
+    textColor?: string;
+    elements?: Array<Record<string, unknown>>;
+  };
   geo?:
     | "dots"
     | "grid"
@@ -4901,8 +4908,187 @@ const renderKnownUI = (siteName: string, accent: string, frame: number) => {
   );
 };
 
+type AIUIElement = Record<string, unknown>;
+
+const renderAIUI = (aiUI: SceneData["aiUI"], accent: string, frame: number) => {
+  if (!aiUI?.elements?.length) return null;
+
+  const bg = aiUI.bgColor || "#0a0a0a";
+  const tc = aiUI.textColor || "#ffffff";
+  const pc = aiUI.primaryColor || accent;
+
+  return (
+    <div style={{
+      width: "100%", height: "100%",
+      background: bg,
+      padding: "12px 10px",
+      display: "flex", flexDirection: "column", gap: 7,
+      overflow: "hidden",
+    }}>
+      {aiUI.elements.map((el: AIUIElement, i: number) => {
+        const elFade = interpolate(Math.max(0, frame - i * 6), [0, 16], [0, 1], {
+          extrapolateRight: "clamp", easing: E_OUT,
+        });
+
+        if (el.type === "header") {
+          const sizes: Record<string, number> = { bold: 13, normal: 10, small: 8 };
+          const weights: Record<string, number> = { bold: 800, normal: 500, small: 400 };
+          const style = String(el.style || "normal");
+          return (
+            <div key={i} style={{
+              fontSize: sizes[style] || 11,
+              fontWeight: weights[style] || 600,
+              fontFamily: FONT,
+              color: style === "bold" ? tc : pc,
+              letterSpacing: "-0.02em",
+              opacity: elFade,
+            }}>
+              {String(el.content || "")}
+            </div>
+          );
+        }
+
+        if (el.type === "metric") {
+          return (
+            <div key={i} style={{
+              background: "rgba(255,255,255,0.05)",
+              borderRadius: 8, padding: "6px 8px",
+              opacity: elFade,
+            }}>
+              <div style={{
+                fontSize: 16, fontWeight: 800, fontFamily: FONT,
+                color: pc, letterSpacing: "-0.04em",
+              }}>
+                {String(el.value || "")}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontSize: 7, fontFamily: FONT, color: "rgba(255,255,255,0.4)" }}>{String(el.label || "")}</div>
+                {el.trend ? (
+                  <div style={{ fontSize: 7, fontFamily: FONT, color: "#30d158", fontWeight: 600 }}>{String(el.trend)}</div>
+                ) : null}
+              </div>
+            </div>
+          );
+        }
+
+        if (el.type === "bar") {
+          const values = (el.values as number[]) || [60, 80, 45, 90, 70];
+          return (
+            <div key={i} style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 36, opacity: elFade }}>
+              {values.map((v: number, j: number) => {
+                const barH = interpolate(Math.max(0, frame - i * 6 - j * 3), [0, 18], [0, v], { extrapolateRight: "clamp" });
+                return (
+                  <div key={j} style={{
+                    flex: 1, height: `${barH}%`,
+                    borderRadius: "2px 2px 0 0",
+                    background: j === values.length - 2 ? String(el.color || pc) : `${String(el.color || pc)}44`,
+                  }} />
+                );
+              })}
+            </div>
+          );
+        }
+
+        if (el.type === "list") {
+          return (
+            <div key={i} style={{ display: "flex", flexDirection: "column", gap: 4, opacity: elFade }}>
+              {((el.items as string[]) || []).map((item: string, j: number) => (
+                <div key={j} style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "4px 6px",
+                  background: j === 0 ? `${pc}18` : "transparent",
+                  borderRadius: 6,
+                  borderLeft: j === 0 ? `2px solid ${pc}` : "none",
+                }}>
+                  <div style={{ fontSize: 8, fontFamily: FONT, color: j === 0 ? tc : "rgba(255,255,255,0.5)" }}>
+                    {item}
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        }
+
+        if (el.type === "button") {
+          const btnColor = String(el.color || pc);
+          return (
+            <div key={i} style={{
+              background: btnColor,
+              borderRadius: 8, padding: "6px 10px",
+              textAlign: "center", opacity: elFade,
+            }}>
+              <span style={{ fontSize: 9, fontWeight: 700, fontFamily: FONT, color: isLight(btnColor) ? "#000" : "#fff" }}>
+                {String(el.text || "")}
+              </span>
+            </div>
+          );
+        }
+
+        if (el.type === "progress") {
+          const barW = interpolate(Math.max(0, frame - i * 6), [0, 30], [0, Number(el.value) || 75], { extrapolateRight: "clamp" });
+          return (
+            <div key={i} style={{ opacity: elFade }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                <div style={{ fontSize: 7, fontFamily: FONT, color: "rgba(255,255,255,0.5)" }}>{String(el.label || "")}</div>
+                <div style={{ fontSize: 7, fontFamily: FONT, color: pc, fontWeight: 700 }}>{Math.round(barW)}%</div>
+              </div>
+              <div style={{ height: 4, background: "rgba(255,255,255,0.1)", borderRadius: 2, overflow: "hidden" }}>
+                <div style={{ width: `${barW}%`, height: "100%", background: pc, borderRadius: 2 }} />
+              </div>
+            </div>
+          );
+        }
+
+        if (el.type === "avatar") {
+          return (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, opacity: elFade }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: "50%",
+                background: `${pc}33`, display: "flex",
+                alignItems: "center", justifyContent: "center",
+                fontSize: 14, flexShrink: 0,
+              }}>
+                {String(el.emoji || "👤")}
+              </div>
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 700, fontFamily: FONT, color: tc }}>{String(el.name || "")}</div>
+                <div style={{ fontSize: 7, fontFamily: FONT, color: "rgba(255,255,255,0.4)" }}>{String(el.sub || "")}</div>
+              </div>
+            </div>
+          );
+        }
+
+        if (el.type === "grid") {
+          return (
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, opacity: elFade }}>
+              {((el.items as string[]) || []).map((emoji: string, j: number) => (
+                <div key={j} style={{
+                  aspectRatio: "1", background: "rgba(255,255,255,0.06)",
+                  borderRadius: 8, display: "flex",
+                  alignItems: "center", justifyContent: "center", fontSize: 14,
+                }}>
+                  {emoji}
+                </div>
+              ))}
+            </div>
+          );
+        }
+
+        return null;
+      })}
+    </div>
+  );
+};
+
 const renderMockupScreen = (scene: SceneData, accent: string, frame: number) => {
+  const aiUI = scene.aiUI;
   const photoUrl = scene.photoUrl || "";
+
+  if (aiUI) {
+    const aiScreen = renderAIUI(aiUI, accent, frame);
+    if (aiScreen) return aiScreen;
+  }
+
   if (photoUrl && !photoUrl.includes("pexels")) {
     return (
       <img
@@ -4912,6 +5098,7 @@ const renderMockupScreen = (scene: SceneData, accent: string, frame: number) => 
       />
     );
   }
+
   const siteName = scene.websiteUrl || scene.url || scene.text || "";
   return renderKnownUI(siteName, accent, frame);
 };
