@@ -103,22 +103,21 @@ export type SceneData = {
 // ---------------------------------------------------------
 // HELPERS
 // ---------------------------------------------------------
-const isLight = (bg: string) =>
-  bg === "#f5f5f7" || bg === "#ffffff" || bg === "#eeeeee" || bg === "#f5f5f5";
-
-const getLuminance = (hex: string): number => {
-  const clean = hex.replace("#", "");
-  const r = parseInt(clean.slice(0, 2), 16) / 255;
-  const g = parseInt(clean.slice(2, 4), 16) / 255;
-  const b = parseInt(clean.slice(4, 6), 16) / 255;
-  return 0.299 * r + 0.587 * g + 0.114 * b;
+const isLight = (hex: string): boolean => {
+  try {
+    const h = hex.replace("#", "");
+    if (h.length < 6) return true;
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.5;
+  } catch {
+    return true;
+  }
 };
 
-const textColor = (bg: string): string => {
-  if (isLight(bg)) return "#1d1d1f";
-  const lum = getLuminance(bg);
-  return lum > 0.4 ? "#1d1d1f" : "#f5f5f0";
-};
+const textColor = (bg: string): string => (isLight(bg) ? "#000000" : "#ffffff");
 
 const getUIProgressStepLabels = (scene: SceneData): string[] => {
   const raw = scene.steps;
@@ -322,38 +321,120 @@ const GEO_MAP: Record<string, React.FC<{ bg: string }>> = {
   radial: GeoRadial,
 };
 
-// Fond pur avec micro zoom
-const PureBg: React.FC<{ bg: string }> = ({ bg }) => {
+// ═══════════════════════════════════════════════════════
+// FOND GÉOMÉTRIQUE DYNAMIQUE
+// ═══════════════════════════════════════════════════════
+
+const GeoBackground: React.FC<{ bg: string; geo?: string }> = ({ bg, geo }) => {
+  const light = isLight(bg);
+  const line = light ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)";
+  const dot = light ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.10)";
+
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const scale = interpolate(frame, [0, durationInFrames], [1.0, 1.012], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        background: bg,
-        transform: `scale(${scale})`,
-      }}
-    />
-  );
-};
 
-// ═══════════════════════════════════════════════════════
-// FOND GÉOMÉTRIQUE DYNAMIQUE
-// ═══════════════════════════════════════════════════════
+  const baseStyle: React.CSSProperties = {
+    position: "absolute",
+    inset: 0,
+    background: bg,
+    transform: `scale(${scale})`,
+  };
 
-const GeoBackground: React.FC<{ bg: string; geo?: SceneData["geo"] }> = ({
-  bg,
-  geo,
-}) => {
-  if (!geo) return <PureBg bg={bg} />;
+  if (!geo || geo === "none") {
+    return <div style={baseStyle} />;
+  }
 
-  const Component = GEO_MAP[geo] || PureBg;
-  return <Component bg={bg} />;
+  const patterns: Record<string, React.CSSProperties> = {
+    dots: {
+      ...baseStyle,
+      backgroundImage: `radial-gradient(circle, ${dot} 1.5px, transparent 1.5px)`,
+      backgroundSize: "40px 40px",
+    },
+    grid: {
+      ...baseStyle,
+      backgroundImage: `linear-gradient(${line} 1px, transparent 1px), linear-gradient(90deg, ${line} 1px, transparent 1px)`,
+      backgroundSize: "56px 56px",
+    },
+    diagonal: {
+      ...baseStyle,
+      backgroundImage: `repeating-linear-gradient(45deg, ${line} 0px, ${line} 1px, transparent 1px, transparent 40px)`,
+    },
+    circles: {
+      ...baseStyle,
+    },
+    perspective: {
+      ...baseStyle,
+    },
+    hex: {
+      ...baseStyle,
+      backgroundImage: `radial-gradient(circle, ${dot} 1.5px, transparent 1.5px)`,
+      backgroundSize: "30px 52px",
+      backgroundPosition: "0 0, 15px 26px",
+    },
+    cross: {
+      ...baseStyle,
+      backgroundImage: `linear-gradient(${line} 2px, transparent 2px), linear-gradient(90deg, ${line} 2px, transparent 2px)`,
+      backgroundSize: "60px 60px",
+      backgroundPosition: "-1px -1px",
+    },
+    lines: {
+      ...baseStyle,
+      backgroundImage: `repeating-linear-gradient(0deg, ${line} 0px, ${line} 1px, transparent 1px, transparent 48px)`,
+    },
+    radial: {
+      ...baseStyle,
+      backgroundImage: `radial-gradient(ellipse 70% 60% at 50% 50%, ${light ? "rgba(255,255,255,0.0)" : "rgba(255,255,255,0.04)"} 0%, transparent 100%)`,
+    },
+  };
+
+  const style = patterns[geo] || baseStyle;
+
+  if (geo === "circles") {
+    return (
+      <div style={baseStyle}>
+        <div style={{ position: "absolute", inset: 0, transform: `scale(${scale})` }}>
+          {[150, 280, 420, 560, 700].map((r, i) => (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                width: r * 2,
+                height: r * 2,
+                borderRadius: "50%",
+                border: `1px solid ${line}`,
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (geo === "perspective") {
+    return (
+      <div style={{ ...baseStyle, overflow: "hidden" }}>
+        <div
+          style={{
+            position: "absolute",
+            inset: -200,
+            backgroundImage: `linear-gradient(${line} 1px, transparent 1px), linear-gradient(90deg, ${line} 1px, transparent 1px)`,
+            backgroundSize: "60px 60px",
+            transform: `perspective(600px) rotateX(55deg) translateY(30%) scale(${scale})`,
+            transformOrigin: "center bottom",
+          }}
+        />
+      </div>
+    );
+  }
+
+  return <div style={style} />;
 };
 
 // ─── SINGLEWORD ───────────────────────────────────────
