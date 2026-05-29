@@ -17,7 +17,21 @@ const FONT =
 // TYPES
 // ---------------------------------------------------------
 export type SceneData = {
-  type: "singleword" | "maskreveal" | "slideword" | "zoomword";
+  type:
+    | "singleword"
+    | "maskreveal"
+    | "slideword"
+    | "zoomword"
+    | "fadeupl"
+    | "blurin"
+    | "scalein"
+    | "slideup"
+    | "cliptop"
+    | "staggerwords"
+    | "morphweight"
+    | "fadepure"
+    | "tracking"
+    | "rotatein";
   text?: string;
   bg?: string;
   accentColor?: string;
@@ -321,6 +335,548 @@ export const ZoomWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             filter: `blur(${blur}px)`,
             whiteSpace: "nowrap",
             overflow: "hidden",
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 5. FADE UP LETTERS ───────────────────────────────
+export const FadeUpLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+  const text = scene.text || "";
+  const letters = text.split("");
+  const fontSize = autoFontSize(text, 160, 72);
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity: fadeOut,
+        }}
+      >
+        <div style={{ display: "flex", whiteSpace: "nowrap" }}>
+          {letters.map((letter, i) => {
+            const delay = i * 4;
+            const enter = spring({
+              frame: Math.max(0, frame - delay),
+              fps,
+              config: { damping: 280, stiffness: 90, mass: 0.7 },
+              from: 0,
+              to: 1,
+            });
+            return (
+              <span
+                key={i}
+                style={{
+                  fontSize,
+                  fontWeight: 600,
+                  fontFamily: FONT,
+                  letterSpacing: "-0.03em",
+                  lineHeight: 1,
+                  color: textColor(bg),
+                  display: "inline-block",
+                  opacity: interpolate(enter, [0, 1], [0, 1]),
+                  transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px)`,
+                  filter: `blur(${interpolate(enter, [0, 0.5, 1], [6, 1, 0])}px)`,
+                }}
+              >
+                {letter === " " ? "\u00A0" : letter}
+              </span>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 6. BLUR IN CENTER ────────────────────────────────
+export const BlurInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+
+  const progress = interpolate(frame, [0, 35], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const blur = interpolate(progress, [0, 1], [40, 0]);
+  const opacity = Math.min(interpolate(progress, [0, 0.2], [0, 1]), fadeOut);
+  const fontSize = autoFontSize(scene.text || "", 160, 72);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            opacity,
+            filter: `blur(${blur}px)`,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 7. SCALE FROM NOTHING ────────────────────────────
+export const ScaleInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+
+  const enter = spring({
+    frame,
+    fps,
+    config: { damping: 300, stiffness: 60, mass: 1 },
+    from: 0,
+    to: 1,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const scale = interpolate(enter, [0, 1], [0.3, 1]);
+  const opacity = Math.min(interpolate(enter, [0, 0.3], [0, 1]), fadeOut);
+  const blur = interpolate(enter, [0, 0.5, 1], [12, 3, 0]);
+  const fontSize = autoFontSize(scene.text || "", 160, 72);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            opacity,
+            transform: `scale(${scale})`,
+            filter: `blur(${blur}px)`,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 8. SLIDE FROM BOTTOM ─────────────────────────────
+export const SlideUpScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+
+  const enter = spring({
+    frame,
+    fps,
+    config: { damping: 260, stiffness: 70, mass: 0.9 },
+    from: 0,
+    to: 1,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const y = interpolate(enter, [0, 1], [120, 0]);
+  const opacity = Math.min(interpolate(enter, [0, 0.2], [0, 1]), fadeOut);
+  const fontSize = autoFontSize(scene.text || "", 160, 72);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            opacity,
+            transform: `translateY(${y}px)`,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 9. CLIP FROM TOP ─────────────────────────────────
+export const ClipTopScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+
+  const clipProgress = interpolate(frame, [0, 36], [0, 100], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 160, 72);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity: fadeOut,
+        }}
+      >
+        <div
+          style={{
+            clipPath: `inset(0 0 ${Math.max(0, 100 - clipProgress)}% 0)`,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              fontSize,
+              fontWeight: 600,
+              fontFamily: FONT,
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+              color: textColor(bg),
+              whiteSpace: "nowrap",
+            }}
+          >
+            {scene.text}
+          </div>
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 10. STAGGER WORDS ────────────────────────────────
+export const StaggerWordsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+  const words = (scene.text || "").split(" ");
+  const fontSize = autoFontSize(scene.text || "", 130, 60);
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity: fadeOut,
+        }}
+      >
+        <div style={{ display: "flex", gap: "0.28em", whiteSpace: "nowrap" }}>
+          {words.map((word, i) => {
+            const delay = i * 10;
+            const enter = spring({
+              frame: Math.max(0, frame - delay),
+              fps,
+              config: { damping: 280, stiffness: 80, mass: 0.8 },
+              from: 0,
+              to: 1,
+            });
+            return (
+              <span
+                key={i}
+                style={{
+                  fontSize,
+                  fontWeight: 600,
+                  fontFamily: FONT,
+                  letterSpacing: "-0.03em",
+                  lineHeight: 1,
+                  color: textColor(bg),
+                  display: "inline-block",
+                  opacity: interpolate(enter, [0, 1], [0, 1]),
+                  transform: `translateY(${interpolate(enter, [0, 1], [50, 0])}px) rotate(${interpolate(enter, [0, 1], [4, 0])}deg)`,
+                  filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
+                }}
+              >
+                {word}
+              </span>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 11. MORPH WEIGHT ─────────────────────────────────
+export const MorphWeightScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+
+  const progress = interpolate(frame, [0, 40], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const fontWeight = Math.round(interpolate(progress, [0, 1], [100, 700]));
+  const opacity = Math.min(interpolate(progress, [0, 0.15], [0, 1]), fadeOut);
+  const fontSize = autoFontSize(scene.text || "", 160, 72);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            opacity,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 12. FADE CROSS ───────────────────────────────────
+export const FadePureScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+
+  const fadeIn = interpolate(frame, [0, 30], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 24, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const fontSize = autoFontSize(scene.text || "", 160, 72);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          opacity: Math.min(fadeIn, fadeOut),
+        }}
+      >
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            whiteSpace: "nowrap",
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 13. TRACKING EXPAND ──────────────────────────────
+export const TrackingScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#ffffff";
+
+  const progress = interpolate(frame, [0, 40], [0, 1], {
+    extrapolateRight: "clamp",
+    easing: E_OUT,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const tracking = interpolate(progress, [0, 1], [-0.15, -0.025]);
+  const opacity = Math.min(interpolate(progress, [0, 0.2], [0, 1]), fadeOut);
+  const fontSize = autoFontSize(scene.text || "", 160, 72);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: `${tracking}em`,
+            lineHeight: 1,
+            color: textColor(bg),
+            opacity,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {scene.text}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+// ─── 14. ROTATE IN ────────────────────────────────────
+export const RotateInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
+  const bg = scene.bg || "#000000";
+
+  const enter = spring({
+    frame,
+    fps,
+    config: { damping: 300, stiffness: 70, mass: 1 },
+    from: 0,
+    to: 1,
+  });
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 22, durationInFrames],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: E_IN,
+    },
+  );
+
+  const rotate = interpolate(enter, [0, 1], [-6, 0]);
+  const opacity = Math.min(interpolate(enter, [0, 0.2], [0, 1]), fadeOut);
+  const y = interpolate(enter, [0, 1], [30, 0]);
+  const fontSize = autoFontSize(scene.text || "", 160, 72);
+
+  return (
+    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
+      <PureBg bg={bg} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div
+          style={{
+            fontSize,
+            fontWeight: 600,
+            fontFamily: FONT,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            color: textColor(bg),
+            opacity,
+            transform: `translateY(${y}px) rotate(${rotate}deg)`,
+            whiteSpace: "nowrap",
           }}
         >
           {scene.text}

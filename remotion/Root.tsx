@@ -5,26 +5,22 @@ const fps = 60;
 
 const defaultProps: MotionVideoProps = {
   scenes: [
-    { type: "singleword", text: "Simple.", bg: "#ffffff" },
-    { type: "maskreveal", text: "Élégant.", bg: "#000000" },
-    { type: "zoomword", text: "Rapide.", bg: "#ffffff" },
-    { type: "slideword", text: "Précis.", bg: "#000000" },
-    { type: "singleword", text: "Puissant.", bg: "#ffffff" },
-    { type: "maskreveal", text: "Pour toi.", bg: "#000000" },
-    { type: "zoomword", text: "Motionr.", bg: "#ffffff" },
-    { type: "slideword", text: "Commence.", bg: "#000000" },
+    { type: "fadeupl", text: "Élégant.", bg: "#ffffff" },
+    { type: "blurin", text: "Fluide.", bg: "#000000" },
+    { type: "scalein", text: "Précis.", bg: "#ffffff" },
+    { type: "slideup", text: "Rapide.", bg: "#000000" },
+    { type: "cliptop", text: "Simple.", bg: "#ffffff" },
+    { type: "staggerwords", text: "Fait pour toi.", bg: "#000000" },
+    { type: "morphweight", text: "Premium.", bg: "#ffffff" },
+    { type: "fadepure", text: "Sobre.", bg: "#000000" },
+    { type: "tracking", text: "Motionr.", bg: "#ffffff" },
+    { type: "rotatein", text: "Commence.", bg: "#000000" },
   ] as MotionVideoProps["scenes"],
-  sceneDurations: [
-    { startFrame: 0, durationFrames: 120 },
-    { startFrame: 120, durationFrames: 120 },
-    { startFrame: 240, durationFrames: 120 },
-    { startFrame: 360, durationFrames: 120 },
-    { startFrame: 480, durationFrames: 120 },
-    { startFrame: 600, durationFrames: 120 },
-    { startFrame: 720, durationFrames: 120 },
-    { startFrame: 840, durationFrames: 120 },
-  ],
-  totalFrames: 960,
+  sceneDurations: Array.from({ length: 10 }, (_, i) => ({
+    startFrame: i * 120,
+    durationFrames: 120,
+  })),
+  totalFrames: 1200,
   audioSrc: null,
   musicSrc: null,
 };
@@ -49,7 +45,7 @@ const RemotionRoot = () => (
       });
 
       const total =
-        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 960;
+        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 1200;
 
       const fmt = (p as MotionVideoProps & { format?: string }).format || "9:16";
       const w = fmt === "16:9" ? 1920 : 1080;

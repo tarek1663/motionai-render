@@ -14,6 +14,16 @@ import {
   MaskRevealScene,
   SlideWordScene,
   ZoomWordScene,
+  FadeUpLettersScene,
+  BlurInScene,
+  ScaleInScene,
+  SlideUpScene,
+  ClipTopScene,
+  StaggerWordsScene,
+  MorphWeightScene,
+  FadePureScene,
+  TrackingScene,
+  RotateInScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -45,6 +55,26 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <SlideWordScene scene={sceneWithIndex} />;
     case "zoomword":
       return <ZoomWordScene scene={sceneWithIndex} />;
+    case "fadeupl":
+      return <FadeUpLettersScene scene={sceneWithIndex} />;
+    case "blurin":
+      return <BlurInScene scene={sceneWithIndex} />;
+    case "scalein":
+      return <ScaleInScene scene={sceneWithIndex} />;
+    case "slideup":
+      return <SlideUpScene scene={sceneWithIndex} />;
+    case "cliptop":
+      return <ClipTopScene scene={sceneWithIndex} />;
+    case "staggerwords":
+      return <StaggerWordsScene scene={sceneWithIndex} />;
+    case "morphweight":
+      return <MorphWeightScene scene={sceneWithIndex} />;
+    case "fadepure":
+      return <FadePureScene scene={sceneWithIndex} />;
+    case "tracking":
+      return <TrackingScene scene={sceneWithIndex} />;
+    case "rotatein":
+      return <RotateInScene scene={sceneWithIndex} />;
     default:
       return <SingleWordScene scene={sceneWithIndex} />;
   }
