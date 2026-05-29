@@ -1093,21 +1093,6 @@ export const GeoBgTestScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
         >
           {scene.text}
         </div>
-        <div
-          style={{
-            position: "absolute",
-            bottom: 40,
-            fontSize: 18,
-            fontWeight: 400,
-            fontFamily: FONT,
-            color: isLight(bg) ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.25)",
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            opacity,
-          }}
-        >
-          {geoType}
-        </div>
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -1374,11 +1359,6 @@ export const CounterScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   );
   const opacity = Math.min(fadeIn, fadeOut);
 
-  const labelFade = interpolate(Math.max(0, frame - 10), [0, 20], [0, 1], {
-    extrapolateRight: "clamp",
-    easing: E_OUT,
-  });
-
   const displayValue =
     current >= 1000
       ? `${(current / 1000).toFixed(current % 1000 === 0 ? 0 : 1)}K`
@@ -1412,21 +1392,6 @@ export const CounterScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
           {displayValue}
           {suffix}
         </div>
-        {scene.text && (
-          <div
-            style={{
-              fontSize: 28,
-              fontWeight: 400,
-              fontFamily: FONT,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-              color: isLight(bg) ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)",
-              opacity: labelFade,
-            }}
-          >
-            {scene.text}
-          </div>
-        )}
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -1596,8 +1561,8 @@ export const MultiStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
               style={{
                 width: "100%",
                 display: "flex",
-                alignItems: "baseline",
-                justifyContent: "space-between",
+                alignItems: "center",
+                justifyContent: "center",
                 paddingBottom: isLast ? 0 : 24,
                 marginBottom: isLast ? 0 : 24,
                 borderBottom: isLast ? "none" : `1px solid ${borderColor}`,
@@ -1615,22 +1580,11 @@ export const MultiStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
                   lineHeight: 1,
                   color: textColor(bg),
                   fontVariantNumeric: "tabular-nums",
+                  whiteSpace: "nowrap",
                 }}
               >
                 {current >= 1000 ? `${(current / 1000).toFixed(0)}K` : current}
                 {stat.suffix}
-              </div>
-              <div
-                style={{
-                  fontSize: 22,
-                  fontWeight: 400,
-                  fontFamily: FONT,
-                  letterSpacing: "0.04em",
-                  textTransform: "uppercase",
-                  color: isLight(bg) ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)",
-                }}
-              >
-                {stat.label}
               </div>
             </div>
           );
