@@ -5,43 +5,21 @@ const fps = 60;
 
 const defaultProps: MotionVideoProps = {
   scenes: [
+    { type: "wipe", text: "Motionr.", bg: "#ffffff", accentColor: "#000000" },
+    { type: "wipe", text: "Simple.", bg: "#000000", accentColor: "#ffffff" },
+    { type: "flash", text: "Rapide.", bg: "#ffffff", accentColor: "#000000" },
+    { type: "flash", text: "Précis.", bg: "#000000", accentColor: "#ffffff" },
     {
-      type: "linedraw",
-      text: "Motionr.",
-      bg: "#ffffff",
-      accentColor: "#000000",
-    },
-    {
-      type: "linedraw",
+      type: "colorfade",
       text: "Élégant.",
-      bg: "#000000",
-      accentColor: "#ffffff",
-    },
-    {
-      type: "shape",
-      text: "Simple.",
-      bg: "#ffffff",
-      accentColor: "#000000",
-      shape: "circle",
-    },
-    {
-      type: "shape",
-      text: "Précis.",
-      bg: "#000000",
-      accentColor: "#ffffff",
-      shape: "square",
-    },
-    {
-      type: "expandingshape",
-      text: "Infini.",
       bg: "#ffffff",
       accentColor: "#000000",
     },
     {
-      type: "expandingshape",
+      type: "colorfade",
       text: "Puissant.",
       bg: "#000000",
-      accentColor: "#ffffff",
+      accentColor: "#10B981",
     },
   ] as MotionVideoProps["scenes"],
   sceneDurations: Array.from({ length: 6 }, (_, i) => ({

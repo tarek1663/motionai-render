@@ -35,6 +35,9 @@ import {
   LineDrawScene,
   ShapeScene,
   ExpandingShapeScene,
+  WipeScene,
+  FlashScene,
+  ColorFadeScene,
 } from "./templates/scenes";
 
 export type MotionVideoProps = {
@@ -108,6 +111,12 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <ShapeScene scene={sceneWithIndex} />;
     case "expandingshape":
       return <ExpandingShapeScene scene={sceneWithIndex} />;
+    case "wipe":
+      return <WipeScene scene={sceneWithIndex} />;
+    case "flash":
+      return <FlashScene scene={sceneWithIndex} />;
+    case "colorfade":
+      return <ColorFadeScene scene={sceneWithIndex} />;
     default:
       return <SingleWordScene scene={sceneWithIndex} />;
   }
