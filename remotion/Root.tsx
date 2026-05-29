@@ -3,46 +3,74 @@ import { MotionVideo, MotionVideoProps } from "./MotionVideo";
 
 const fps = 60;
 
-const getDimensions = (fmt: string) => {
-  if (fmt === "16:9") return { width: 1920, height: 1080 };
-  if (fmt === "1:1")  return { width: 1080, height: 1080 };
-  return { width: 1080, height: 1920 };
+const defaultProps: MotionVideoProps = {
+  scenes: [
+    {
+      type: "appletext",
+      text: "L'IA qui crée.",
+      text2: "Des vidéos en quelques minutes.",
+      bg: "#ffffff",
+      accentColor: "#7C3AED",
+    },
+    {
+      type: "appleaccent",
+      text: "Simple. Puissant.",
+      text2: "Décris ton idée. Motionr fait le reste.",
+      bg: "#ffffff",
+      accentColor: "#7C3AED",
+    },
+    {
+      type: "applenumber",
+      text: "vidéos générées",
+      text2: "",
+      bg: "#ffffff",
+      accentColor: "#10B981",
+      counterTo: 10247,
+    },
+    {
+      type: "appleicon",
+      text: "72+ animations",
+      text2: "Toujours choisies intelligemment.",
+      bg: "#0a0a0a",
+      accentColor: "#7C3AED",
+    },
+    {
+      type: "applephoto",
+      text: "Crée sans limite.",
+      text2: "Script, voix, animations — tout automatique.",
+      bg: "#ffffff",
+      accentColor: "#10B981",
+    },
+    {
+      type: "applecta",
+      text: "Commence maintenant.",
+      text2: "3 vidéos gratuites. Sans carte.",
+      bg: "#0a0a0a",
+      accentColor: "#10B981",
+    },
+  ] as MotionVideoProps["scenes"],
+  sceneDurations: [
+    { startFrame: 0, durationFrames: 150 },
+    { startFrame: 150, durationFrames: 150 },
+    { startFrame: 300, durationFrames: 150 },
+    { startFrame: 450, durationFrames: 150 },
+    { startFrame: 600, durationFrames: 150 },
+    { startFrame: 750, durationFrames: 150 },
+  ],
+  totalFrames: 900,
+  audioSrc: null,
+  musicSrc: null,
 };
-
-// Démo — aperçu batch 3 dans Remotion Studio
-const demoScenes = [
-  { type: "logoreveal", text: "MotionAI", text2: "✦", bg: "#0a0a0a", accentColor: "#7C3AED" },
-  { type: "brandintro", text: "MOTION AI", text2: "EST. 2024", bg: "#0a0a0a", accentColor: "#7C3AED" },
-  { type: "geometric", text: "Innovation.", bg: "#0a0a0a", accentColor: "#7C3AED" },
-  { type: "liquid", text: "Plein à ras bord.", bg: "#0a0a0a", accentColor: "#7C3AED" },
-  { type: "heartbeat", text: "En pleine forme.", bg: "#0a0a0a", accentColor: "#ff375f" },
-  { type: "audiowaveform", text: "Son premium.", text2: "ElevenLabs", bg: "#0a0a0a", accentColor: "#7C3AED" },
-  { type: "vinyl", text: "Midnight Dreams.", text2: "MotionAI Records", bg: "#0a0a0a", accentColor: "#7C3AED" },
-  { type: "scoreboard", text: "Mi-temps", text2: "Finale 2024", counterTo: 3, bg: "#0a0a0a", accentColor: "#7C3AED" },
-  { type: "infographic", text: "98%:Satisfaction|2min:Génération|1080p:Qualité|72:Scènes", text2: "MotionAI en chiffres", bg: "#0a0a0a", accentColor: "#7C3AED" },
-  { type: "pullquote", text: "La meilleure app de motion design que j'ai jamais utilisée.", text2: "— Marie L., Créatrice", bg: "#ffffff", accentColor: "#7C3AED" },
-  { type: "magazinecover", text: "L'IA qui crée.", text2: "MOTION", bg: "#0a0a0a", accentColor: "#7C3AED" },
-  { type: "cta", text: "Essaie maintenant.", text2: "Gratuit →", bg: "#7C3AED", accentColor: "#ffffff" },
-] as any[];
-
-const demoTotal = 30 * fps; // 1800 frames
-const demoDurations = demoScenes.map(() => Math.round(demoTotal / demoScenes.length));
 
 const RemotionRoot = () => (
   <Composition
     id="MotionVideo"
     component={MotionVideo}
-    durationInFrames={7200}
+    durationInFrames={defaultProps.totalFrames}
     fps={fps}
     width={1080}
     height={1920}
-    defaultProps={{
-      audioSrc: null,
-      scenes: demoScenes,
-      sceneDurations: demoDurations,
-      totalFrames: demoTotal,
-      musicVolume: 0.12,
-    } as MotionVideoProps}
+    defaultProps={defaultProps}
     calculateMetadata={async ({ props }) => {
       const p = props as MotionVideoProps;
       const sceneDurationsAdjusted = (p.sceneDurations || []).map((d) => {
@@ -55,11 +83,9 @@ const RemotionRoot = () => (
 
       const total = Number.isFinite(p.totalFrames) && p.totalFrames > 0
         ? p.totalFrames
-        : 1800;
+        : 900;
 
-      console.log("📐 calculateMetadata totalFrames:", total, "=", total / 60, "seconds");
-
-      const fmt = (p as any).format || "9:16";
+      const fmt = (p as MotionVideoProps & { format?: string }).format || "9:16";
       const w = fmt === "16:9" ? 1920 : 1080;
       const h = fmt === "16:9" ? 1080 : fmt === "1:1" ? 1080 : 1920;
 
