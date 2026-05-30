@@ -131,50 +131,52 @@ const recalcSceneDurations = (scenes) => {
 
 const syncScenesWithVoice = (scenes, phraseTimestamps, fps = 60) => {
   if (!phraseTimestamps || phraseTimestamps.length === 0) {
+    console.log("⚠️ No phraseTimestamps — using fixed durations");
     return recalcSceneDurations(scenes);
   }
 
-  const totalVoiceDuration =
-    phraseTimestamps.length > 0
-      ? phraseTimestamps[phraseTimestamps.length - 1].endFrame
-      : 0;
-
-  const synced = [];
-  let currentFrame = 0;
-
-  const sceneDurationTotal = scenes.reduce(
-    (acc, s) => acc + (s.durationFrames || 90),
-    0,
+  const totalVoiceFrames = phraseTimestamps[phraseTimestamps.length - 1]?.endFrame || 0;
+  console.log(
+    "🎙️ Total voice frames:",
+    totalVoiceFrames,
+    "— Scenes:",
+    scenes.length,
+    "— Phrases:",
+    phraseTimestamps.length,
   );
-  const scale =
-    sceneDurationTotal > 0 ? totalVoiceDuration / sceneDurationTotal : 1;
 
-  scenes.forEach((scene) => {
+  const totalSceneDuration = scenes.reduce((acc, s) => acc + (s.durationFrames || 90), 0);
+
+  let currentFrame = 0;
+  const synced = scenes.map((scene) => {
     const baseDuration = scene.durationFrames || 90;
-    const scaledDuration = Math.max(60, Math.round(baseDuration * scale));
+    const scaledDuration = Math.max(
+      40,
+      Math.round((baseDuration / totalSceneDuration) * totalVoiceFrames),
+    );
 
-    synced.push({
+    const result = {
       startFrame: currentFrame,
       durationFrames: scaledDuration,
-    });
+    };
     currentFrame += scaledDuration;
+    return result;
   });
 
-  if (totalVoiceDuration > currentFrame && synced.length > 0) {
-    synced[synced.length - 1].durationFrames += totalVoiceDuration - currentFrame;
-    console.log(
-      "🎙️ Extended last scene by",
-      totalVoiceDuration - currentFrame,
-      "frames",
+  const totalSynced = synced.reduce((acc, s) => acc + s.durationFrames, 0);
+  if (synced.length > 0 && totalVoiceFrames > 0) {
+    const diff = totalVoiceFrames - totalSynced;
+    synced[synced.length - 1].durationFrames = Math.max(
+      40,
+      synced[synced.length - 1].durationFrames + diff,
     );
-    currentFrame = totalVoiceDuration;
   }
 
   console.log(
-    "🎙️ Total scene duration:",
-    currentFrame,
-    "— Voice duration:",
-    totalVoiceDuration,
+    "🎙️ Synced — total frames:",
+    synced.reduce((acc, s) => acc + s.durationFrames, 0),
+    "vs voice:",
+    totalVoiceFrames,
   );
   return synced;
 };
