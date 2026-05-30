@@ -13,6 +13,21 @@ const E_IN = Easing.bezier(0.4, 0, 1, 1);
 const FONT =
   "'SF Pro Display', '-apple-system', 'BlinkMacSystemFont', sans-serif";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const safeStr = (val: unknown): string => {
+  if (typeof val === "string") return val;
+  if (typeof val === "number") return String(val);
+  if (typeof val === "object" && val !== null) {
+    const obj = val as Record<string, unknown>;
+    const nested =
+      obj.text ?? obj.label ?? obj.name ?? obj.title ?? obj.value ?? obj.desc;
+    if (typeof nested === "string") return nested;
+    if (typeof nested === "number") return String(nested);
+    return JSON.stringify(val);
+  }
+  return "";
+};
+
 type MousePoint = { x: number; y: number; frame: number; action: string };
 
 const MouseCursor: React.FC<{
@@ -102,6 +117,7 @@ const Annotation: React.FC<{
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const label = safeStr(text);
 
   const enter = spring({
     frame: Math.max(0, frame - startFrame),
@@ -141,9 +157,9 @@ const Annotation: React.FC<{
       />
       <circle cx={px} cy={py} r={3} fill={accent} />
       <rect
-        x={px + ax - text.length * 4}
+        x={px + ax - label.length * 4}
         y={py + ay - 14}
-        width={text.length * 8}
+        width={label.length * 8}
         height={22}
         rx={6}
         fill="rgba(0,0,0,0.75)"
@@ -160,7 +176,7 @@ const Annotation: React.FC<{
         fill="white"
         letterSpacing="-0.3"
       >
-        {text}
+        {label}
       </text>
     </g>
   );
@@ -199,10 +215,12 @@ const renderElement = (el: any, accent: string, frame: number, key: string) => {
               letterSpacing: "-0.04em",
             }}
           >
-            {el.logo}
+            {safeStr(el.logo)}
           </div>
           <div style={{ display: "flex", gap: 24 }}>
-            {(el.links || []).map((link: string, i: number) => (
+            {(el.links || []).map(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (link: any, i: number) => (
               <div
                 key={i}
                 style={{
@@ -212,9 +230,10 @@ const renderElement = (el: any, accent: string, frame: number, key: string) => {
                   fontWeight: 500,
                 }}
               >
-                {link}
+                {safeStr(link)}
               </div>
-            ))}
+            ),
+            )}
           </div>
           <div
             style={{
@@ -227,7 +246,7 @@ const renderElement = (el: any, accent: string, frame: number, key: string) => {
               fontFamily: FONT,
             }}
           >
-            {el.ctaText || "Get Started"}
+            {safeStr(el.ctaText) || "Get Started"}
           </div>
         </div>
       );
@@ -258,7 +277,7 @@ const renderElement = (el: any, accent: string, frame: number, key: string) => {
               maxWidth: 500,
             }}
           >
-            {el.headline}
+            {safeStr(el.headline)}
           </div>
           <div
             style={{
@@ -268,7 +287,7 @@ const renderElement = (el: any, accent: string, frame: number, key: string) => {
               maxWidth: 400,
             }}
           >
-            {el.subline}
+            {safeStr(el.subline)}
           </div>
           <div
             style={{
@@ -282,7 +301,7 @@ const renderElement = (el: any, accent: string, frame: number, key: string) => {
               boxShadow: `0 8px 24px ${accent}44`,
             }}
           >
-            {el.ctaText || "Commencer gratuitement"}
+            {safeStr(el.ctaText) || "Commencer gratuitement"}
           </div>
         </div>
       );
@@ -311,7 +330,7 @@ const renderElement = (el: any, accent: string, frame: number, key: string) => {
                   border: "1px solid rgba(0,0,0,0.06)",
                 }}
               >
-                <div style={{ fontSize: 24, marginBottom: 8 }}>{item.icon}</div>
+                <div style={{ fontSize: 24, marginBottom: 8 }}>{safeStr(item.icon)}</div>
                 <div
                   style={{
                     fontSize: 13,
@@ -321,7 +340,7 @@ const renderElement = (el: any, accent: string, frame: number, key: string) => {
                     marginBottom: 4,
                   }}
                 >
-                  {item.title}
+                  {safeStr(item.title)}
                 </div>
                 <div
                   style={{
@@ -331,7 +350,7 @@ const renderElement = (el: any, accent: string, frame: number, key: string) => {
                     lineHeight: 1.4,
                   }}
                 >
-                  {item.desc}
+                  {safeStr(item.desc)}
                 </div>
               </div>
             ),
@@ -355,7 +374,9 @@ const renderElement = (el: any, accent: string, frame: number, key: string) => {
             opacity: elFade,
           }}
         >
-          {(el.items || []).map((item: string, i: number) => (
+          {(el.items || []).map(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (item: any, i: number) => (
             <div
               key={i}
               style={{
@@ -373,9 +394,10 @@ const renderElement = (el: any, accent: string, frame: number, key: string) => {
                     : "2px solid transparent",
               }}
             >
-              {item}
+              {safeStr(item)}
             </div>
-          ))}
+          ),
+          )}
         </div>
       );
 
@@ -400,7 +422,7 @@ const renderElement = (el: any, accent: string, frame: number, key: string) => {
               marginBottom: 6,
             }}
           >
-            {el.title}
+            {safeStr(el.title)}
           </div>
           <div
             style={{
@@ -411,7 +433,7 @@ const renderElement = (el: any, accent: string, frame: number, key: string) => {
               letterSpacing: "-0.04em",
             }}
           >
-            {el.value}
+            {safeStr(el.value)}
           </div>
         </div>
       );
@@ -466,7 +488,9 @@ const renderElement = (el: any, accent: string, frame: number, key: string) => {
               overflow: "hidden",
             }}
           >
-            {(el.headers || []).map((h: string, i: number) => (
+            {(el.headers || []).map(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (h: any, i: number) => (
               <div
                 key={i}
                 style={{
@@ -478,11 +502,15 @@ const renderElement = (el: any, accent: string, frame: number, key: string) => {
                   color: "rgba(0,0,0,0.5)",
                 }}
               >
-                {h}
+                {safeStr(h)}
               </div>
-            ))}
-            {(el.rows || []).map((row: string[], ri: number) =>
-              row.map((cell, ci) => (
+            ),
+            )}
+            {(el.rows || []).map(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (row: any, ri: number) => {
+              const cells = Array.isArray(row) ? row : [];
+              return cells.map((cell: unknown, ci: number) => (
                 <div
                   key={`${ri}-${ci}`}
                   style={{
@@ -493,9 +521,10 @@ const renderElement = (el: any, accent: string, frame: number, key: string) => {
                     color: "#000",
                   }}
                 >
-                  {cell}
+                  {safeStr(cell)}
                 </div>
-              )),
+              ));
+            },
             )}
           </div>
         </div>
