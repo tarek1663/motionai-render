@@ -93,55 +93,49 @@ const syncScenesWithVoice = (scenes, phraseTimestamps, fps = 60) => {
     return recalcSceneDurations(scenes);
   }
 
-  console.log(
-    "🎙️ Phrases:",
-    phraseTimestamps.length,
-    "— Scenes:",
-    scenes.length,
+  const totalVoiceDuration =
+    phraseTimestamps.length > 0
+      ? phraseTimestamps[phraseTimestamps.length - 1].endFrame
+      : 0;
+
+  const synced = [];
+  let currentFrame = 0;
+
+  const sceneDurationTotal = scenes.reduce(
+    (acc, s) => acc + (s.durationFrames || 90),
+    0,
   );
+  const scale =
+    sceneDurationTotal > 0 ? totalVoiceDuration / sceneDurationTotal : 1;
 
-  if (scenes.length > phraseTimestamps.length) {
-    const totalDuration = phraseTimestamps.reduce(
-      (acc, p) => acc + (p.endFrame - p.startFrame),
-      0,
-    );
-    const avgFramesPerScene = Math.round(totalDuration / scenes.length);
+  scenes.forEach((scene) => {
+    const baseDuration = scene.durationFrames || 90;
+    const scaledDuration = Math.max(60, Math.round(baseDuration * scale));
 
-    let currentFrame = 0;
-    return scenes.map((scene, i) => {
-      const phrase = phraseTimestamps[i];
-      const duration = phrase
-        ? Math.max(60, phrase.endFrame - phrase.startFrame)
-        : Math.max(60, scene.durationFrames || avgFramesPerScene);
-
-      const result = { startFrame: currentFrame, durationFrames: duration };
-      currentFrame += duration;
-      return result;
+    synced.push({
+      startFrame: currentFrame,
+      durationFrames: scaledDuration,
     });
+    currentFrame += scaledDuration;
+  });
+
+  if (totalVoiceDuration > currentFrame && synced.length > 0) {
+    synced[synced.length - 1].durationFrames += totalVoiceDuration - currentFrame;
+    console.log(
+      "🎙️ Extended last scene by",
+      totalVoiceDuration - currentFrame,
+      "frames",
+    );
+    currentFrame = totalVoiceDuration;
   }
 
-  const phrasesPerScene = Math.ceil(phraseTimestamps.length / scenes.length);
-
-  let currentFrame = 0;
-  return scenes.map((scene, i) => {
-    const startIdx = i * phrasesPerScene;
-    const endIdx = Math.min(startIdx + phrasesPerScene, phraseTimestamps.length);
-    const group = phraseTimestamps.slice(startIdx, endIdx);
-
-    if (group.length === 0) {
-      const duration = Math.max(60, scene.durationFrames || 90);
-      const result = { startFrame: currentFrame, durationFrames: duration };
-      currentFrame += duration;
-      return result;
-    }
-
-    const startFrame = group[0].startFrame;
-    const endFrame = group[group.length - 1].endFrame;
-    const duration = Math.max(60, endFrame - startFrame);
-
-    currentFrame = startFrame + duration;
-    return { startFrame, durationFrames: duration };
-  });
+  console.log(
+    "🎙️ Total scene duration:",
+    currentFrame,
+    "— Voice duration:",
+    totalVoiceDuration,
+  );
+  return synced;
 };
 
 const generateMockupContent = (scene, prompt) => {
