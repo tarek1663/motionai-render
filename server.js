@@ -135,49 +135,89 @@ const syncScenesWithVoice = (scenes, phraseTimestamps, fps = 60) => {
     return recalcSceneDurations(scenes);
   }
 
-  const totalVoiceFrames = phraseTimestamps[phraseTimestamps.length - 1]?.endFrame || 0;
+  const validTimestamps = phraseTimestamps.filter(
+    (p) =>
+      p &&
+      typeof p.startFrame === "number" &&
+      typeof p.endFrame === "number" &&
+      p.endFrame > p.startFrame,
+  );
+
   console.log(
-    "🎙️ Total voice frames:",
-    totalVoiceFrames,
+    "🎙️ Valid timestamps:",
+    validTimestamps.length,
     "— Scenes:",
     scenes.length,
-    "— Phrases:",
-    phraseTimestamps.length,
   );
 
-  const totalSceneDuration = scenes.reduce((acc, s) => acc + (s.durationFrames || 90), 0);
-
-  let currentFrame = 0;
-  const synced = scenes.map((scene) => {
-    const baseDuration = scene.durationFrames || 90;
-    const scaledDuration = Math.max(
-      40,
-      Math.round((baseDuration / totalSceneDuration) * totalVoiceFrames),
-    );
-
-    const result = {
-      startFrame: currentFrame,
-      durationFrames: scaledDuration,
-    };
-    currentFrame += scaledDuration;
-    return result;
-  });
-
-  const totalSynced = synced.reduce((acc, s) => acc + s.durationFrames, 0);
-  if (synced.length > 0 && totalVoiceFrames > 0) {
-    const diff = totalVoiceFrames - totalSynced;
-    synced[synced.length - 1].durationFrames = Math.max(
-      40,
-      synced[synced.length - 1].durationFrames + diff,
-    );
+  if (validTimestamps.length === 0) {
+    return recalcSceneDurations(scenes);
   }
 
-  console.log(
-    "🎙️ Synced — total frames:",
-    synced.reduce((acc, s) => acc + s.durationFrames, 0),
-    "vs voice:",
-    totalVoiceFrames,
-  );
+  const synced = [];
+  const totalVoiceFrames = validTimestamps[validTimestamps.length - 1].endFrame;
+
+  if (scenes.length === validTimestamps.length) {
+    console.log("🎙️ Perfect 1:1 sync");
+    scenes.forEach((scene, i) => {
+      const ts = validTimestamps[i];
+      synced.push({
+        startFrame: ts.startFrame,
+        durationFrames: Math.max(40, ts.durationFrames || ts.endFrame - ts.startFrame),
+      });
+    });
+    return synced;
+  }
+
+  if (scenes.length > validTimestamps.length) {
+    console.log("🎙️ More scenes than phrases — proportional distribution");
+
+    const totalSceneDuration = scenes.reduce(
+      (acc, s) => acc + (s.durationFrames || 80),
+      0,
+    );
+    let currentFrame = 0;
+
+    scenes.forEach((scene) => {
+      const ratio = (scene.durationFrames || 80) / totalSceneDuration;
+      const duration = Math.max(40, Math.round(ratio * totalVoiceFrames));
+      synced.push({
+        startFrame: currentFrame,
+        durationFrames: duration,
+      });
+      currentFrame += duration;
+    });
+
+    const totalSynced = synced.reduce((acc, s) => acc + s.durationFrames, 0);
+    if (synced.length > 0) {
+      synced[synced.length - 1].durationFrames += totalVoiceFrames - totalSynced;
+    }
+    return synced;
+  }
+
+  console.log("🎙️ Fewer scenes than phrases — grouping phrases");
+  const phrasesPerScene = Math.ceil(validTimestamps.length / scenes.length);
+
+  scenes.forEach((scene, i) => {
+    const startIdx = i * phrasesPerScene;
+    const endIdx = Math.min(startIdx + phrasesPerScene, validTimestamps.length);
+    const group = validTimestamps.slice(startIdx, endIdx);
+
+    if (group.length === 0) {
+      const last = synced[synced.length - 1];
+      const lastEnd = last ? last.startFrame + last.durationFrames : 0;
+      synced.push({ startFrame: lastEnd, durationFrames: 80 });
+      return;
+    }
+
+    const startFrame = group[0].startFrame;
+    const endFrame = group[group.length - 1].endFrame;
+    synced.push({
+      startFrame,
+      durationFrames: Math.max(40, endFrame - startFrame),
+    });
+  });
+
   return synced;
 };
 
