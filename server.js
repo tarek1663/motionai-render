@@ -794,6 +794,12 @@ app.post("/render", async (req, res) => {
       phraseTimestamps = [],
     } = req.body;
 
+    console.log(
+      "🎙️ phraseTimestamps received:",
+      JSON.stringify(req.body.phraseTimestamps?.slice(0, 3)),
+    );
+    console.log("🎙️ scenes count:", scenes?.length);
+
     const outPath = path.join(RENDERS_DIR, `${jobId}.mp4`);
     const errPath = path.join(RENDERS_DIR, `${jobId}.error`);
     const metaPath = path.join(RENDERS_DIR, `${jobId}.meta.json`);
