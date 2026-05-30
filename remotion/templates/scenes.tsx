@@ -229,6 +229,15 @@ const useAppleMicroZoom = (intensity = 0.015) => {
   });
 };
 
+
+const useContinuousMotion = (intensity = 1) => {
+  const frame = useCurrentFrame();
+  const breathe = 1 + Math.sin(frame * 0.05) * 0.004 * intensity;
+  const floatY = Math.sin(frame * 0.04) * 1.5 * intensity;
+  const microRotate = Math.sin(frame * 0.03) * 0.15 * intensity;
+  return { breathe, floatY, microRotate };
+};
+
 const MotionBlurWrapper: React.FC<{
   children: React.ReactNode;
   velocityX?: number;
@@ -532,8 +541,14 @@ const GEO_MAP: Record<string, React.FC<{ bg: string }>> = {
 const GeoBackground: React.FC<{ bg: string; geo?: string }> = ({ bg, geo }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
-  const zoom = useAppleMicroZoom(0.015);
-  const scale = zoom;
+  const isShortScene = durationInFrames < 70;
+
+  const scale = interpolate(
+    frame,
+    [0, Math.max(1, durationInFrames)],
+    [1.0, isShortScene ? 1.025 : 1.012],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
 
   const r = parseInt(bg.replace("#", "").slice(0, 2), 16) || 0;
   const g = parseInt(bg.replace("#", "").slice(2, 4), 16) || 0;
@@ -543,10 +558,12 @@ const GeoBackground: React.FC<{ bg: string; geo?: string }> = ({ bg, geo }) => {
   const patternColor =
     luminance > 0.5 ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.10)";
 
-  const rotation = interpolate(frame, [0, Math.max(1, durationInFrames)], [0, 2], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  const rotation = interpolate(
+    frame,
+    [0, Math.max(1, durationInFrames)],
+    [0, isShortScene ? 6 : 2],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
 
   const base: React.CSSProperties = {
     position: "absolute",
@@ -673,6 +690,7 @@ const GeoBackground: React.FC<{ bg: string; geo?: string }> = ({ bg, geo }) => {
 export const SingleWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
 
   const enter = spring({
@@ -711,7 +729,7 @@ export const SingleWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             color: mainTextColor(scene, bg),
             textShadow: mainTextShadow(bg),
             opacity,
-            transform: `translateY(${y}px) scale(${scale})`,
+            transform: `translateY(${y + motion.floatY}px) scale(${scale * motion.breathe})`,
             filter: `blur(${blur}px)`,
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -728,6 +746,7 @@ export const SingleWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const MaskRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
 
   const reveal = interpolate(frame, [0, 40], [0, 102], {
@@ -795,6 +814,7 @@ export const MaskRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const SlideWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
 
   const enter = spring({
@@ -854,6 +874,7 @@ export const SlideWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const ZoomWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
 
   const progress = interpolate(frame, [0, 40], [0, 1], {
@@ -882,7 +903,7 @@ export const ZoomWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             color: mainTextColor(scene, bg),
             textShadow: mainTextShadow(bg),
             opacity,
-            transform: `scale(${scale})`,
+            transform: `scale(${scale * motion.breathe}) translateY(${motion.floatY}px)`,
             filter: `blur(${blur}px)`,
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -899,6 +920,7 @@ export const ZoomWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const FadeUpLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const text = scene.text || "";
   const words = text.trim().split(/\s+/).filter(Boolean);
@@ -944,7 +966,7 @@ export const FadeUpLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
                         textShadow: mainTextShadow(bg),
                         display: "inline-block",
                         opacity: interpolate(enter, [0, 1], [0, 1]),
-                        transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px)`,
+                        transform: `translateY(${interpolate(enter, [0, 1], [40, 0]) + motion.floatY}px) scale(${motion.breathe})`,
                         filter: `blur(${interpolate(enter, [0, 0.5, 1], [6, 1, 0])}px)`,
                       }}
                     >
@@ -964,6 +986,7 @@ export const FadeUpLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
 export const BlurInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
 
   const progress = interpolate(frame, [0, 35], [0, 1], {
@@ -1005,6 +1028,7 @@ export const BlurInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const ScaleInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
 
   const enter = spring({
@@ -1035,7 +1059,7 @@ export const ScaleInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             color: mainTextColor(scene, bg),
             textShadow: mainTextShadow(bg),
             opacity,
-            transform: `scale(${scale})`,
+            transform: `scale(${scale * motion.breathe}) translateY(${motion.floatY}px)`,
             filter: `blur(${blur}px)`,
             whiteSpace: "nowrap",
           }}
@@ -1051,6 +1075,7 @@ export const ScaleInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const SlideUpScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
 
   const enter = spring({
@@ -1098,6 +1123,7 @@ export const SlideUpScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const ClipTopScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
 
   const clipProgress = interpolate(frame, [0, 36], [0, 100], {
@@ -1148,6 +1174,7 @@ export const ClipTopScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const StaggerWordsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
   const words = (scene.text || "").split(" ");
   const fontSize = autoFontSize(scene.text || "", 130, 60);
@@ -1187,7 +1214,7 @@ export const StaggerWordsScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
                   display: "inline-block",
                   marginRight: "0.05em",
                   opacity: interpolate(enter, [0, 1], [0, 1]),
-                  transform: `translateY(${interpolate(enter, [0, 1], [50, 0])}px) rotate(${interpolate(enter, [0, 1], [4, 0])}deg)`,
+                  transform: `translateY(${interpolate(enter, [0, 1], [50, 0]) + motion.floatY}px) rotate(${interpolate(enter, [0, 1], [4, 0]) + motion.microRotate}deg) scale(${motion.breathe})`,
                   filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
                 }}
               >
@@ -1205,6 +1232,7 @@ export const StaggerWordsScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 export const FadePureScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
 
   const fadeIn = safeFadeIn(frame, 30);
@@ -1292,6 +1320,7 @@ export const TrackingScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const RotateInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
 
   const enter = spring({
@@ -1322,7 +1351,7 @@ export const RotateInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             color: mainTextColor(scene, bg),
             textShadow: mainTextShadow(bg),
             opacity,
-            transform: `translateY(${y}px) rotate(${rotate}deg)`,
+            transform: `translateY(${y + motion.floatY}px) rotate(${rotate + motion.microRotate}deg) scale(${motion.breathe})`,
             whiteSpace: "nowrap",
           }}
         >
@@ -1337,6 +1366,7 @@ export const RotateInScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const GeoBgTestScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const geoType = scene.geo || "dots";
 
@@ -1389,6 +1419,7 @@ export const GeoBgTestScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const PhotoRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const photoUrl = scene.photoUrl || "";
 
@@ -1433,7 +1464,7 @@ export const PhotoRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
               color: mainTextColor(scene, bg),
             textShadow: mainTextShadow(bg),
               opacity: textFadeIn,
-              transform: `translateY(${textY}px)`,
+              transform: `translateY(${textY + motion.floatY}px) scale(${motion.breathe})`,
               whiteSpace: "nowrap",
             }}
           >
@@ -1471,6 +1502,7 @@ export const PhotoRevealScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const PhotoCollageScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
 
   const photos = [scene.photoUrl, scene.photoUrl2, scene.photoUrl3].filter(
@@ -1530,7 +1562,7 @@ export const PhotoCollageScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
                   borderRadius: 14,
                   overflow: "hidden",
                   opacity: interpolate(enter, [0, 1], [0, 1]),
-                  transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px) scale(${interpolate(enter, [0, 1], [0.94, 1])})`,
+                  transform: `translateY(${interpolate(enter, [0, 1], [40, 0]) + motion.floatY}px) scale(${motion.breathe}) scale(${interpolate(enter, [0, 1], [0.94, 1])})`,
                   filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
                   boxShadow: isLight(bg)
                     ? "0 16px 40px rgba(0,0,0,0.10)"
@@ -1579,7 +1611,7 @@ export const PhotoCollageScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
               color: mainTextColor(scene, bg),
             textShadow: mainTextShadow(bg),
               opacity: interpolate(textEnter, [0, 1], [0, 1]),
-              transform: `translateY(${interpolate(textEnter, [0, 1], [20, 0])}px)`,
+              transform: `translateY(${interpolate(textEnter, [0, 1], [20, 0]) + motion.floatY}px) scale(${motion.breathe})`,
               whiteSpace: "nowrap",
             }}
           >
@@ -1599,6 +1631,7 @@ export const PhotoCollageScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 export const CounterScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const target = scene.counterTo ?? 1000;
   const suffix = scene.suffix || "";
@@ -1660,6 +1693,7 @@ export const CounterScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const ProgressBarScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
   const target = scene.counterTo ?? 75;
   const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
@@ -1752,6 +1786,7 @@ export const ProgressBarScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const MultiStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
 
   const stats = scene.stats || [
@@ -1810,7 +1845,7 @@ export const MultiStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
                 marginBottom: isLast ? 0 : 24,
                 borderBottom: isLast ? "none" : `1px solid ${borderColor}`,
                 opacity: interpolate(enter, [0, 1], [0, 1]),
-                transform: `translateY(${interpolate(enter, [0, 1], [30, 0])}px)`,
+                transform: `translateY(${interpolate(enter, [0, 1], [30, 0]) + motion.floatY}px) scale(${motion.breathe})`,
                 filter: `blur(${interpolate(enter, [0, 0.5, 1], [6, 1, 0])}px)`,
               }}
             >
@@ -1846,6 +1881,7 @@ export const MultiStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const AccentWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
   const words = (scene.text || "").split(" ");
@@ -1889,7 +1925,7 @@ export const AccentWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
                   display: "inline-block",
                   marginRight: "0.05em",
                   opacity: interpolate(enter, [0, 1], [0, 1]),
-                  transform: `translateY(${interpolate(enter, [0, 1], [30, 0])}px) scale(${interpolate(enter, [0, 1], [0.88, 1])})`,
+                  transform: `translateY(${interpolate(enter, [0, 1], [30, 0]) + motion.floatY}px) scale(${motion.breathe}) scale(${interpolate(enter, [0, 1], [0.88, 1])})`,
                   filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
                 }}
               >
@@ -1907,6 +1943,7 @@ export const AccentWordScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const UnderlineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
 
@@ -1946,7 +1983,7 @@ export const UnderlineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
               lineHeight: 1,
               color: mainTextColor(scene, bg),
             textShadow: mainTextShadow(bg),
-              transform: `translateY(${textY}px)`,
+              transform: `translateY(${textY + motion.floatY}px) scale(${motion.breathe})`,
               whiteSpace: "nowrap",
               paddingBottom: 12,
             }}
@@ -1975,6 +2012,7 @@ export const UnderlineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const ColorShiftScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
 
   const fromBg = scene.fromBg || "#ffffff";
   const toBg = scene.toBg || "#000000";
@@ -2053,6 +2091,7 @@ export const ColorShiftScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const LineDrawScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const accent = scene.accentColor || textColor(bg);
 
@@ -2094,7 +2133,7 @@ export const LineDrawScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             color: mainTextColor(scene, bg),
             textShadow: mainTextShadow(bg),
             opacity: textFade,
-            transform: `translateY(${textY}px)`,
+            transform: `translateY(${textY + motion.floatY}px) scale(${motion.breathe})`,
             whiteSpace: "nowrap",
           }}
         >
@@ -2119,6 +2158,7 @@ export const LineDrawScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const ShapeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
   const accent = scene.accentColor || textColor(bg);
   const shape = scene.shape || "circle";
@@ -2182,7 +2222,7 @@ export const ShapeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             color: mainTextColor(scene, bg),
             textShadow: mainTextShadow(bg),
             opacity: Math.min(interpolate(textEnter, [0, 1], [0, 1]), fadeOut),
-            transform: `scale(${interpolate(textEnter, [0, 1], [0.92, 1])})`,
+            transform: `scale(${interpolate(textEnter, [0, 1], [0.92, 1]) * motion.breathe}) translateY(${motion.floatY}px)`,
             filter: `blur(${interpolate(textEnter, [0, 0.5, 1], [6, 1, 0])}px)`,
             whiteSpace: "nowrap",
             zIndex: 1,
@@ -2199,6 +2239,7 @@ export const ShapeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const ExpandingShapeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const accent = scene.accentColor || textColor(bg);
 
@@ -2264,7 +2305,7 @@ export const ExpandingShapeScene: React.FC<{ scene: SceneData }> = ({ scene }) =
             color: mainTextColor(scene, bg),
             textShadow: mainTextShadow(bg),
             opacity: Math.min(interpolate(textEnter, [0, 1], [0, 1]), fadeOut),
-            transform: `scale(${interpolate(textEnter, [0, 1], [0.92, 1])})`,
+            transform: `scale(${interpolate(textEnter, [0, 1], [0.92, 1]) * motion.breathe}) translateY(${motion.floatY}px)`,
             filter: `blur(${interpolate(textEnter, [0, 0.5, 1], [6, 1, 0])}px)`,
             whiteSpace: "nowrap",
           }}
@@ -2284,6 +2325,7 @@ export const ExpandingShapeScene: React.FC<{ scene: SceneData }> = ({ scene }) =
 export const WipeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const wipeColor = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
 
@@ -2370,6 +2412,7 @@ export const WipeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const FlashScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
   const flashColor = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
 
@@ -2443,6 +2486,7 @@ export const FlashScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const ColorFadeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
 
@@ -2520,6 +2564,7 @@ export const ColorFadeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const SplitVerticalScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
 
   const splitIn = interpolate(frame, [0, 28], [50, 0], {
@@ -2598,6 +2643,7 @@ export const SplitVerticalScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
 export const ZoomTransitionScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
 
   const scaleIn = interpolate(frame, [0, 30], [3, 1], {
@@ -2633,7 +2679,7 @@ export const ZoomTransitionScene: React.FC<{ scene: SceneData }> = ({ scene }) =
           justifyContent: "center",
           alignItems: "center",
           opacity: Math.min(opacityIn, opacityOut),
-          transform: `scale(${scale})`,
+          transform: `scale(${scale * motion.breathe}) translateY(${motion.floatY}px)`,
         }}
       >
         <div
@@ -2659,6 +2705,7 @@ export const ZoomTransitionScene: React.FC<{ scene: SceneData }> = ({ scene }) =
 export const IrisScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
 
   const irisIn = interpolate(frame, [0, 32], [0, 150], {
@@ -2723,6 +2770,7 @@ export const IrisScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const CurtainScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
   const curtainColor = isLight(bg) ? "#000000" : "#ffffff";
 
@@ -2801,6 +2849,7 @@ export const CurtainScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const DiagonalWipeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
 
   const wipeIn = interpolate(frame, [0, 30], [-150, 150], {
@@ -2866,6 +2915,7 @@ export const DiagonalWipeScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 export const GlitchSwitchScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
 
   const glitchIn = frame < 12;
@@ -2930,6 +2980,7 @@ export const GlitchSwitchScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 export const PixelDissolveScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
 
   const progress = interpolate(frame, [0, 35], [0, 1], {
@@ -3013,6 +3064,7 @@ export const PixelDissolveScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
 export const LightSweepScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
 
   const sweepX = interpolate(
@@ -3079,6 +3131,7 @@ export const LightSweepScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const NotificationScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
   const accent = scene.accentColor || "#10B981";
 
@@ -3164,7 +3217,7 @@ export const NotificationScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
             maxWidth: 460,
             boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
             border: `1px solid ${isLight(bg) ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)"}`,
-            transform: `translateY(${y + yOut}px)`,
+            transform: `translateY(${y + yOut + motion.floatY}px) scale(${motion.breathe})`,
             opacity,
           }}
         >
@@ -3230,6 +3283,7 @@ export const NotificationScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 export const PulseButtonScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
 
@@ -3294,7 +3348,7 @@ export const PulseButtonScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
         <div
           style={{
             position: "relative",
-            transform: `scale(${scale})`,
+            transform: `scale(${scale * motion.breathe}) translateY(${motion.floatY}px)`,
             opacity,
           }}
         >
@@ -3340,6 +3394,7 @@ export const PulseButtonScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const UIProgressScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
   const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
 
@@ -3556,6 +3611,7 @@ const PlatformIcon: React.FC<{ platform: string; size?: number }> = ({
 export const QuoteScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#f5f5f7";
   const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
   const opacity = sceneOpacity(frame, durationInFrames);
@@ -3644,6 +3700,7 @@ export const QuoteScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const TimelineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
   const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
   const opacity = sceneOpacity(frame, durationInFrames);
@@ -3740,6 +3797,7 @@ export const TimelineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const SocialStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
   const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
   const opacity = sceneOpacity(frame, durationInFrames);
@@ -3808,6 +3866,7 @@ export const SocialStatsScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const ChecklistScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#34c759");
   const opacity = sceneOpacity(frame, durationInFrames);
@@ -3890,6 +3949,7 @@ export const ChecklistScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const AudioVizScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
   const accent = scene.accentColor || (isLight(bg) ? "#000000" : "#ffffff");
   const opacity = sceneOpacity(frame, durationInFrames);
@@ -3945,6 +4005,7 @@ export const AudioVizScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const ColorLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
   const accent = safeAccent(scene.accentColor, bg);
   const words = (scene.text || "").trim().split(/\s+/).filter(Boolean);
@@ -3995,7 +4056,7 @@ export const ColorLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
                         color,
                         display: "inline-block",
                         opacity: interpolate(enter, [0, 1], [0, 1]),
-                        transform: `translateY(${interpolate(enter, [0, 1], [30, 0])}px) scale(${interpolate(enter, [0, 1], [0.8, 1])})`,
+                        transform: `translateY(${interpolate(enter, [0, 1], [30, 0]) + motion.floatY}px) scale(${motion.breathe}) scale(${interpolate(enter, [0, 1], [0.8, 1])})`,
                         filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
                         textShadow: mainTextShadow(bg),
                       }}
@@ -4016,6 +4077,7 @@ export const ColorLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 export const GradientScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg1 = scene.bg || "#000000";
   const bg2 = scene.bg2 || scene.accentColor || "#1a1a1a";
 
@@ -4075,6 +4137,7 @@ export const GradientScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const HierarchyTextScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const accent = safeAccent(scene.accentColor, bg);
   const words = (scene.text || "").split(" ");
@@ -4118,7 +4181,7 @@ export const HierarchyTextScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
                   display: "inline-block",
                   marginRight: "0.05em",
                   opacity: interpolate(enter, [0, 1], [0, 1]),
-                  transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px)`,
+                  transform: `translateY(${interpolate(enter, [0, 1], [40, 0]) + motion.floatY}px) scale(${motion.breathe})`,
                   filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
                   textShadow: mainTextShadow(bg),
                 }}
@@ -4137,6 +4200,7 @@ export const HierarchyTextScene: React.FC<{ scene: SceneData }> = ({ scene }) =>
 export const SpotlightScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
 
   const enter = spring({
@@ -4218,6 +4282,7 @@ export const SpotlightScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const NoiseScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
 
   const enter = spring({
@@ -4345,6 +4410,7 @@ export const GradientTextScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 export const EraseLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const words = (scene.text || "").trim().split(/\s+/).filter(Boolean);
   const letters = words.join("").split("");
@@ -4420,6 +4486,7 @@ export const EraseLettersScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 export const SplitLinesScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const accent = safeAccent(scene.accentColor, bg);
 
@@ -4470,7 +4537,7 @@ export const SplitLinesScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
                 whiteSpace: "nowrap",
                 textAlign: "center",
                 opacity: interpolate(enter, [0, 1], [0, 1]),
-                transform: `translateY(${interpolate(enter, [0, 1], [30, 0])}px)`,
+                transform: `translateY(${interpolate(enter, [0, 1], [30, 0]) + motion.floatY}px) scale(${motion.breathe})`,
                 filter: `blur(${interpolate(enter, [0, 0.5, 1], [8, 1, 0])}px)`,
                 textShadow: mainTextShadow(bg),
               }}
@@ -4488,6 +4555,7 @@ export const SplitLinesScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const BgNumberScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const number = scene.bgNumber || "1";
 
@@ -4554,7 +4622,7 @@ export const BgNumberScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             color: mainTextColor(scene, bg),
             whiteSpace: "nowrap",
             opacity: Math.min(interpolate(textEnter, [0, 1], [0, 1]), fadeOut),
-            transform: `scale(${interpolate(textEnter, [0, 1], [0.92, 1])}) translateY(${interpolate(textEnter, [0, 1], [24, 0])}px)`,
+            transform: `scale(${interpolate(textEnter, [0, 1], [0.92, 1]) * motion.breathe}) translateY(${motion.floatY}px) translateY(${interpolate(textEnter, [0, 1], [24, 0])}px)`,
             filter: `blur(${interpolate(textEnter, [0, 0.5, 1], [8, 1, 0])}px)`,
             textShadow: mainTextShadow(bg),
           }}
@@ -4570,6 +4638,7 @@ export const BgNumberScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const TwoLinesScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
   const accent = safeAccent(scene.accentColor, bg);
 
@@ -5193,6 +5262,7 @@ export const IPhoneScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const MacBookScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const accent = safeAccent(scene.accentColor, bg);
   const photoUrl = scene.photoUrl || "";
@@ -5220,7 +5290,7 @@ export const MacBookScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
         <div style={{
           width: "76%", maxWidth: 520,
           opacity: interpolate(enter, [0, 0.3], [0, 1]),
-          transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px) scale(${interpolate(enter, [0, 1], [0.9, 1])})`,
+          transform: `translateY(${interpolate(enter, [0, 1], [40, 0]) + motion.floatY}px) scale(${motion.breathe}) scale(${interpolate(enter, [0, 1], [0.9, 1])})`,
         }}>
           {/* Écran */}
           <div style={{
@@ -5287,6 +5357,7 @@ export const MacBookScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const DoubleDeviceScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const accent = safeAccent(scene.accentColor, bg);
   const photoUrl = scene.photoUrl || "";
@@ -5381,6 +5452,7 @@ export const DoubleDeviceScene: React.FC<{ scene: SceneData }> = ({ scene }) => 
 export const BrowserScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const accent = safeAccent(scene.accentColor, bg);
   const photoUrl = scene.photoUrl || "";
@@ -5414,7 +5486,7 @@ export const BrowserScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
           border: `1px solid ${isLight(bg) ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"}`,
           boxShadow: isLight(bg) ? "0 24px 60px rgba(0,0,0,0.12)" : "0 24px 60px rgba(0,0,0,0.5)",
           opacity: interpolate(enter, [0, 0.3], [0, 1]),
-          transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px) scale(${interpolate(enter, [0, 1], [0.94, 1])})`,
+          transform: `translateY(${interpolate(enter, [0, 1], [40, 0]) + motion.floatY}px) scale(${motion.breathe}) scale(${interpolate(enter, [0, 1], [0.94, 1])})`,
         }}>
           {/* Toolbar */}
           <div style={{
@@ -5474,6 +5546,7 @@ export const BrowserScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const DashboardScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
   const accent = safeAccent(scene.accentColor, bg);
 
@@ -5500,7 +5573,7 @@ export const DashboardScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
           padding: "24px",
           boxShadow: isLight(bg) ? "0 20px 60px rgba(0,0,0,0.1)" : "0 20px 60px rgba(0,0,0,0.4)",
           opacity: interpolate(enter, [0, 0.3], [0, 1]),
-          transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px) scale(${interpolate(enter, [0, 1], [0.94, 1])})`,
+          transform: `translateY(${interpolate(enter, [0, 1], [40, 0]) + motion.floatY}px) scale(${motion.breathe}) scale(${interpolate(enter, [0, 1], [0.94, 1])})`,
         }}>
           {/* Header */}
           <div style={{
@@ -5596,6 +5669,7 @@ export const DashboardScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const ChatScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const accent = safeAccent(scene.accentColor, bg);
 
@@ -5661,6 +5735,7 @@ export const ChatScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const NetworkScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
   const accent = safeAccent(scene.accentColor, bg);
 
@@ -5752,6 +5827,7 @@ export const NetworkScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const DataFlowScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
   const accent = safeAccent(scene.accentColor, bg);
 
@@ -5826,6 +5902,7 @@ export const DataFlowScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const WorldMapScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#000000";
   const accent = safeAccent(scene.accentColor, bg);
 
@@ -5927,6 +6004,7 @@ export const WorldMapScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
 export const HorizontalTimelineScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const motion = useContinuousMotion();
   const bg = scene.bg || "#ffffff";
   const accent = safeAccent(scene.accentColor, bg);
 
