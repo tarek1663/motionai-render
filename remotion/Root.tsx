@@ -1,5 +1,6 @@
 import { registerRoot, Composition } from "remotion";
 import { MotionVideo, MotionVideoProps } from "./MotionVideo";
+import { AppDemoVideo, AppDemoVideoProps } from "./AppDemoVideo";
 
 const fps = 60;
 
@@ -47,7 +48,34 @@ const defaultProps: MotionVideoProps = {
   musicSrc: null,
 };
 
+const defaultAppDemoProps: AppDemoVideoProps = {
+  screens: [
+    {
+      id: "demo1",
+      name: "Dashboard",
+      bgColor: "#ffffff",
+      url: "motionr.app",
+      duration: 180,
+      elements: [
+        { type: "navbar", logo: "Motionr", links: ["Features", "Pricing"], ctaText: "Start" },
+        { type: "hero", headline: "Crée ta vidéo.", subline: "En 3 clics.", ctaText: "Essayer" },
+      ],
+      mousePath: [
+        { x: 50, y: 20, frame: 0, action: "move" },
+        { x: 50, y: 55, frame: 60, action: "click" },
+      ],
+    },
+  ],
+  screenDurations: [{ startFrame: 0, durationFrames: 180 }],
+  format: "desktop",
+  accent: "#10B981",
+  appName: "Motionr",
+  bgColor: "#f5f5f7",
+  totalFrames: 1800,
+};
+
 const RemotionRoot = () => (
+  <>
   <Composition
     id="MotionVideo"
     component={MotionVideo}
@@ -84,6 +112,29 @@ const RemotionRoot = () => (
       };
     }}
   />
+  <Composition
+    id="AppDemo"
+    component={AppDemoVideo}
+    durationInFrames={defaultAppDemoProps.totalFrames}
+    fps={fps}
+    width={1920}
+    height={1080}
+    defaultProps={defaultAppDemoProps}
+    calculateMetadata={async ({ props }) => {
+      const p = props as AppDemoVideoProps;
+      const total =
+        Number.isFinite(p.totalFrames) && p.totalFrames > 0 ? p.totalFrames : 1800;
+      const isMobile = p.format === "mobile";
+      return {
+        durationInFrames: total,
+        fps: 60,
+        width: isMobile ? 1080 : 1920,
+        height: isMobile ? 1920 : 1080,
+        props: p,
+      };
+    }}
+  />
+  </>
 );
 
 registerRoot(RemotionRoot);

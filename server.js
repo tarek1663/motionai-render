@@ -735,7 +735,10 @@ app.post("/render", async (req, res) => {
   try {
   const jobId = uuidv4();
   const {
+    compositionId = "MotionVideo",
     scenes,
+    screens,
+    screenDurations: requestedScreenDurations,
     totalFrames: requestedTotalFrames,
     format,
     audioUrl,
@@ -744,10 +747,120 @@ app.post("/render", async (req, res) => {
     prompt,
     duration,
     accentColor,
+    accent,
+    appName,
+    bgColor,
     formatName,
+    plan = "free",
     quality = "fast",
     phraseTimestamps = [],
   } = req.body;
+
+  if (compositionId === "AppDemo") {
+    const appScreens = screens || [];
+    let frameCursor = 0;
+    const screenDurations =
+      requestedScreenDurations?.length === appScreens.length
+        ? requestedScreenDurations
+        : appScreens.map((s) => {
+            const durationFrames = Math.max(60, s.duration || 180);
+            const timing = { startFrame: frameCursor, durationFrames };
+            frameCursor += durationFrames;
+            return timing;
+          });
+
+    const adjustedTotalFrames = Math.max(
+      screenDurations.reduce((acc, s) => acc + s.durationFrames, 0),
+      requestedTotalFrames || 1800,
+    );
+
+    const isMobile = format === "mobile";
+    const inputProps = {
+      screens: appScreens,
+      screenDurations,
+      format: isMobile ? "mobile" : "desktop",
+      accent: accent || accentColor || "#10B981",
+      appName: appName || "App",
+      bgColor: bgColor || "#f5f5f7",
+      totalFrames: adjustedTotalFrames,
+      audioSrc: toAbsoluteAssetUrl(audioUrl || null),
+      musicSrc: toAbsoluteAssetUrl(musicUrl || null),
+      musicVolume: musicVolume || 0.05,
+      showWatermark: plan === "free",
+      prompt,
+      duration,
+      formatName: formatName || "App Demo",
+      quality,
+    };
+
+    const outPath = path.join(RENDERS_DIR, `${jobId}.mp4`);
+    const errPath = path.join(RENDERS_DIR, `${jobId}.error`);
+    const metaPath = path.join(RENDERS_DIR, `${jobId}.meta.json`);
+    const progressPath = path.join(RENDERS_DIR, `${jobId}.progress`);
+
+    const qualitySettings = {
+      fast: { crf: 28, concurrency: 8 },
+      high: { crf: 18, concurrency: 4 },
+    };
+    const settings = qualitySettings[quality] || qualitySettings.fast;
+
+    if (fs.existsSync(errPath)) fs.unlinkSync(errPath);
+    if (fs.existsSync(progressPath)) fs.unlinkSync(progressPath);
+    fs.writeFileSync(progressPath, JSON.stringify({ progress: 0 }));
+    fs.writeFileSync(
+      metaPath,
+      JSON.stringify({ prompt, format, duration, accentColor: accent, formatName, quality, compositionId }),
+    );
+
+    res.json({ jobId });
+
+    (async () => {
+      try {
+        const { renderMedia, selectComposition } = require("@remotion/renderer");
+        const bundleLocation = await getBundleLocation();
+        const renderInputProps = {
+          ...inputProps,
+          audioSrc: toAbsoluteAssetUrl(inputProps.audioSrc),
+          musicSrc: toAbsoluteAssetUrl(inputProps.musicSrc),
+        };
+
+        const composition = await selectComposition({
+          serveUrl: bundleLocation,
+          id: "AppDemo",
+          inputProps: renderInputProps,
+        });
+
+        await renderMedia({
+          composition,
+          serveUrl: bundleLocation,
+          codec: "h264",
+          outputLocation: outPath,
+          inputProps: renderInputProps,
+          browserExecutable: "/usr/bin/chromium",
+          chromiumOptions: {
+            disableWebSecurity: true,
+            ignoreCertificateErrors: true,
+            args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+          },
+          concurrency: settings.concurrency,
+          crf: settings.crf,
+          pixelFormat: "yuv420p",
+          onProgress: ({ progress }) => {
+            const pct = Math.round(progress * 100);
+            fs.writeFileSync(progressPath, JSON.stringify({ progress: pct }));
+          },
+        });
+
+        fs.writeFileSync(progressPath, JSON.stringify({ progress: 100 }));
+      } catch (err) {
+        const message = err?.message || "Render failed";
+        console.error("AppDemo render error:", message);
+        fs.writeFileSync(errPath, message);
+      }
+    })();
+
+    return;
+  }
 
   const enrichedScenes = await enrichScenesWithPhotos(scenes || [], prompt || "");
   const enrichedWithMockup = enrichedScenes.map((scene) =>
