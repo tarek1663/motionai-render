@@ -27,22 +27,24 @@ const testSceneDurations = [
 
 const testTotalFrames = 550;
 
+const defaultProps = {
+  audioSrc: null,
+  musicSrc: null,
+  scenes: testScenes,
+  sceneDurations: testSceneDurations,
+  totalFrames: testTotalFrames,
+  musicVolume: 0.12,
+} as MotionVideoProps;
+
 const RemotionRoot = () => (
   <Composition
     id="MotionVideo"
     component={MotionVideo}
-    durationInFrames={testTotalFrames}
+    durationInFrames={defaultProps.totalFrames || 1800}
     fps={fps}
     width={1080}
     height={1920}
-    defaultProps={{
-      audioSrc: null,
-      musicSrc: null,
-      scenes: testScenes,
-      sceneDurations: testSceneDurations,
-      totalFrames: testTotalFrames,
-      musicVolume: 0.12,
-    } as MotionVideoProps}
+    defaultProps={defaultProps}
     calculateMetadata={async ({ props }) => {
       const p = props as MotionVideoProps;
       const sceneDurationsAdjusted = (p.sceneDurations || []).map((d) => {

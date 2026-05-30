@@ -129,96 +129,37 @@ const recalcSceneDurations = (scenes) => {
   });
 };
 
-const syncScenesWithVoice = (scenes, phraseTimestamps, fps = 60) => {
+const syncScenesWithVoice = (scenes, wordTimestamps, fps = 60) => {
+  if (scenes?.[0]?.startFrame !== undefined) {
+    console.log("🎙️ Using Claude-generated timestamps directly");
+    return scenes.map((scene) => ({
+      startFrame: scene.startFrame || 0,
+      durationFrames: Math.max(30, scene.durationFrames || 80),
+    }));
+  }
+
+  const phraseTimestamps = wordTimestamps;
+
   if (!phraseTimestamps || phraseTimestamps.length === 0) {
-    console.log("⚠️ No phraseTimestamps — using fixed durations");
+    console.log("⚠️ No wordTimestamps — using fixed durations");
     return recalcSceneDurations(scenes);
   }
 
-  const validTimestamps = phraseTimestamps.filter(
-    (p) =>
-      p &&
-      typeof p.startFrame === "number" &&
-      typeof p.endFrame === "number" &&
-      p.endFrame > p.startFrame,
+  const totalFrames =
+    phraseTimestamps[phraseTimestamps.length - 1]?.endFrame || 1800;
+  const totalSceneDuration = scenes.reduce(
+    (acc, s) => acc + (s.durationFrames || 80),
+    0,
   );
 
-  console.log(
-    "🎙️ Valid timestamps:",
-    validTimestamps.length,
-    "— Scenes:",
-    scenes.length,
-  );
-
-  if (validTimestamps.length === 0) {
-    return recalcSceneDurations(scenes);
-  }
-
-  const synced = [];
-  const totalVoiceFrames = validTimestamps[validTimestamps.length - 1].endFrame;
-
-  if (scenes.length === validTimestamps.length) {
-    console.log("🎙️ Perfect 1:1 sync");
-    scenes.forEach((scene, i) => {
-      const ts = validTimestamps[i];
-      synced.push({
-        startFrame: ts.startFrame,
-        durationFrames: Math.max(40, ts.durationFrames || ts.endFrame - ts.startFrame),
-      });
-    });
-    return synced;
-  }
-
-  if (scenes.length > validTimestamps.length) {
-    console.log("🎙️ More scenes than phrases — proportional distribution");
-
-    const totalSceneDuration = scenes.reduce(
-      (acc, s) => acc + (s.durationFrames || 80),
-      0,
-    );
-    let currentFrame = 0;
-
-    scenes.forEach((scene) => {
-      const ratio = (scene.durationFrames || 80) / totalSceneDuration;
-      const duration = Math.max(40, Math.round(ratio * totalVoiceFrames));
-      synced.push({
-        startFrame: currentFrame,
-        durationFrames: duration,
-      });
-      currentFrame += duration;
-    });
-
-    const totalSynced = synced.reduce((acc, s) => acc + s.durationFrames, 0);
-    if (synced.length > 0) {
-      synced[synced.length - 1].durationFrames += totalVoiceFrames - totalSynced;
-    }
-    return synced;
-  }
-
-  console.log("🎙️ Fewer scenes than phrases — grouping phrases");
-  const phrasesPerScene = Math.ceil(validTimestamps.length / scenes.length);
-
-  scenes.forEach((scene, i) => {
-    const startIdx = i * phrasesPerScene;
-    const endIdx = Math.min(startIdx + phrasesPerScene, validTimestamps.length);
-    const group = validTimestamps.slice(startIdx, endIdx);
-
-    if (group.length === 0) {
-      const last = synced[synced.length - 1];
-      const lastEnd = last ? last.startFrame + last.durationFrames : 0;
-      synced.push({ startFrame: lastEnd, durationFrames: 80 });
-      return;
-    }
-
-    const startFrame = group[0].startFrame;
-    const endFrame = group[group.length - 1].endFrame;
-    synced.push({
-      startFrame,
-      durationFrames: Math.max(40, endFrame - startFrame),
-    });
+  let currentFrame = 0;
+  return scenes.map((scene) => {
+    const ratio = (scene.durationFrames || 80) / totalSceneDuration;
+    const duration = Math.max(30, Math.round(ratio * totalFrames));
+    const result = { startFrame: currentFrame, durationFrames: duration };
+    currentFrame += duration;
+    return result;
   });
-
-  return synced;
 };
 
 const generateMockupContent = (scene, prompt) => {
@@ -592,8 +533,8 @@ app.post("/voice", async (req, res) => {
           text,
           model_id: "eleven_multilingual_v2",
           voice_settings: {
-            stability: 0.75,
-            similarity_boost: 0.85,
+            stability: 0.5,
+            similarity_boost: 0.75,
             style: 0.3,
             use_speaker_boost: true,
           },
@@ -617,10 +558,48 @@ app.post("/voice", async (req, res) => {
     console.log("🎵 Audio URL:", audioUrl);
 
     const fps = 60;
-    const alignment = data.alignment || {};
+    const alignment = data.alignment || data.normalized_alignment || {};
     const characters = alignment.characters || [];
     const charStartTimes = alignment.character_start_times_seconds || [];
     const charEndTimes = alignment.character_end_times_seconds || [];
+
+    const wordTimestamps = [];
+    let currentWord = "";
+    let wordStart = 0;
+
+    for (let i = 0; i < characters.length; i++) {
+      const char = characters[i];
+      if (char === " " || char === "\n" || i === characters.length - 1) {
+        if (char !== " " && char !== "\n") currentWord += char;
+        if (currentWord.trim().length > 0) {
+          const start = wordStart;
+          const end = charEndTimes[i] || charStartTimes[i] || start;
+          wordTimestamps.push({
+            word: currentWord.trim(),
+            start,
+            end,
+            startFrame: Math.round(start * fps),
+            endFrame: Math.round(end * fps),
+            durationFrames: Math.max(20, Math.round((end - start) * fps)),
+          });
+        }
+        currentWord = "";
+        wordStart = charStartTimes[i + 1] || 0;
+      } else {
+        if (currentWord === "") wordStart = charStartTimes[i] || 0;
+        currentWord += char;
+      }
+    }
+
+    const totalFrames =
+      Math.round(
+        (charEndTimes[charEndTimes.length - 1] || 30) * fps,
+      ) || 1800;
+
+    console.log(
+      "🎙️ wordTimestamps:",
+      wordTimestamps.slice(0, 5).map((w) => `"${w.word}" [${w.startFrame}-${w.endFrame}]`),
+    );
 
     const lines = text.split("\n").filter((l) => l.trim());
 
@@ -675,7 +654,15 @@ app.post("/voice", async (req, res) => {
 
     const durationSeconds = charEndTimes[charEndTimes.length - 1] || 30;
 
-    res.json({ audioUrl, durationSeconds, phraseTimestamps, alignment });
+    res.json({
+      audioUrl,
+      durationSeconds,
+      totalFrames,
+      wordTimestamps,
+      phraseTimestamps,
+      alignment,
+      script: text,
+    });
   } catch (err) {
     console.error("Voice error:", err);
     res.status(500).json({ error: err.message });
@@ -832,6 +819,7 @@ app.post("/render", async (req, res) => {
       showWatermark: requestedShowWatermark,
       quality = "fast",
       phraseTimestamps = [],
+      wordTimestamps = [],
     } = req.body;
 
     console.log(
@@ -883,14 +871,23 @@ app.post("/render", async (req, res) => {
         );
         const enrichedWithAI = await enrichMockupsWithAI(enrichedWithMockup, prompt || "");
 
-        const sceneDurations = syncScenesWithVoice(enrichedWithAI, phraseTimestamps, 60);
+        const sceneDurations = syncScenesWithVoice(
+          enrichedWithAI,
+          wordTimestamps.length ? wordTimestamps : phraseTimestamps,
+          60,
+        );
         const computedTotalFrames = sceneDurations.reduce(
           (acc, s) => acc + s.durationFrames,
           0,
         );
+        const lastSceneEnd =
+          sceneDurations.length > 0
+            ? sceneDurations[sceneDurations.length - 1].startFrame +
+              sceneDurations[sceneDurations.length - 1].durationFrames
+            : 0;
         const adjustedTotalFrames = Math.max(
-          computedTotalFrames || requestedTotalFrames || 1800,
-          enrichedWithAI.length * 60,
+          requestedTotalFrames || lastSceneEnd || computedTotalFrames || 1800,
+          enrichedWithAI.length * 30,
         );
 
         console.log("🎬 Total frames:", adjustedTotalFrames, "— Scenes:", enrichedWithAI.length);
