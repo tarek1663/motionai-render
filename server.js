@@ -94,46 +94,54 @@ const syncScenesWithVoice = (scenes, phraseTimestamps, fps = 60) => {
   }
 
   console.log(
-    "🎙️ Syncing",
-    scenes.length,
-    "scenes with",
+    "🎙️ Phrases:",
     phraseTimestamps.length,
-    "phrases",
+    "— Scenes:",
+    scenes.length,
   );
 
-  const synced = [];
-  let currentFrame = 0;
+  if (scenes.length > phraseTimestamps.length) {
+    const totalDuration = phraseTimestamps.reduce(
+      (acc, p) => acc + (p.endFrame - p.startFrame),
+      0,
+    );
+    const avgFramesPerScene = Math.round(totalDuration / scenes.length);
 
-  scenes.forEach((scene, i) => {
-    const phrase = phraseTimestamps[i];
+    let currentFrame = 0;
+    return scenes.map((scene, i) => {
+      const phrase = phraseTimestamps[i];
+      const duration = phrase
+        ? Math.max(60, phrase.endFrame - phrase.startFrame)
+        : Math.max(60, scene.durationFrames || avgFramesPerScene);
 
-    if (phrase) {
-      const startFrame = Math.round(phrase.startFrame ?? currentFrame);
-      const endFrame = Math.round(
-        phrase.endFrame ?? startFrame + (phrase.durationFrames || 90),
-      );
-      const durationFrames = Math.max(60, endFrame - startFrame);
-
-      synced.push({
-        startFrame,
-        durationFrames,
-      });
-      currentFrame = startFrame + durationFrames;
-    } else {
-      const duration = scene.durationFrames || 90;
-      synced.push({
-        startFrame: currentFrame,
-        durationFrames: duration,
-      });
+      const result = { startFrame: currentFrame, durationFrames: duration };
       currentFrame += duration;
-    }
-  });
+      return result;
+    });
+  }
 
-  console.log(
-    "🎙️ Synced durations:",
-    synced.map((s) => s.durationFrames),
-  );
-  return synced;
+  const phrasesPerScene = Math.ceil(phraseTimestamps.length / scenes.length);
+
+  let currentFrame = 0;
+  return scenes.map((scene, i) => {
+    const startIdx = i * phrasesPerScene;
+    const endIdx = Math.min(startIdx + phrasesPerScene, phraseTimestamps.length);
+    const group = phraseTimestamps.slice(startIdx, endIdx);
+
+    if (group.length === 0) {
+      const duration = Math.max(60, scene.durationFrames || 90);
+      const result = { startFrame: currentFrame, durationFrames: duration };
+      currentFrame += duration;
+      return result;
+    }
+
+    const startFrame = group[0].startFrame;
+    const endFrame = group[group.length - 1].endFrame;
+    const duration = Math.max(60, endFrame - startFrame);
+
+    currentFrame = startFrame + duration;
+    return { startFrame, durationFrames: duration };
+  });
 };
 
 const generateMockupContent = (scene, prompt) => {
@@ -532,40 +540,65 @@ app.post("/voice", async (req, res) => {
     console.log("🎵 Audio URL:", audioUrl);
 
     const fps = 60;
-    const charTimes = data.alignment?.character_start_times_seconds || [];
-    const charEndTimes = data.alignment?.character_end_times_seconds || [];
+    const alignment = data.alignment || {};
+    const characters = alignment.characters || [];
+    const charStartTimes = alignment.character_start_times_seconds || [];
+    const charEndTimes = alignment.character_end_times_seconds || [];
 
-    const sentences = text
-      .split(/\n/)
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+    const lines = text.split("\n").filter((l) => l.trim());
 
     let charIndex = 0;
-    const phraseTimestamps = sentences.map((sentence, i) => {
-      const startTime = charTimes[charIndex] || 0;
-      const endCharIndex = Math.min(charIndex + sentence.length - 1, charEndTimes.length - 1);
-      const endTime = charEndTimes[endCharIndex] || startTime + 2;
+    const phraseTimestamps = lines
+      .map((line) => {
+        const cleanLine = line.trim();
+        if (!cleanLine) return null;
 
-      const adjustedEndTime = i < sentences.length - 1
-        ? endTime + 0.05
-        : endTime + 0.3;
+        while (
+          charIndex < characters.length &&
+          typeof characters[charIndex] === "string" &&
+          /\s/.test(characters[charIndex])
+        ) {
+          charIndex += 1;
+        }
 
-      charIndex += sentence.length + 1;
+        const lineChars = cleanLine.replace(/\s/g, "").length;
+        const startTime = charStartTimes[charIndex] || 0;
 
-      return {
-        phrase: sentence,
-        startFrame: Math.round(startTime * fps),
-        endFrame: Math.round(adjustedEndTime * fps),
-        durationFrames: Math.max(30, Math.round((adjustedEndTime - startTime) * fps)),
-      };
-    });
+        let endCharIdx = charIndex;
+        let charsFound = 0;
+        while (endCharIdx < characters.length && charsFound < lineChars) {
+          if (characters[endCharIdx] && characters[endCharIdx] !== " ") {
+            charsFound += 1;
+          }
+          endCharIdx += 1;
+        }
 
-    console.log("📝 Phrases count:", phraseTimestamps.length);
-    console.log("📝 First phrase:", phraseTimestamps[0]);
+        const endTime =
+          charEndTimes[Math.max(0, endCharIdx - 1)] || startTime + 1.5;
+        charIndex = endCharIdx;
+
+        const startFrame = Math.round(startTime * fps);
+        const endFrame = Math.round(endTime * fps);
+
+        return {
+          phrase: cleanLine,
+          startFrame,
+          endFrame,
+          durationFrames: Math.max(60, endFrame - startFrame),
+        };
+      })
+      .filter(Boolean);
+
+    console.log(
+      "🎙️ phraseTimestamps:",
+      phraseTimestamps.map(
+        (p) => `"${p.phrase.slice(0, 20)}" [${p.startFrame}-${p.endFrame}]`,
+      ),
+    );
 
     const durationSeconds = charEndTimes[charEndTimes.length - 1] || 30;
 
-    res.json({ audioUrl, durationSeconds, phraseTimestamps });
+    res.json({ audioUrl, durationSeconds, phraseTimestamps, alignment });
   } catch (err) {
     console.error("Voice error:", err);
     res.status(500).json({ error: err.message });
