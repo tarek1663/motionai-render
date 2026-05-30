@@ -83,13 +83,9 @@ export type SceneData = {
     | "worldmap"
     | "horizontaltimeline"
     | "weightreveal"
-    | "beatdrop"
-    | "zoombrute"
     | "strobe"
     | "explode"
     | "parallax"
-    | "shake"
-    | "droptext"
     | "repeatcut";
   text?: string;
   durationFrames?: number;
@@ -6130,82 +6126,6 @@ export const HorizontalTimelineScene: React.FC<{ scene: SceneData }> = ({ scene 
   );
 };
 
-// ─── BEAT DROP ────────────────────────────────────────
-export const BeatDropScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
-  const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
-  const accent = scene.accentColor || "#ffffff";
-
-  const flashIn = interpolate(frame, [0, 4], [0, 1], {
-    extrapolateRight: "clamp",
-    easing: E_OUT,
-  });
-  const flashOut = interpolate(
-    frame,
-    [durationInFrames - 6, durationInFrames],
-    [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: E_IN,
-    },
-  );
-
-  return (
-    <AbsoluteFill
-      style={{
-        background: accent,
-        opacity: Math.min(flashIn, flashOut),
-      }}
-    />
-  );
-};
-
-// ─── ZOOM BRUTAL ──────────────────────────────────────
-export const ZoomBruteScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
-  const frame = useCurrentFrame();
-  const motion = useContinuousMotion();
-  const bg = scene.bg || "#ffffff";
-
-  const zoomIn = interpolate(frame, [0, 10], [2.5, 1], {
-    extrapolateRight: "clamp",
-    easing: Easing.out(Easing.cubic),
-  });
-  const { opacity } = useAppleTiming();
-  const fontSize = autoFontSize(scene.text || "", 140, 64);
-
-  return (
-    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <GeoBackground bg={bg} geo={scene.geo} />
-      <AbsoluteFill
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-          opacity,
-          transform: `scale(${zoomIn * motion.breathe}) translateY(${motion.floatY}px)`,
-        }}
-      >
-        <div
-          style={{
-            fontSize,
-            fontWeight: 800,
-            fontFamily: FONT,
-            letterSpacing: "-0.04em",
-            lineHeight: 1,
-            color: textColor(bg),
-            whiteSpace: "nowrap",
-            textShadow: isLight(bg)
-              ? "0 2px 12px rgba(0,0,0,0.1)"
-              : "0 2px 20px rgba(0,0,0,0.5)",
-          }}
-        >
-          {scene.text}
-        </div>
-      </AbsoluteFill>
-    </AbsoluteFill>
-  );
-};
-
 // ─── STROBE ───────────────────────────────────────────
 export const StrobeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
   const frame = useCurrentFrame();
@@ -6368,112 +6288,6 @@ export const ParallaxScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
             whiteSpace: "nowrap",
             transform: `translateX(${textX + interpolate(enter, [0, 1], [-40, 0])}px) scale(${interpolate(enter, [0, 1], [0.95, 1])})`,
             filter: `blur(${interpolate(enter, [0, 0.4, 1], [6, 0, 0])}px)`,
-          }}
-        >
-          {scene.text}
-        </div>
-      </AbsoluteFill>
-    </AbsoluteFill>
-  );
-};
-
-// ─── SHAKE ────────────────────────────────────────────
-export const ShakeScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const bg = scene.bg || "#ffffff";
-
-  const { opacity } = useAppleTiming();
-  const enter = spring({
-    frame,
-    fps,
-    config: { damping: 280, stiffness: 100 },
-    from: 0,
-    to: 1,
-  });
-
-  const shakeIntensity = interpolate(frame, [0, 12, 20], [8, 3, 0], {
-    extrapolateRight: "clamp",
-    easing: E_OUT,
-  });
-  const shakeX = Math.sin(frame * 1.8) * shakeIntensity;
-  const shakeY = Math.cos(frame * 2.1) * shakeIntensity * 0.5;
-
-  const fontSize = autoFontSize(scene.text || "", 140, 64);
-
-  return (
-    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <div style={{ transform: `translate(${shakeX * 0.3}px, ${shakeY * 0.3}px)` }}>
-        <GeoBackground bg={bg} geo={scene.geo} />
-      </div>
-      <AbsoluteFill
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-          opacity,
-          transform: `translate(${shakeX}px, ${shakeY}px)`,
-        }}
-      >
-        <div
-          style={{
-            fontSize,
-            fontWeight: 800,
-            fontFamily: FONT,
-            letterSpacing: "-0.04em",
-            lineHeight: 1,
-            color: textColor(bg),
-            whiteSpace: "nowrap",
-            transform: `scale(${interpolate(enter, [0, 1], [0.9, 1])})`,
-          }}
-        >
-          {scene.text}
-        </div>
-      </AbsoluteFill>
-    </AbsoluteFill>
-  );
-};
-
-// ─── DROP TEXT ────────────────────────────────────────
-export const DropTextScene: React.FC<{ scene: SceneData }> = ({ scene }) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const bg = scene.bg || "#000000";
-
-  const drop = spring({
-    frame,
-    fps,
-    config: { damping: 12, stiffness: 400, mass: 0.8 },
-    from: 0,
-    to: 1,
-  });
-
-  const { opacity } = useAppleTiming();
-  const y = interpolate(drop, [0, 1], [-400, 0]);
-  const squish = interpolate(drop, [0, 0.7, 0.85, 1], [1, 1, 0.85, 1]);
-
-  const fontSize = autoFontSize(scene.text || "", 140, 64);
-
-  return (
-    <AbsoluteFill style={{ background: bg, overflow: "hidden" }}>
-      <GeoBackground bg={bg} geo={scene.geo} />
-      <AbsoluteFill
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-          opacity,
-        }}
-      >
-        <div
-          style={{
-            fontSize,
-            fontWeight: 900,
-            fontFamily: FONT,
-            letterSpacing: "-0.04em",
-            lineHeight: 1,
-            color: textColor(bg),
-            whiteSpace: "nowrap",
-            transform: `translateY(${y}px) scaleY(${squish})`,
-            transformOrigin: "center bottom",
           }}
         >
           {scene.text}

@@ -5,35 +5,27 @@ const fps = 60;
 
 const testScenes = [
   { type: "singleword", text: "Nike.", bg: "#000000", accentColor: "#ffffff", geo: "dots", durationFrames: 60 },
-  { type: "beatdrop", bg: "#ff0000", accentColor: "#ff0000", durationFrames: 20 },
-  { type: "zoombrute", text: "Puissant.", bg: "#ffffff", accentColor: "#000000", geo: "grid", durationFrames: 80 },
   { type: "strobe", text: "Impact.", bg: "#000000", accentColor: "#ffffff", geo: "circles", durationFrames: 70 },
   { type: "explode", text: "Boom.", bg: "#ffffff", accentColor: "#000000", durationFrames: 80 },
   { type: "parallax", text: "Profond.", bg: "#000000", accentColor: "#ffffff", geo: "diagonal", durationFrames: 100 },
-  { type: "shake", text: "Choc.", bg: "#ffffff", accentColor: "#000000", geo: "cross", durationFrames: 80 },
-  { type: "droptext", text: "Chute.", bg: "#000000", accentColor: "#ffffff", geo: "dots", durationFrames: 90 },
   { type: "repeatcut", text: "Encore.", bg: "#ffffff", accentColor: "#000000", durationFrames: 90 },
   { type: "singleword", text: "Vite.", bg: "#000000", accentColor: "#ffffff", geo: "grid", durationFrames: 50 },
   { type: "singleword", text: "Plus.", bg: "#ffffff", accentColor: "#000000", geo: "dots", durationFrames: 40 },
-  { type: "singleword", text: "Encore.", bg: "#000000", accentColor: "#ffffff", geo: "circles", durationFrames: 30 },
+  { type: "singleword", text: "Just Do It.", bg: "#000000", accentColor: "#ffffff", geo: "circles", durationFrames: 60 },
 ] as MotionVideoProps["scenes"];
 
 const testSceneDurations = [
   { startFrame: 0, durationFrames: 60 },
-  { startFrame: 60, durationFrames: 20 },
-  { startFrame: 80, durationFrames: 80 },
-  { startFrame: 160, durationFrames: 70 },
-  { startFrame: 230, durationFrames: 80 },
-  { startFrame: 310, durationFrames: 100 },
-  { startFrame: 410, durationFrames: 80 },
-  { startFrame: 490, durationFrames: 90 },
-  { startFrame: 580, durationFrames: 90 },
-  { startFrame: 670, durationFrames: 50 },
-  { startFrame: 720, durationFrames: 40 },
-  { startFrame: 760, durationFrames: 30 },
+  { startFrame: 60, durationFrames: 70 },
+  { startFrame: 130, durationFrames: 80 },
+  { startFrame: 210, durationFrames: 100 },
+  { startFrame: 310, durationFrames: 90 },
+  { startFrame: 400, durationFrames: 50 },
+  { startFrame: 450, durationFrames: 40 },
+  { startFrame: 490, durationFrames: 60 },
 ];
 
-const testTotalFrames = 790;
+const testTotalFrames = 550;
 
 const RemotionRoot = () => (
   <Composition
