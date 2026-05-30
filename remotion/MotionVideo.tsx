@@ -381,16 +381,16 @@ export const MotionVideo: React.FC<MotionVideoProps> = ({
       })}
 
       {showWatermark && (
-        <AbsoluteFill style={{ pointerEvents: "none" }}>
+        <AbsoluteFill style={{ pointerEvents: "none", zIndex: 9999 }}>
           <div
             style={{
               position: "absolute",
               bottom: 24,
               right: 24,
-              background: "rgba(0,0,0,0.5)",
+              background: "rgba(0,0,0,0.55)",
               backdropFilter: "blur(8px)",
               borderRadius: 8,
-              padding: "4px 10px",
+              padding: "5px 12px",
               display: "flex",
               alignItems: "center",
               gap: 6,
@@ -399,14 +399,14 @@ export const MotionVideo: React.FC<MotionVideoProps> = ({
           >
             <div
               style={{
-                width: 14,
-                height: 14,
-                borderRadius: 3,
+                width: 16,
+                height: 16,
+                borderRadius: 4,
                 background: "#10B981",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 7,
+                fontSize: 8,
                 fontWeight: 900,
                 color: "#fff",
               }}
@@ -415,10 +415,11 @@ export const MotionVideo: React.FC<MotionVideoProps> = ({
             </div>
             <span
               style={{
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 700,
-                color: "rgba(255,255,255,0.7)",
+                color: "rgba(255,255,255,0.8)",
                 letterSpacing: "0.04em",
+                fontFamily: "-apple-system, sans-serif",
               }}
             >
               Motionr

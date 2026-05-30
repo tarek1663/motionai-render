@@ -747,6 +747,7 @@ app.post("/render", async (req, res) => {
     accentColor,
     formatName,
     plan = "free",
+    showWatermark: requestedShowWatermark,
     quality = "fast",
     phraseTimestamps = [],
   } = req.body;
@@ -840,6 +841,8 @@ app.post("/render", async (req, res) => {
     audioSrc: audioUrl || null,
     musicSrc: musicUrl || null,
     musicVolume: musicVolume || 0.07,
+    showWatermark: requestedShowWatermark ?? plan === "free",
+    plan: plan || "free",
     prompt,
     duration,
     accentColor,
