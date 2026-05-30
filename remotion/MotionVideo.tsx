@@ -75,6 +75,14 @@ import {
   WorldMapScene,
   HorizontalTimelineScene,
   WeightRevealScene,
+  BeatDropScene,
+  ZoomBruteScene,
+  StrobeScene,
+  ExplodeScene,
+  ParallaxScene,
+  ShakeScene,
+  DropTextScene,
+  RepeatCutScene,
   DynamicVignette,
 } from "./templates/scenes";
 
@@ -255,6 +263,22 @@ const SceneRenderer: React.FC<{ scene: SceneData; index: number }> = ({
       return <HorizontalTimelineScene scene={sceneWithIndex} />;
     case "weightreveal":
       return <WeightRevealScene scene={sceneWithIndex} />;
+    case "beatdrop":
+      return <BeatDropScene scene={sceneWithIndex} />;
+    case "zoombrute":
+      return <ZoomBruteScene scene={sceneWithIndex} />;
+    case "strobe":
+      return <StrobeScene scene={sceneWithIndex} />;
+    case "explode":
+      return <ExplodeScene scene={sceneWithIndex} />;
+    case "parallax":
+      return <ParallaxScene scene={sceneWithIndex} />;
+    case "shake":
+      return <ShakeScene scene={sceneWithIndex} />;
+    case "droptext":
+      return <DropTextScene scene={sceneWithIndex} />;
+    case "repeatcut":
+      return <RepeatCutScene scene={sceneWithIndex} />;
     default:
       return <SingleWordScene scene={sceneWithIndex} />;
   }
