@@ -73,6 +73,47 @@ const toAbsoluteAssetUrl = (url) => {
   return `${process.env.RENDER_SERVER_URL}${url}`;
 };
 
+// ── File d'attente rendu (max 3 simultanés) ───────────
+let activeRenders = 0;
+const MAX_CONCURRENT = 3;
+const queue = [];
+
+const processQueue = () => {
+  while (queue.length > 0 && activeRenders < MAX_CONCURRENT) {
+    const next = queue.shift();
+    next();
+  }
+};
+
+const addToQueue = (renderFn) => {
+  return new Promise((resolve, reject) => {
+    const wrapped = async () => {
+      activeRenders++;
+      try {
+        const result = await renderFn();
+        resolve(result);
+      } catch (err) {
+        reject(err);
+      } finally {
+        activeRenders--;
+        processQueue();
+      }
+    };
+    queue.push(wrapped);
+    processQueue();
+  });
+};
+
+const writeJobProgress = (progressPath, progress, status) => {
+  fs.writeFileSync(
+    progressPath,
+    JSON.stringify({
+      progress: progress ?? 0,
+      status: status || "rendering",
+    }),
+  );
+};
+
 const recalcSceneDurations = (scenes) => {
   const ANTICIPATION = 3;
   let currentFrame = 0;
@@ -733,210 +774,154 @@ app.post("/photos", async (req, res) => {
 // ── Lancer un rendu ───────────────────────────────────
 app.post("/render", async (req, res) => {
   try {
-  const jobId = uuidv4();
-  const {
-    compositionId = "MotionVideo",
-    scenes,
-    totalFrames: requestedTotalFrames,
-    format,
-    audioUrl,
-    musicUrl,
-    musicVolume,
-    prompt,
-    duration,
-    accentColor,
-    formatName,
-    plan = "free",
-    showWatermark: requestedShowWatermark,
-    quality = "fast",
-    phraseTimestamps = [],
-  } = req.body;
-
-  const enrichedScenes = await enrichScenesWithPhotos(scenes || [], prompt || "");
-  const enrichedWithMockup = enrichedScenes.map((scene) =>
-    generateMockupContent(scene, prompt || ""),
-  );
-
-  const enrichedWithAI = await enrichMockupsWithAI(
-    enrichedWithMockup,
-    prompt || "",
-  );
-
-  console.log(
-    "📱 Scene types:",
-    enrichedWithAI.map(
-      (s) => `${s.type}:${s.mockupType || s.mockupData?.type || "none"}`,
-    ),
-  );
-  console.log(
-    "📱 First iPhone scene:",
-    JSON.stringify(
-      enrichedWithAI.find((s) => s.type === "iphone"),
-      null,
-      2,
-    ),
-  );
-  console.log(
-    "📱 Mockup scenes:",
-    enrichedWithAI
-      .filter((s) => s.mockupData)
-      .map((s) => `${s.type}:${s.mockupData?.type}`),
-  );
-  console.log(
-    "🤖 Mockups with AI UI:",
-    enrichedWithAI.filter((s) => s.aiUI).map((s) => s.type),
-  );
-
-  const outPath = path.join(RENDERS_DIR, `${jobId}.mp4`);
-  const errPath = path.join(RENDERS_DIR, `${jobId}.error`);
-  const metaPath = path.join(RENDERS_DIR, `${jobId}.meta.json`);
-  const progressPath = path.join(RENDERS_DIR, `${jobId}.progress`);
-
-  const qualitySettings = {
-    fast: { crf: 28, concurrency: 8, scale: 0.75 },
-    high: { crf: 18, concurrency: 4, scale: 1 },
-  };
-
-  const settings = qualitySettings[quality] || qualitySettings.fast;
-
-  if (fs.existsSync(errPath)) fs.unlinkSync(errPath);
-  if (fs.existsSync(progressPath)) fs.unlinkSync(progressPath);
-  fs.writeFileSync(progressPath, JSON.stringify({ progress: 0 }));
-
-  fs.writeFileSync(
-    metaPath,
-    JSON.stringify({
-      prompt,
+    const jobId = uuidv4();
+    const {
+      scenes,
+      totalFrames: requestedTotalFrames,
       format,
+      audioUrl,
+      musicUrl,
+      musicVolume,
+      prompt,
       duration,
       accentColor,
       formatName,
-      quality,
-    })
-  );
+      plan = "free",
+      showWatermark: requestedShowWatermark,
+      quality = "fast",
+      phraseTimestamps = [],
+    } = req.body;
 
-  const sceneDurations = syncScenesWithVoice(enrichedWithAI, phraseTimestamps, 60);
-  const computedTotalFrames = sceneDurations.reduce(
-    (acc, s) => acc + s.durationFrames,
-    0,
-  );
-  const adjustedTotalFrames = Math.max(
-    computedTotalFrames || requestedTotalFrames || 1800,
-    enrichedWithAI.length * 60,
-  );
+    const outPath = path.join(RENDERS_DIR, `${jobId}.mp4`);
+    const errPath = path.join(RENDERS_DIR, `${jobId}.error`);
+    const metaPath = path.join(RENDERS_DIR, `${jobId}.meta.json`);
+    const progressPath = path.join(RENDERS_DIR, `${jobId}.progress`);
 
-  console.log(
-    "🎬 Total frames:",
-    adjustedTotalFrames,
-    "— Scenes:",
-    enrichedWithAI.length,
-  );
+    const qualitySettings = {
+      fast: { crf: 28, concurrency: 8, scale: 0.75 },
+      high: { crf: 18, concurrency: 4, scale: 1 },
+    };
+    const settings = qualitySettings[quality] || qualitySettings.fast;
 
-  const inputProps = {
-    scenes: enrichedWithAI,
-    sceneDurations,
-    totalFrames: adjustedTotalFrames,
-    phraseTimestamps,
-    format: format || "9:16",
-    audioSrc: audioUrl || null,
-    musicSrc: musicUrl || null,
-    musicVolume: musicVolume || 0.07,
-    showWatermark: requestedShowWatermark ?? plan === "free",
-    plan: plan || "free",
-    prompt,
-    duration,
-    accentColor,
-    formatName,
-    quality,
-    audioUrl,
-    musicUrl,
-  };
+    if (fs.existsSync(errPath)) fs.unlinkSync(errPath);
+    if (fs.existsSync(progressPath)) fs.unlinkSync(progressPath);
+    writeJobProgress(progressPath, 0, "queued");
 
-  res.json({ jobId });
+    fs.writeFileSync(
+      metaPath,
+      JSON.stringify({
+        prompt,
+        format,
+        duration,
+        accentColor,
+        formatName,
+        quality,
+      }),
+    );
 
-  (async () => {
-    try {
-      console.log("📐 Props totalFrames:", inputProps.totalFrames);
-      console.log("📐 Expected duration:", inputProps.totalFrames / 60, "seconds");
+    console.log(
+      `📥 Render queued: ${jobId} (queue: ${queue.length + 1}, active: ${activeRenders}/${MAX_CONCURRENT})`,
+    );
 
-      const { renderMedia, selectComposition } = require("@remotion/renderer");
+    res.json({ jobId });
 
-      const bundleLocation = await getBundleLocation();
+    void addToQueue(async () => {
+      try {
+        writeJobProgress(progressPath, 0, "rendering");
 
-      const totalFrames = inputProps.totalFrames || 1800;
+        const enrichedScenes = await enrichScenesWithPhotos(scenes || [], prompt || "");
+        const enrichedWithMockup = enrichedScenes.map((scene) =>
+          generateMockupContent(scene, prompt || ""),
+        );
+        const enrichedWithAI = await enrichMockupsWithAI(enrichedWithMockup, prompt || "");
 
-      const renderInputProps = {
-        ...inputProps,
-        totalFrames,
-        audioSrc: toAbsoluteAssetUrl(inputProps.audioSrc),
-        musicSrc: toAbsoluteAssetUrl(inputProps.musicSrc),
-      };
+        const sceneDurations = syncScenesWithVoice(enrichedWithAI, phraseTimestamps, 60);
+        const computedTotalFrames = sceneDurations.reduce(
+          (acc, s) => acc + s.durationFrames,
+          0,
+        );
+        const adjustedTotalFrames = Math.max(
+          computedTotalFrames || requestedTotalFrames || 1800,
+          enrichedWithAI.length * 60,
+        );
 
-      console.log(
-        "📱 Remotion scenes with mockupData:",
-        renderInputProps.scenes?.filter((s) => s.mockupData)?.length ?? 0,
-      );
-      console.log(
-        "📱 Remotion iPhone payload:",
-        JSON.stringify(
-          renderInputProps.scenes?.find((s) => s.type === "iphone"),
-          null,
-          2,
-        ),
-      );
+        console.log("🎬 Total frames:", adjustedTotalFrames, "— Scenes:", enrichedWithAI.length);
 
-      const composition = await selectComposition({
-        serveUrl: bundleLocation,
-        id: "MotionVideo",
-        inputProps: renderInputProps,
-      });
+        const inputProps = {
+          scenes: enrichedWithAI,
+          sceneDurations,
+          totalFrames: adjustedTotalFrames,
+          phraseTimestamps,
+          format: format || "9:16",
+          audioSrc: audioUrl || null,
+          musicSrc: musicUrl || null,
+          musicVolume: musicVolume || 0.07,
+          showWatermark: requestedShowWatermark ?? plan === "free",
+          plan: plan || "free",
+          prompt,
+          duration,
+          accentColor,
+          formatName,
+          quality,
+          audioUrl,
+          musicUrl,
+        };
 
-      composition.durationInFrames = totalFrames;
-      console.log(
-        "📐 Final duration:",
-        composition.durationInFrames,
-        "frames =",
-        composition.durationInFrames / 60,
-        "seconds"
-      );
+        const { renderMedia, selectComposition } = require("@remotion/renderer");
+        const bundleLocation = await getBundleLocation();
+        const totalFrames = inputProps.totalFrames || 1800;
 
-      await renderMedia({
-        composition,
-        serveUrl: bundleLocation,
-        codec: "h264",
-        outputLocation: outPath,
-        inputProps: renderInputProps,
-        browserExecutable: "/usr/bin/chromium",
-        chromiumOptions: {
-          disableWebSecurity: true,
-          ignoreCertificateErrors: true,
-          args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-gpu",
-            "--single-process",
-            "--no-zygote",
-          ],
-        },
-        concurrency: settings.concurrency,
-        crf: settings.crf,
-        pixelFormat: "yuv420p",
-        // `scale` n'est pas supporté par renderMedia programmatique.
-        onProgress: ({ progress }) => {
-          const pct = Math.round(progress * 100);
-          fs.writeFileSync(progressPath, JSON.stringify({ progress: pct }));
-          console.log(`📊 Render progress: ${pct}%`);
-        },
-      });
+        const renderInputProps = {
+          ...inputProps,
+          totalFrames,
+          audioSrc: toAbsoluteAssetUrl(inputProps.audioSrc),
+          musicSrc: toAbsoluteAssetUrl(inputProps.musicSrc),
+        };
 
-      fs.writeFileSync(progressPath, JSON.stringify({ progress: 100 }));
-      console.log("✅ Render done:", jobId);
-    } catch (err) {
-      console.error("❌ Render error:", err.message);
-      fs.writeFileSync(errPath, err.message);
-    }
-  })();
+        const composition = await selectComposition({
+          serveUrl: bundleLocation,
+          id: "MotionVideo",
+          inputProps: renderInputProps,
+        });
+
+        composition.durationInFrames = totalFrames;
+
+        await renderMedia({
+          composition,
+          serveUrl: bundleLocation,
+          codec: "h264",
+          outputLocation: outPath,
+          inputProps: renderInputProps,
+          browserExecutable: "/usr/bin/chromium",
+          chromiumOptions: {
+            disableWebSecurity: true,
+            ignoreCertificateErrors: true,
+            args: [
+              "--no-sandbox",
+              "--disable-setuid-sandbox",
+              "--disable-dev-shm-usage",
+              "--disable-gpu",
+              "--single-process",
+              "--no-zygote",
+            ],
+          },
+          concurrency: settings.concurrency,
+          crf: settings.crf,
+          pixelFormat: "yuv420p",
+          onProgress: ({ progress }) => {
+            const pct = Math.round(progress * 100);
+            writeJobProgress(progressPath, pct, "rendering");
+            console.log(`📊 Render progress: ${pct}%`);
+          },
+        });
+
+        writeJobProgress(progressPath, 100, "rendering");
+        console.log("✅ Render done:", jobId);
+      } catch (err) {
+        console.error("❌ Render error:", err.message);
+        fs.writeFileSync(errPath, err.message);
+      }
+    });
   } catch (err) {
     console.error("Render setup error:", err);
     res.status(500).json({ error: err.message });
@@ -963,14 +948,20 @@ app.get("/render/:jobId", (req, res) => {
   }
 
   let progress = 0;
+  let status = "rendering";
   if (fs.existsSync(progressPath)) {
     try {
       const data = JSON.parse(fs.readFileSync(progressPath, "utf-8"));
       progress = data.progress || 0;
-    } catch {}
+      if (data.status === "queued" || data.status === "rendering") {
+        status = data.status;
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
-  res.json({ status: "rendering", progress });
+  res.json({ status, progress });
 });
 
 // ── Metadata ──────────────────────────────────────────
